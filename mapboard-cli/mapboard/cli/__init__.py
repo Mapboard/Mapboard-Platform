@@ -4,13 +4,13 @@ import typer
 import click
 import subprocess
 import rich
+from os import environ
+from macrostrat.utils import cmd
+from .definitions import MAPBOARD_ROOT
 
-app = typer.Typer()
+app = typer.Typer(no_args_is_help=True, add_completion=False)
 
-
-@app.command()
-def hello(name: str):
-    typer.echo(f"Hello {name}")
+console = rich.console.Console()
 
 
 @app.callback()
@@ -20,13 +20,24 @@ def callback():
     """
 
 
-def _compose(args):
+@app.command()
+def up():
+    """Start the Mapboard server and follow logs."""
+    compose("up", "-d")
+    console.print("Starting Mapboard server...")
+    compose("logs", "-f", "--since=1s")
+
+
+def compose(*args):
     """Run docker compose commands in the appropriate context"""
-    subprocess.run(["docker", "compose", *args])
+    env = environ.copy()
+    env["COMPOSE_PROJECT_NAME"] = "mapboard"
+    env["COMPOSE_FILE"] = str(MAPBOARD_ROOT / "system" / "docker-compose.yaml")
+    cmd("docker", "compose", *args, env=env)
 
 
 @click.command(
-    "main",
+    "compose",
     context_settings=dict(
         ignore_unknown_options=True,
         help_option_names=[],
@@ -36,10 +47,10 @@ def _compose(args):
     ),
 )
 @click.argument("args", nargs=-1, type=click.UNPROCESSED)
-def compose(args):
+def _compose(args):
     """Run docker compose commands in the appropriate context"""
-    _compose(args)
+    compose(args)
 
 
-_app = typer.main.get_command(app)
-_app.add_command(compose, "compose")
+cli = typer.main.get_command(app)
+cli.add_command(_compose, "compose")

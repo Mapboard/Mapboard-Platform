@@ -1,4 +1,4 @@
-from mapboard.cli import _app
+from mapboard.cli import cli
 
 if __name__ == "__main__":
-    _app()
+    cli()

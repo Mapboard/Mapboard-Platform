@@ -1,5 +1,5 @@
 all:
-	cd cli-app && poetry install
+	cd mapboard-cli && poetry install
 
 install:
 	rm -f /usr/local/bin/mapboard
