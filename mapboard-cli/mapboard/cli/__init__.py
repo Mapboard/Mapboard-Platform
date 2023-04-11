@@ -3,6 +3,7 @@
 import typer
 import click
 import subprocess
+import rich
 
 app = typer.Typer()
 
@@ -12,7 +13,11 @@ def hello(name: str):
     typer.echo(f"Hello {name}")
 
 
-# Get click object
+@app.callback()
+def callback():
+    """
+    Mapboard command-line interface
+    """
 
 
 def _compose(args):
@@ -36,5 +41,5 @@ def compose(args):
     _compose(args)
 
 
-typer_click_object = typer.main.get_command(app)
-typer_click_object.add_command(compose, "compose")
+_app = typer.main.get_command(app)
+_app.add_command(compose, "compose")
