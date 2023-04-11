@@ -2,13 +2,20 @@
 
 import typer
 import click
-import subprocess
 import rich
-from os import environ
-from macrostrat.utils import cmd
-from .definitions import MAPBOARD_ROOT
+import sys
+from .compose import compose, check_status, follow_logs
+from typer.core import TyperGroup
+from typer import Context
 
-app = typer.Typer(no_args_is_help=True, add_completion=False)
+
+class OrderCommands(TyperGroup):
+    def list_commands(self, ctx: Context):
+        """Return list of commands in the order appear."""
+        return list(self.commands)  # get commands using self.commands
+
+
+app = typer.Typer(no_args_is_help=True, add_completion=False, cls=OrderCommands)
 
 console = rich.console.Console()
 
@@ -21,19 +28,40 @@ def callback():
 
 
 @app.command()
-def up():
+def up(container: str = "", force_recreate: bool = False):
     """Start the Mapboard server and follow logs."""
-    compose("up", "-d")
-    console.print("Starting Mapboard server...")
-    compose("logs", "-f", "--since=1s")
+    res = compose(
+        "up",
+        "-d",
+        "--build",
+        "--remove-orphans",
+        "--force-recreate" if force_recreate else "",
+        container,
+    )
+    if res.returncode != 0:
+        console.print(
+            "[red bold]One or more containers did not build successfully, aborting."
+        )
+        sys.exit(res.returncode)
+    else:
+        console.print("[green bold]All containers built successfully.")
+
+    console.print("[bold]Starting Mapboard server...")
+    check_status("Mapboard", "mapboard")
+    follow_logs("Mapboard", "mapboard")
 
 
-def compose(*args):
-    """Run docker compose commands in the appropriate context"""
-    env = environ.copy()
-    env["COMPOSE_PROJECT_NAME"] = "mapboard"
-    env["COMPOSE_FILE"] = str(MAPBOARD_ROOT / "system" / "docker-compose.yaml")
-    cmd("docker", "compose", *args, env=env)
+@app.command()
+def down():
+    """Stop the Mapboard server."""
+    console.print("[bold]Stopping Mapboard server...")
+    compose("down", "--remove-orphans")
+
+
+@app.command()
+def restart(ctx: Context):
+    """Restart the Mapboard server and follow logs."""
+    ctx.invoke(up, force_recreate=True)
 
 
 @click.command(
