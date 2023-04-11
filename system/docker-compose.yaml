@@ -21,19 +21,19 @@ services:
       - 5432
     volumes:
       - ./data/db_cluster:/var/lib/postgresql/data
-  app:
-    build: ../Server
-    environment:
-      - MAPBOARD_SRID=32711
-      - PGHOST=database
-      - PGPORT=5432
-      - PGUSER=${POSTGRES_USER}
-      - PGPASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB
-    ports:
-      - "3006:3006"
-    expose:
-      - "3006"
+  # app:
+  #   build: ../Server
+  #   environment:
+  #     - MAPBOARD_SRID=32711
+  #     - PGHOST=database
+  #     - PGPORT=5432
+  #     - PGUSER=${POSTGRES_USER}
+  #     - PGPASSWORD=${POSTGRES_PASSWORD}
+  #     - POSTGRES_DB
+  #   ports:
+  #     - "3006:3006"
+  #   expose:
+  #     - "3006"
   # app:
   #   image: ghcr.io/davenquinn/geologic-map:latest
   #   command: serve
