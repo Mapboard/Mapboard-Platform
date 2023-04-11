@@ -1,0 +1,49 @@
+version: "3"
+services:
+  database:
+    # PostgreSQL 13 is needed in order to allow force-dropping the database
+    # (in testing mode)
+    image: postgis/postgis:15-3.3
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER
+      - POSTGRES_DB
+      # This allows connections without a password, which is expedient but insecure...
+      - POSTGRES_PASSWORD
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "${MAPBOARD_DB_PORT:-54391}:5432"
+    expose:
+      - 5432
+    volumes:
+      - ./data/db_cluster:/var/lib/postgresql/data
+  app:
+    build: ../Server
+    environment:
+      - MAPBOARD_SRID=32711
+      - PGHOST=database
+      - PGPORT=5432
+      - PGUSER=${POSTGRES_USER}
+      - PGPASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB
+    ports:
+      - "3006:3006"
+    expose:
+      - "3006"
+  # app:
+  #   image: ghcr.io/davenquinn/geologic-map:latest
+  #   command: serve
+  #   restart: unless-stopped
+  #   ports:
+  #     - "3006:3006"
+  #   expose: 
+  #     - "3006"
+  #   volumes:
+  #     - ./map-config.json:/conf/geologic-map-config.json:ro
+  #     - ./data/tilesets:/data/tilesets:ro
+  #   depends_on:
+  #     - database
