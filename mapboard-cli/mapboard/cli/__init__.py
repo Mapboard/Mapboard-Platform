@@ -33,29 +33,34 @@ class ControlCommand(Typer):
         self.name = name
 
         def callback(ctx: Context):
-            ctx.obj = ApplicationSettings(self.name)
+            ctx.obj = ApplicationConfig(self.name)
 
         callback.__doc__ = f"""{self.name} command-line interface"""
 
         self.registered_callback = TyperInfo(callback=callback)
 
 
-app = ControlCommand(name="Mapboard")
-
 console = rich.console.Console()
 
 
-class ApplicationSettings:
+class ApplicationConfig:
     name: str
 
     def __init__(self, name: str):
         self.name = name
 
+    def print(self, text, style=None):
+        text = text.replace(":app_name:", self.name)
+        console.print(text, style=style)
+
+
+app = ControlCommand(name="Mapboard")
+
 
 @app.command()
 def up(ctx: Context, container: str = "", force_recreate: bool = False):
     """Start the Mapboard server and follow logs."""
-    settings = ctx.find_object(ApplicationSettings)
+    cfg = ctx.find_object(ApplicationConfig)
 
     res = compose(
         "up",
@@ -66,7 +71,7 @@ def up(ctx: Context, container: str = "", force_recreate: bool = False):
         container,
     )
     if res.returncode != 0:
-        console.print(
+        cfg.print(
             "One or more containers did not build successfully, aborting.",
             style="red bold",
         )
@@ -74,15 +79,16 @@ def up(ctx: Context, container: str = "", force_recreate: bool = False):
     else:
         console.print("All containers built successfully.", style="green bold")
 
-    console.print(f"[bold]Starting {settings.name} server...")
-    check_status(settings.name, settings.name.lower())
-    follow_logs(settings.name, settings.name.lower())
+    console.print("Starting :app_name: server...", style="bold")
+    check_status(cfg.name, cfg.name.lower())
+    follow_logs(cfg.name, cfg.name.lower())
 
 
 @app.command()
-def down():
+def down(ctx: Context):
     """Stop the server."""
-    console.print("[bold]Stopping Mapboard server...")
+    cfg = ctx.find_object(ApplicationConfig)
+    cfg.print("Stopping :app_name: server...", style="bold")
     compose("down", "--remove-orphans")
 
 
