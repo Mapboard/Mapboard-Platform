@@ -77,9 +77,9 @@ def up(ctx: Context, container: str = "", force_recreate: bool = False):
         )
         sys.exit(res.returncode)
     else:
-        console.print("All containers built successfully.", style="green bold")
+        cfg.print("All containers built successfully.", style="green bold")
 
-    console.print("Starting :app_name: server...", style="bold")
+    cfg.print("Starting :app_name: server...", style="bold")
     check_status(cfg.name, cfg.name.lower())
     follow_logs(cfg.name, cfg.name.lower())
 
@@ -95,7 +95,7 @@ def down(ctx: Context):
 @app.command()
 def restart(ctx: Context):
     """Restart the server and follow logs."""
-    ctx.invoke(up, force_recreate=True)
+    ctx.invoke(up, ctx, force_recreate=True)
 
 
 @click.command(

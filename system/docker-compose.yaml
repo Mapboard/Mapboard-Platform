@@ -1,5 +1,22 @@
 version: "3"
 services:
+  gateway:
+    # Traefik reverse proxy. We might go back to Nginx or replace this with Caddy in the future.
+    image: "traefik:v2.9"
+    container_name: "traefik"
+    command:
+      #- "--log.level=DEBUG"
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      # mDNS
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "8080:8080"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
   database:
     # PostgreSQL 13 is needed in order to allow force-dropping the database
     # (in testing mode)
@@ -23,17 +40,18 @@ services:
       - ../data/db_cluster:/var/lib/postgresql/data
   app:
     build: ../mapboard-server
+    # Command with reloader
+    command: uvicorn --reload --host '' mapboard.server:app
     environment:
-      - MAPBOARD_SRID=32711
-      - PGHOST=database
-      - PGPORT=5432
-      - PGUSER=${POSTGRES_USER}
-      - PGPASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB
-    ports:
-      - "3006:3006"
-    expose:
-      - "3006"
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@database:5432/${POSTGRES_DB}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.app.rule=Host(`mapboard.localhost`)"
+      - "traefik.http.routers.app.entrypoints=web"
+      - "traefik.http.routers.app.service=app_svc"
+      - "traefik.http.services.app_svc.loadbalancer.server.port=8000"
+    volumes:
+      - ../mapboard-server:/app:ro
   # app:
   #   image: ghcr.io/davenquinn/geologic-map:latest
   #   command: serve
