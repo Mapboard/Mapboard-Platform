@@ -2,21 +2,13 @@ version: "3"
 services:
   gateway:
     # Traefik reverse proxy. We might go back to Nginx or replace this with Caddy in the future.
-    image: "traefik:v2.9"
-    container_name: "traefik"
-    command:
-      #- "--log.level=DEBUG"
-      - "--api.insecure=true"
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-      - "--entrypoints.web.address=:80"
-      # mDNS
+    image: "caddy:2"
     restart: unless-stopped
     ports:
-      - "80:80"
-      - "8080:8080"
+      - "8000:8000"
     volumes:
-      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      # Caddyfile
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
   database:
     # PostgreSQL 13 is needed in order to allow force-dropping the database
     # (in testing mode)
@@ -39,29 +31,21 @@ services:
     volumes:
       - ../data/db_cluster:/var/lib/postgresql/data
   app:
+    image: mapboard-server
     build: ../mapboard-server
     # Command with reloader
     command: uvicorn --reload --host '' mapboard.server:app
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@database:5432/${POSTGRES_DB}
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.app.rule=Host(`mapboard.localhost`)"
-      - "traefik.http.routers.app.entrypoints=web"
-      - "traefik.http.routers.app.service=app_svc"
-      - "traefik.http.services.app_svc.loadbalancer.server.port=8000"
     volumes:
-      - ../mapboard-server:/app:ro
-  # app:
-  #   image: ghcr.io/davenquinn/geologic-map:latest
-  #   command: serve
-  #   restart: unless-stopped
-  #   ports:
-  #     - "3006:3006"
-  #   expose: 
-  #     - "3006"
-  #   volumes:
-  #     - ./map-config.json:/conf/geologic-map-config.json:ro
-  #     - ./data/tilesets:/data/tilesets:ro
-  #   depends_on:
-  #     - database
+      - ../mapboard-server:/app:ro 
+  bonjour:
+    image: mapboard-bonjour-service
+    build: ../bonjour-service
+    restart: unless-stopped
+    network_mode: host
+    ports:
+      - 5350:5353/udp
+
+    
+

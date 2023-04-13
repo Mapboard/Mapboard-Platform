@@ -4,15 +4,27 @@ import typer
 import click
 import rich
 import sys
+from os import environ
 from .compose import compose, check_status, follow_logs
 from typer.core import TyperGroup
 from typer.models import TyperInfo
 from typer import Context
 from typer import Typer
+from typing import Optional
 from dotenv import load_dotenv
+from time import sleep
 from .definitions import MAPBOARD_ROOT
+from macrostrat.utils import get_logger
+from subprocess import Popen
+import signal
+import threading
 
 load_dotenv(MAPBOARD_ROOT / ".env")
+
+environ["DOCKER_SCAN_SUGGEST"] = "false"
+environ["DOCKER_BUILDKIT"] = "1"
+
+log = get_logger(__name__)
 
 
 class OrderCommands(TyperGroup):
@@ -51,6 +63,7 @@ class ApplicationConfig:
 
     def print(self, text, style=None):
         text = text.replace(":app_name:", self.name)
+        text = text.replace(":command_name:", self.name.lower())
         console.print(text, style=style)
 
 
@@ -58,14 +71,21 @@ app = ControlCommand(name="Mapboard")
 
 
 @app.command()
-def up(ctx: Context, container: str = "", force_recreate: bool = False):
+def up(
+    ctx: Context, container: str = typer.Argument(None), force_recreate: bool = False
+):
     """Start the Mapboard server and follow logs."""
     cfg = ctx.find_object(ApplicationConfig)
+    if container is None:
+        container = ""
+
+    compose("build", container)
+
+    sleep(0.1)
 
     res = compose(
         "up",
-        "-d",
-        "--build",
+        "--no-start",
         "--remove-orphans",
         "--force-recreate" if force_recreate else "",
         container,
@@ -79,9 +99,43 @@ def up(ctx: Context, container: str = "", force_recreate: bool = False):
     else:
         cfg.print("All containers built successfully.", style="green bold")
 
+    running_containers = check_status(cfg.name, cfg.name.lower())
     cfg.print("Starting :app_name: server...", style="bold")
-    check_status(cfg.name, cfg.name.lower())
-    follow_logs(cfg.name, cfg.name.lower())
+    compose("start")
+
+    if "gateway" in running_containers:
+        cfg.print("Reloading gateway server...", style="bold")
+        compose("exec -w /etc/caddy gateway caddy reload")
+
+    thread = threading.Thread(
+        target=follow_logs, args=(cfg.name, cfg.name.lower(), container)
+    )
+    thread.start()
+
+    # Wait for input
+    restart = False
+    # Can't figure out how to get restarting to work properly
+    try:
+        thread.wait()
+        # while not restart:
+        #     r = input("Press 'r' to restart, or Ctrl+C to exit: ")
+        #     print("You pressed", r)
+        #     restart = r == "r"
+    finally:
+        # Stop the thread
+        thread.join()
+
+    if restart:
+        ctx.invoke(up, ctx, container, force_recreate=True)
+
+
+def signal_handler(sig, frame):
+    if sig == signal.SIGTERM:
+        print("You pressed Ctrl+Z!")
+        raise EOFError
+    elif sig == signal.SIGINT:
+        print("You pressed Ctrl+C!")
+        raise KeyboardInterrupt
 
 
 @app.command()
@@ -93,9 +147,9 @@ def down(ctx: Context):
 
 
 @app.command()
-def restart(ctx: Context):
+def restart(ctx: Context, container: str = typer.Argument(None)):
     """Restart the server and follow logs."""
-    ctx.invoke(up, ctx, force_recreate=True)
+    ctx.invoke(up, ctx, container, force_recreate=True)
 
 
 @click.command(
@@ -111,7 +165,7 @@ def restart(ctx: Context):
 @click.argument("args", nargs=-1, type=click.UNPROCESSED)
 def _compose(args):
     """Run docker compose commands in the appropriate context"""
-    compose(args)
+    compose(*args)
 
 
 cli = typer.main.get_command(app)

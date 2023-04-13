@@ -1,6 +1,7 @@
 from os import environ
 from macrostrat.utils import cmd
 from rich.console import Console
+from subprocess import Popen
 
 from .definitions import MAPBOARD_ROOT
 
@@ -28,12 +29,13 @@ def check_status(app_name: str, command_name: str):
             f" or [cyan]{command_name} up --force-recreate[/cyan]."
         )
     console.print()
+    return running_containers
 
 
-def follow_logs(app_name: str, command_name: str):
+def follow_logs(app_name: str, command_name: str, container: str):
     console.print("[green bold]Following container logs")
     console.print(f"[dim]- Press Ctrl+c to exit ({app_name} will keep running).")
     console.print(
         f"[dim]- {app_name} can be stopped with the [cyan]{command_name} down[/cyan] command."
     )
-    compose("logs", "-f", "--since=1s")
+    compose("logs", "-f", "--since=1s", container)
