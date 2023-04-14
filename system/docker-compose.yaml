@@ -39,13 +39,5 @@ services:
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@database:5432/${POSTGRES_DB}
     volumes:
       - ../mapboard-server:/app:ro 
-  bonjour:
-    image: mapboard-bonjour-service
-    build: ../bonjour-service
-    restart: unless-stopped
-    network_mode: host
-    ports:
-      - 5350:5353/udp
 
-    
 
