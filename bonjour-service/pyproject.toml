@@ -1,0 +1,14 @@
+[tool.poetry]
+authors = ["Daven Quinn <dev@davenquinn.com>"]
+description = "A local service advertiser for the Mapboard system"
+name = "mapboard-bonjour-service"
+readme = "README.md"
+version = "1.0.0"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+zeroconf = "^0.56.0"
+
+[build-system]
+build-backend = "poetry.core.masonry.api"
+requires = ["poetry-core"]

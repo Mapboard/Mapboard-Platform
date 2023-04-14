@@ -14,6 +14,7 @@ from typing import Optional
 from dotenv import load_dotenv
 from time import sleep
 from .definitions import MAPBOARD_ROOT
+from .bonjour_service import daemon
 from macrostrat.utils import get_logger
 from subprocess import Popen
 import signal
@@ -82,6 +83,10 @@ def up(
     compose("build", container)
 
     sleep(0.1)
+
+    # Start zeroconf daemon
+    daemon.stop()
+    daemon.start()
 
     res = compose(
         "up",
