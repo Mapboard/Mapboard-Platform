@@ -39,15 +39,5 @@ services:
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@database:5432/${POSTGRES_DB}
     volumes:
       - ../mapboard-server:/app:ro 
-  bonjour:
-    image: mapboard-bonjour-service
-    build: ../bonjour-service
-    restart: unless-stopped
-  mdns_repeater:
-    image: monstrenyatko/mdns-repeater:latest
-    command: mdns-repeater -f -d eth0 docker0
-    network_mode: "host"
-    environment:
-      - MDNS_REPEATER_INTERFACES="eth0 wlan0 docker0"
-    
+
 
