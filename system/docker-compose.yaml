@@ -43,9 +43,11 @@ services:
     image: mapboard-bonjour-service
     build: ../bonjour-service
     restart: unless-stopped
-    network_mode: host
-    ports:
-      - 5350:5353/udp
-
+  mdns_repeater:
+    image: monstrenyatko/mdns-repeater:latest
+    command: mdns-repeater -f -d eth0 docker0
+    network_mode: "host"
+    environment:
+      - MDNS_REPEATER_INTERFACES="eth0 wlan0 docker0"
     
 

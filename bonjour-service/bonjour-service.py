@@ -8,8 +8,9 @@ zc = Zeroconf()
 fqdn = socket.gethostname()
 fqdn = "Daven-Quinn.local"
 ip_info = socket.gethostbyname_ex(fqdn)
-print(ip_info)
+print(ip_info, file=sys.stderr)
 ip_addr = ip_info[2][0]
+ip_addr = socket.gethostbyname(fqdn)
 address = socket.inet_aton(ip_addr)
 hostname = fqdn.split(".")[0]
 print(fqdn, ip_addr, hostname, address, file=sys.stderr)
