@@ -10,12 +10,10 @@ from typer.core import TyperGroup
 from typer.models import TyperInfo
 from typer import Context
 from typer import Typer
-from typing import Optional
 from dotenv import load_dotenv
 from time import sleep
 from .definitions import MAPBOARD_ROOT
 from macrostrat.utils import get_logger
-from subprocess import Popen
 import signal
 import threading
 
@@ -117,25 +115,12 @@ def up(
     # Can't figure out how to get restarting to work properly
     try:
         thread.wait()
-        # while not restart:
-        #     r = input("Press 'r' to restart, or Ctrl+C to exit: ")
-        #     print("You pressed", r)
-        #     restart = r == "r"
     finally:
         # Stop the thread
         thread.join()
 
     if restart:
         ctx.invoke(up, ctx, container, force_recreate=True)
-
-
-def signal_handler(sig, frame):
-    if sig == signal.SIGTERM:
-        print("You pressed Ctrl+Z!")
-        raise EOFError
-    elif sig == signal.SIGINT:
-        print("You pressed Ctrl+C!")
-        raise KeyboardInterrupt
 
 
 @app.command()
