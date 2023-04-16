@@ -5,7 +5,7 @@ import { FocusStyleManager } from "@blueprintjs/core";
 
 import { MapApp } from "./app";
 import "@blueprintjs/core/lib/css/blueprint.css";
-import "@macrostrat/ui-components/lib/esm/index.css";
+import "@macrostrat/ui-components/dist/ui-components.css"
 import "./main.styl";
 
 FocusStyleManager.onlyShowFocusOnTabs();

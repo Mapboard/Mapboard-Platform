@@ -24,8 +24,13 @@ function reloadGeologySource(map) {
 }
 
 async function fitBounds(map) {
-  const res = await axios.get(sourceURL + "/feature-server/meta");
-  const bounds = res.data?.projectBounds;
+  let bounds = null;
+  try {
+    const res = await axios.get(sourceURL + "/feature-server/meta");
+    bounds = res.data?.projectBounds;
+  } catch (err) {
+    console.log("Error fetching bounds", err);
+  }
   if (bounds != null) {
     map.fitBounds(
       [
@@ -45,9 +50,19 @@ interface MapOptions {
 }
 
 async function reloadStyle(map: Map, styler: GeologyStyler, baseLayer: string) {
-  const style = await styler.createStyle(map, baseLayer);
-  map.setStyle(style);
-  if (map.getSource("mapbox-dem") == null) return;
+  try {
+    const style = await styler.createStyle(map, baseLayer);
+    map.setStyle(style);
+  } catch (err) {
+    console.error(err);
+  }
+
+  if (map.getSource("mapbox-dem") == null) {
+    map.addSource("mapbox-dem", {
+      type: "raster-dem",
+      url: "mapbox://mapbox.mapbox-terrain-dem-v1",
+    });
+  }
   map.setTerrain({ source: "mapbox-dem", exaggeration: 1.0 });
 }
 
@@ -58,6 +73,9 @@ async function initializeMap(
 ): Promise<Map> {
   //const style = createStyle(polygonTypes);
   const { onClickSpot } = options;
+
+  mapboxgl.accessToken = process.env.MAPBOX_ACCESS_TOKEN;
+  console.log("Initializing map", mapboxgl.accessToken);
 
   const map = new mapboxgl.Map({
     container: el,

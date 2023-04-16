@@ -7,7 +7,7 @@ import {
 } from "./geology-layers";
 import { createUnitFill } from "./pattern-fill";
 import io from "socket.io-client";
-import { get } from "axios";
+import axios from "axios";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { lineSymbols } from "./symbol-layers";
@@ -95,9 +95,6 @@ class GeologyStyler {
   }
 
   async createStyle(map: mapboxgl.Map, baseStyleURL: string) {
-    const { data: polygonTypes } = await get(
-      this.sourceURL + "/feature-server/polygon/types"
-    );
     const baseURL = baseStyleURL.replace(
       "mapbox://styles",
       "https://api.mapbox.com/styles/v1"
@@ -106,6 +103,17 @@ class GeologyStyler {
       access_token: mapboxgl.accessToken,
     });
     baseStyle = createBasicStyle(baseStyle);
+
+    let polygonTypes = [];
+    try {
+      const res = await axios.get(
+        this.sourceURL + "/feature-server/polygon/types"
+      );
+      polygonTypes = res.data;
+    } catch (e) {
+      console.error(e);
+    }
+
     if (!this.opts.enableGeology) return baseStyle;
     await Promise.all([
       setupLineSymbols(map),
