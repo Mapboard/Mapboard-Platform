@@ -50,6 +50,7 @@ interface MapOptions {
 }
 
 async function reloadStyle(map: Map, styler: GeologyStyler, baseLayer: string) {
+  if (!map.isStyleLoaded) return;
   try {
     const style = await styler.createStyle(map, baseLayer);
     map.setStyle(style);
