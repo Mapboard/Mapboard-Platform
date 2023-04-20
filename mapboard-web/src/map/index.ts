@@ -10,7 +10,7 @@ import h from "@macrostrat/hyper";
 import axios from "axios";
 import { baseLayers } from "./style";
 import { MapState, MapAction } from "../actions";
-import { sourceURL } from "../config";
+import { mapboxToken, sourceURL } from "../config";
 
 let ix = 0;
 let oldID = "geology";
@@ -75,7 +75,7 @@ async function initializeMap(
   //const style = createStyle(polygonTypes);
   const { onClickSpot } = options;
 
-  mapboxgl.accessToken = process.env.MAPBOX_ACCESS_TOKEN;
+  mapboxgl.accessToken = mapboxToken;
   console.log("Initializing map", mapboxgl.accessToken);
 
   const map = new mapboxgl.Map({
