@@ -5,7 +5,7 @@
   "description": "A standalone web frontend application for Mapboard. Unlike earlier iterations of this frontend, this application will be highly decoupled from the mapping server. It will also have more features geared towards high-end graphical representation of geologic maps.",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "parcel index.html",
+    "dev": "vite",
     "build": "parcel build --public-url ./ index.html"
   },
   "author": "Daven Quinn",
@@ -20,13 +20,21 @@
     "buffer": "^5.5.0",
     "parcel": "^2.8.3",
     "process": "^0.11.10",
-    "typescript": "^4.5.2"
+    "sass": "^1.62.0",
+    "stylus": "^0.59.0",
+    "supports-color": "^9.3.1",
+    "typescript": "^4.5.2",
+    "vite": "^4.2.2"
   },
+  "workspaces": [
+    "web-components"
+  ],
   "dependencies": {
     "@blueprintjs/core": "^4.17.8",
     "@blueprintjs/popover2": "^1.13.12",
     "@macrostrat/hyper": "^2.2.1",
-    "@macrostrat/ui-components": "^3.0.0-b8",
+    "@macrostrat/map-interface": "workspace:*",
+    "@macrostrat/ui-components": "workspace:*",
     "@types/mapbox-gl": "^2.7.10",
     "axios": "^1.3.5",
     "babel-polyfill": "^6.26.0",

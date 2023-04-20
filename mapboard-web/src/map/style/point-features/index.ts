@@ -1,7 +1,9 @@
 import { loadImage } from "../utils";
-import pointSymbols from "./symbols/*.png";
+//import pointSymbols from "./symbols/*.png";
 import { pointLayers } from "./symbol-layer";
 import axios from "axios";
+
+const pointSymbols = {};
 
 function createMeasurementsSource(features, index = null) {
   if (index != null) {
