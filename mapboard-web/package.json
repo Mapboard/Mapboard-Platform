@@ -30,6 +30,7 @@
     "web-components/packages/*"
   ],
   "dependencies": {
+    "@blueprintjs/colors": "^4.1.22",
     "@blueprintjs/core": "^4.17.8",
     "@blueprintjs/popover2": "^1.13.12",
     "@macrostrat/hyper": "^2.2.1",

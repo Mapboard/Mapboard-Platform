@@ -1456,6 +1456,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@blueprintjs/colors@npm:^4.1.22":
+  version: 4.1.22
+  resolution: "@blueprintjs/colors@npm:4.1.22"
+  checksum: fcf755ee3667c531b85875f7754d56bbf0bcd363321c766fbbcd32cd94273409e2309480e430e97bf01ae3327ea043316f9dce4e8920f9db857af4d4999dea59
+  languageName: node
+  linkType: hard
+
 "@blueprintjs/core@npm:^4.17.8":
   version: 4.17.8
   resolution: "@blueprintjs/core@npm:4.17.8"
@@ -2926,6 +2933,15 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@macrostrat/style-system@workspace:web-components/packages/style-system":
+  version: 0.0.0-use.local
+  resolution: "@macrostrat/style-system@workspace:web-components/packages/style-system"
+  dependencies:
+    "@blueprintjs/colors": ^4.1.22
+    sass: ^1.32.8
+  languageName: unknown
+  linkType: soft
+
 "@macrostrat/timescale@workspace:*, @macrostrat/timescale@workspace:web-components/packages/timescale":
   version: 0.0.0-use.local
   resolution: "@macrostrat/timescale@workspace:web-components/packages/timescale"
@@ -3060,6 +3076,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@mapboard/web-frontend@workspace:."
   dependencies:
+    "@blueprintjs/colors": ^4.1.22
     "@blueprintjs/core": ^4.17.8
     "@blueprintjs/popover2": ^1.13.12
     "@macrostrat/hyper": ^2.2.1
@@ -21020,7 +21037,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"sass@npm:^1.49.0, sass@npm:^1.50.0, sass@npm:^1.62.0":
+"sass@npm:^1.32.8, sass@npm:^1.49.0, sass@npm:^1.50.0, sass@npm:^1.62.0":
   version: 1.62.0
   resolution: "sass@npm:1.62.0"
   dependencies:
