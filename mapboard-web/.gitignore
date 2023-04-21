@@ -7,3 +7,4 @@
 .pnp.*
 .vite
 dist
+node_modules

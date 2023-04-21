@@ -3,6 +3,7 @@ import h from "@macrostrat/hyper";
 import { Button, ButtonGroup, Switch, Icon } from "@blueprintjs/core";
 import "@blueprintjs/core/lib/css/blueprint.css";
 import "@blueprintjs/popover2/lib/css/blueprint-popover2.css";
+import { DarkModeProvider } from "@macrostrat/ui-components";
 import { Popover2 } from "@blueprintjs/popover2";
 import { ModalPanel } from "@macrostrat/ui-components";
 import { BaseLayerSwitcher } from "./layer-switcher";
@@ -25,7 +26,7 @@ function InfoModal({ isOpen, onClose, spots = [] }) {
   );
 }
 
-export function MapApp() {
+export function MapAppOld() {
   const [state, dispatch] = useReducer(mapReducer, defaultState);
 
   const isOpen = state.activeSpots != null;
@@ -80,4 +81,10 @@ export function MapApp() {
       }),
     ]),
   ]);
+}
+
+import { Inspector } from "./inspector";
+
+export function MapApp() {
+  return h(DarkModeProvider, { followSystem: true }, h(Inspector));
 }

@@ -17,6 +17,11 @@
     "typeRoots": ["node_modules/@types"],
     "paths": {
       "~/*": ["./src/*"],
+      "@macrostrat/ui-components": [
+        "web-components/packages/ui-components/src"
+      ],
+      "@macrostrat/map-interface": ["web-components/packages/map-interface/src"]
     }
   },
+  "include": ["src", "web-components/packages/*/src"]
 }
