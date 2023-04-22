@@ -1503,7 +1503,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@blueprintjs/colors@npm:^4.0.0-alpha.3":
+"@blueprintjs/colors@npm:^4.0.0-alpha.3, @blueprintjs/colors@npm:^4.1.22":
   version: 4.1.22
   resolution: "@blueprintjs/colors@npm:4.1.22"
   checksum: fcf755ee3667c531b85875f7754d56bbf0bcd363321c766fbbcd32cd94273409e2309480e430e97bf01ae3327ea043316f9dce4e8920f9db857af4d4999dea59
@@ -3999,6 +3999,15 @@ __metadata:
     underscore: ^1.12.0
     use-async-effect: ^2.2.1
     webpack: ^5.73.0
+  languageName: unknown
+  linkType: soft
+
+"@macrostrat/style-system@workspace:web-components/packages/style-system":
+  version: 0.0.0-use.local
+  resolution: "@macrostrat/style-system@workspace:web-components/packages/style-system"
+  dependencies:
+    "@blueprintjs/colors": ^4.1.22
+    sass: ^1.32.8
   languageName: unknown
   linkType: soft
 
@@ -27366,7 +27375,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"sass@npm:^1.38.0, sass@npm:^1.49.0, sass@npm:^1.50.0, sass@npm:^1.62.0":
+"sass@npm:^1.32.8, sass@npm:^1.38.0, sass@npm:^1.49.0, sass@npm:^1.50.0, sass@npm:^1.62.0":
   version: 1.62.0
   resolution: "sass@npm:1.62.0"
   dependencies:
