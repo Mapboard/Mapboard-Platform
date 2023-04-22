@@ -3663,8 +3663,8 @@ __metadata:
   peerDependencies:
     "@blueprintjs/core": ^3.44.1||^4.3.0
     "@macrostrat/ui-components": ^1.0.0
-    react: ^16.12.0||^17.0.0
-    react-dom: ^16.12.0||^17.0.0
+    react: ^16.12.0||^17.0.0||^18
+    react-dom: ^16.12.0||^17.0.0||^18
   languageName: unknown
   linkType: soft
 
@@ -3737,7 +3737,7 @@ __metadata:
     typescript: ^4.5.5
   peerDependencies:
     "@blueprintjs/core": ^4.3.0
-    react: ^16.8.6||^17.0.2
+    react: ^16.8.6||^17.0.2||^18
   languageName: unknown
   linkType: soft
 
@@ -3752,7 +3752,7 @@ __metadata:
     classnames: ^2.3.1
     d3-array: ^2.12.1
     immutability-helper: ^3.1.1
-    react: ^17.0.2
+    react: ^17.0.2||^18
     react-color: ^2.19.3
     react-datasheet: ^1.4.9
     react-dnd: ^14.0.2
@@ -3791,7 +3791,6 @@ __metadata:
     identity-obj-proxy: ^3.0.0
     jest: ^27.4.7
     mapbox-gl: ^2.8.2
-    react: ^17.0.2
     rollup: ^2.66.1
     rollup-plugin-dts: ^4.1.0
     rollup-plugin-peer-deps-external: ^2.2.4
@@ -3799,7 +3798,7 @@ __metadata:
     rollup-plugin-terser: ^7.0.2
     typescript: ^4.5.5
   peerDependencies:
-    react: ^16||^17.0.2
+    react: ^17.0.2||^18
   languageName: unknown
   linkType: soft
 
@@ -3914,9 +3913,11 @@ __metadata:
     "@macrostrat/hyper": ^2.2.1
     "@mapbox/tilebelt": ^1.0.2
     "@turf/bbox": ^6.5.0
+    chroma-js: ^2.4.2
     classnames: ^2.3.2
     d3-format: ^3.1.0
     transition-hook: ^1.5.2
+    use-resize-observer: ^9.1.0
   peerDependencies:
     "@blueprintjs/core": ^3.43.0 || ^4.3.0
     react: ^16.8.6||^17.0.0||^18.0.0
@@ -4035,8 +4036,8 @@ __metadata:
     stylus: ^0.59.0
     typescript: ^4.0.2
   peerDependencies:
-    react: ^16.13.1||^17
-    react-dom: ^16.13.1||^17
+    react: ^16.13.1||^17||^18
+    react-dom: ^16.13.1||^17||^18
   languageName: unknown
   linkType: soft
 
@@ -11632,8 +11633,8 @@ __metadata:
     postcss: ^8.3.11
     postcss-modules: ^4.3.1
     prop-types: ^15.7.2
-    react: ^17.0.0
-    react-dom: ^17.0.0
+    react: ^17.0.0||^18
+    react-dom: ^17.0.0||^18
     react-draggable: ^4.2.0
     react-images: ^1.1.0-beta.0
     react-json-view: ^1.19.1
@@ -25559,7 +25560,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-dom@npm:^17, react-dom@npm:^17.0.0":
+"react-dom@npm:^17":
   version: 17.0.2
   resolution: "react-dom@npm:17.0.2"
   dependencies:
@@ -25572,7 +25573,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-dom@npm:^18.2.0":
+"react-dom@npm:^17.0.0||^18, react-dom@npm:^18.2.0":
   version: 18.2.0
   resolution: "react-dom@npm:18.2.0"
   dependencies:
@@ -26122,7 +26123,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react@npm:^17, react@npm:^17.0.0, react@npm:^17.0.2":
+"react@npm:^17":
   version: 17.0.2
   resolution: "react@npm:17.0.2"
   dependencies:
@@ -26132,7 +26133,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react@npm:^18.2.0":
+"react@npm:^17.0.0||^18, react@npm:^17.0.2||^18, react@npm:^18.2.0":
   version: 18.2.0
   resolution: "react@npm:18.2.0"
   dependencies:
