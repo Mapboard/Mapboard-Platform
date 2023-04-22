@@ -26,6 +26,7 @@ for (const [key, value] of Object.entries(pkg.dependencies)) {
 export default {
   cacheDir: ".vite",
   resolve: {
+    conditions: ["typescript"],
     alias: [
       { find: "~", replacement: path.resolve(__dirname, "src") },
       ...aliases,
