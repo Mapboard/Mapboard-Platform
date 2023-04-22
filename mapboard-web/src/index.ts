@@ -6,8 +6,8 @@ import { Box } from "@macrostrat/ui-components";
 //import { useEffect } from "react";
 
 import { MapApp } from "./app";
+import "@macrostrat/style-system";
 import "@blueprintjs/core/lib/css/blueprint.css";
-import "../web-components/packages/style-system/main.sass";
 import "./main.styl";
 
 // function Inspector() {
