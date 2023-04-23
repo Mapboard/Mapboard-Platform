@@ -2,17 +2,12 @@ import "babel-polyfill";
 import h from "@macrostrat/hyper";
 import { FocusStyleManager } from "@blueprintjs/core";
 import { createRoot } from "react-dom/client";
-import { Box } from "@macrostrat/ui-components";
 //import { useEffect } from "react";
 
 import { MapApp } from "./app";
 import "@macrostrat/style-system";
 import "@blueprintjs/core/lib/css/blueprint.css";
 import "./main.styl";
-
-// function Inspector() {
-//   return h(Box, "Hello world!");
-// }
 
 FocusStyleManager.onlyShowFocusOnTabs();
 

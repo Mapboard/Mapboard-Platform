@@ -3,13 +3,13 @@ import h from "@macrostrat/hyper";
 import { Button, ButtonGroup, Switch, Icon } from "@blueprintjs/core";
 import "@blueprintjs/core/lib/css/blueprint.css";
 import "@blueprintjs/popover2/lib/css/blueprint-popover2.css";
-import { DarkModeProvider } from "@macrostrat/ui-components";
-import { Popover2 } from "@blueprintjs/popover2";
-import { ModalPanel } from "@macrostrat/ui-components";
+import { DarkModeProvider, ModalPanel } from "@macrostrat/ui-components";
 import { BaseLayerSwitcher } from "./layer-switcher";
 import { Spot } from "./spots";
 import { mapReducer, defaultState } from "./actions";
 import { MapComponent } from "./map";
+import { Routes, BrowserRouter, Route } from "react-router-dom";
+import { Inspector } from "./inspector";
 
 function InfoModal({ isOpen, onClose, spots = [] }) {
   if (!isOpen) return null;
@@ -83,8 +83,14 @@ export function MapAppOld() {
   ]);
 }
 
-import { Inspector } from "./inspector";
+function MapAppRoutes() {
+  return h(Routes, null, [h(Route, { path: "/", element: h(Inspector) })]);
+}
 
 export function MapApp() {
-  return h(DarkModeProvider, { followSystem: true }, h(Inspector));
+  return h(
+    DarkModeProvider,
+    { followSystem: true },
+    h(BrowserRouter, h(MapAppRoutes))
+  );
 }
