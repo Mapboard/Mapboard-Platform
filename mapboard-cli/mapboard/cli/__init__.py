@@ -3,6 +3,7 @@ from pathlib import Path
 from macrostrat.database import Database
 from typer.main import get_command
 from os import environ
+from psycopg2.sql import Identifier, Literal, SQL
 from .core import app, cli, _compose, console
 
 POSTGRES_USER = environ.get("POSTGRES_USER") or "postgres"
@@ -19,7 +20,11 @@ def create_fixtures(ctx: Context):
     files = list(fixtures.rglob("*.sql"))
     db = Database(DATABASE_URL)
     for fixture in files:
-        db.run_sql(fixture)
+        db.run_sql(fixture, params=dict(
+            data_schema=Identifier("map_digitizer"),
+            index_prefix=SQL("map_digitizer"),
+            srid=Literal(32733),
+        ))
 
 cli = get_command(app)
 cli.add_command(_compose, "compose")

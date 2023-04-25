@@ -261,23 +261,21 @@ files = [
 
 [[package]]
 name = "macrostrat-database"
-version = "2.0.1"
+version = "2.1.1"
 description = "A SQLAlchemy-based database toolkit."
 category = "main"
 optional = false
 python-versions = ">=3.8,<4.0"
 files = [
-    {file = "macrostrat_database-2.0.1-py3-none-any.whl", hash = "sha256:f1f213fd79b0401d871d83bf0627878d6e4d622558a8483eb030d7f8d23af6f2"},
-    {file = "macrostrat_database-2.0.1.tar.gz", hash = "sha256:bd848bbefd7c3cb8ff7ac600bcbacbf168f3e6b1528129fc038dd9b23c6f63f0"},
+    {file = "macrostrat_database-2.1.1-py3-none-any.whl", hash = "sha256:a9f1b44064eeb82cb34f0a5c358adbf883fb7b8e51f886939bc5fd18e4491a44"},
+    {file = "macrostrat_database-2.1.1.tar.gz", hash = "sha256:b5cf00c216352de56566a65e5c32f53c7d2195fab7d0bab41e18dcb24dc7b39e"},
 ]
 
 [package.dependencies]
 click = ">=8.1.3,<9.0.0"
 GeoAlchemy2 = ">=0.9.4,<0.10.0"
 "macrostrat.utils" = ">=1.0.0,<2.0.0"
-migra = ">=3.0.1621480950,<4.0.0"
 psycopg2-binary = ">=2.9.1,<3.0.0"
-schemainspect = ">=3.0.1616029793,<4.0.0"
 SQLAlchemy = ">=1.4.26,<2.0.0"
 SQLAlchemy-Utils = ">=0.37.0,<0.38.0"
 sqlparse = ">=0.4.0,<0.5.0"
@@ -336,26 +334,6 @@ files = [
 ]
 
 [[package]]
-name = "migra"
-version = "3.0.1663481299"
-description = "Like `diff` but for PostgreSQL schemas"
-category = "main"
-optional = false
-python-versions = ">=3.7,<4"
-files = [
-    {file = "migra-3.0.1663481299-py3-none-any.whl", hash = "sha256:061643e9af63488e085d729f267ed4af4249789979732b703ddeb2c478ec9a93"},
-    {file = "migra-3.0.1663481299.tar.gz", hash = "sha256:0cf0c125d553008d9ff5402663a51703ccc474bb65b5a4f4727906dbf58e217f"},
-]
-
-[package.dependencies]
-schemainspect = ">=3.1.1663480743"
-six = "*"
-sqlbag = "*"
-
-[package.extras]
-pg = ["psycopg2-binary"]
-
-[[package]]
 name = "mypy-extensions"
 version = "1.0.0"
 description = "Type system extensions for programs checked with the mypy type checker."
@@ -393,19 +371,19 @@ files = [
 
 [[package]]
 name = "platformdirs"
-version = "3.2.0"
+version = "3.3.0"
 description = "A small Python package for determining appropriate platform-specific dirs, e.g. a \"user data dir\"."
 category = "dev"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "platformdirs-3.2.0-py3-none-any.whl", hash = "sha256:ebe11c0d7a805086e99506aa331612429a72ca7cd52a1f0d277dc4adc20cb10e"},
-    {file = "platformdirs-3.2.0.tar.gz", hash = "sha256:d5b638ca397f25f979350ff789db335903d7ea010ab28903f57b27e1b16c2b08"},
+    {file = "platformdirs-3.3.0-py3-none-any.whl", hash = "sha256:ea61fd7b85554beecbbd3e9b37fb26689b227ffae38f73353cbcc1cf8bd01878"},
+    {file = "platformdirs-3.3.0.tar.gz", hash = "sha256:64370d47dc3fca65b4879f89bdead8197e93e05d696d6d1816243ebae8595da5"},
 ]
 
 [package.extras]
-docs = ["furo (>=2022.12.7)", "proselint (>=0.13)", "sphinx (>=6.1.3)", "sphinx-autodoc-typehints (>=1.22,!=1.23.4)"]
-test = ["appdirs (==1.4.4)", "covdefaults (>=2.3)", "pytest (>=7.2.2)", "pytest-cov (>=4)", "pytest-mock (>=3.10)"]
+docs = ["furo (>=2023.3.27)", "proselint (>=0.13)", "sphinx (>=6.1.3)", "sphinx-autodoc-typehints (>=1.23,!=1.23.4)"]
+test = ["appdirs (==1.4.4)", "covdefaults (>=2.3)", "pytest (>=7.3.1)", "pytest-cov (>=4)", "pytest-mock (>=3.10)"]
 
 [[package]]
 name = "pluggy"
@@ -550,14 +528,14 @@ email = ["email-validator (>=1.0.3)"]
 
 [[package]]
 name = "pygments"
-version = "2.15.0"
+version = "2.15.1"
 description = "Pygments is a syntax highlighting package written in Python."
 category = "main"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "Pygments-2.15.0-py3-none-any.whl", hash = "sha256:77a3299119af881904cd5ecd1ac6a66214b6e9bed1f2db16993b54adede64094"},
-    {file = "Pygments-2.15.0.tar.gz", hash = "sha256:f7e36cffc4c517fbc252861b9a6e4644ca0e5abadf9a113c72d1358ad09b9500"},
+    {file = "Pygments-2.15.1-py3-none-any.whl", hash = "sha256:db2db3deb4b4179f399a09054b023b6a586b76499d36965813c71aa8ed7b5fd1"},
+    {file = "Pygments-2.15.1.tar.gz", hash = "sha256:8ace4d3c1dd481894b2005f560ead0f9f19ee64fe983366be1a21e171d12775c"},
 ]
 
 [package.extras]
@@ -565,14 +543,14 @@ plugins = ["importlib-metadata"]
 
 [[package]]
 name = "pytest"
-version = "7.3.0"
+version = "7.3.1"
 description = "pytest: simple powerful testing with Python"
 category = "dev"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "pytest-7.3.0-py3-none-any.whl", hash = "sha256:933051fa1bfbd38a21e73c3960cebdad4cf59483ddba7696c48509727e17f201"},
-    {file = "pytest-7.3.0.tar.gz", hash = "sha256:58ecc27ebf0ea643ebfdf7fb1249335da761a00c9f955bcd922349bcb68ee57d"},
+    {file = "pytest-7.3.1-py3-none-any.whl", hash = "sha256:3799fa815351fea3a5e96ac7e503a96fa51cc9942c3753cda7651b93c1cfa362"},
+    {file = "pytest-7.3.1.tar.gz", hash = "sha256:434afafd78b1d78ed0addf160ad2b77a30d35d4bdf8af234fe621919d9ed15e3"},
 ]
 
 [package.dependencies]
@@ -642,30 +620,15 @@ pygments = ">=2.13.0,<3.0.0"
 jupyter = ["ipywidgets (>=7.5.1,<9)"]
 
 [[package]]
-name = "schemainspect"
-version = "3.1.1663587362"
-description = "Schema inspection for PostgreSQL (and possibly others)"
-category = "main"
-optional = false
-python-versions = ">=3.7,<4"
-files = [
-    {file = "schemainspect-3.1.1663587362-py3-none-any.whl", hash = "sha256:3071265712863c4d4e742940a4b44ac685135af3c93416872ec1bb6c822c4aca"},
-    {file = "schemainspect-3.1.1663587362.tar.gz", hash = "sha256:a295ad56f7a19c09e5e1ef9f16dadbf6392e26196cb5f05b5afe613c99ce7468"},
-]
-
-[package.dependencies]
-sqlalchemy = "*"
-
-[[package]]
 name = "setuptools"
-version = "67.6.1"
+version = "67.7.2"
 description = "Easily download, build, install, upgrade, and uninstall Python packages"
 category = "main"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "setuptools-67.6.1-py3-none-any.whl", hash = "sha256:e728ca814a823bf7bf60162daf9db95b93d532948c4c0bea762ce62f60189078"},
-    {file = "setuptools-67.6.1.tar.gz", hash = "sha256:257de92a9d50a60b8e22abfcbb771571fde0dbf3ec234463212027a4eeecbe9a"},
+    {file = "setuptools-67.7.2-py3-none-any.whl", hash = "sha256:23aaf86b85ca52ceb801d32703f12d77517b2556af839621c641fca11287952b"},
+    {file = "setuptools-67.7.2.tar.gz", hash = "sha256:f104fa03692a2602fa0fec6c6a9e63b6c8a968de13e17c026957dd1f53d80990"},
 ]
 
 [package.extras]
@@ -791,38 +754,21 @@ timezone = ["python-dateutil"]
 url = ["furl (>=0.4.1)"]
 
 [[package]]
-name = "sqlbag"
-version = "0.1.1617247075"
-description = "various snippets of SQL-related boilerplate"
-category = "main"
-optional = false
-python-versions = "*"
-files = [
-    {file = "sqlbag-0.1.1617247075-py2.py3-none-any.whl", hash = "sha256:ecdef26d661f8640711030ac6ee618deb92b91f9f0fc2efbf8a3b133af13092d"},
-    {file = "sqlbag-0.1.1617247075.tar.gz", hash = "sha256:b9d7862c3b2030356d796ca872907962fd54704066978d7ae89383f5123366ed"},
-]
-
-[package.dependencies]
-packaging = "*"
-six = "*"
-sqlalchemy = "*"
-
-[package.extras]
-maria = ["pymysql"]
-pendulum = ["pendulum", "relativedelta"]
-pg = ["psycopg2"]
-
-[[package]]
 name = "sqlparse"
-version = "0.4.3"
+version = "0.4.4"
 description = "A non-validating SQL parser."
 category = "main"
 optional = false
 python-versions = ">=3.5"
 files = [
-    {file = "sqlparse-0.4.3-py3-none-any.whl", hash = "sha256:0323c0ec29cd52bceabc1b4d9d579e311f3e4961b98d174201d5622a23b85e34"},
-    {file = "sqlparse-0.4.3.tar.gz", hash = "sha256:69ca804846bb114d2ec380e4360a8a340db83f0ccf3afceeb1404df028f57268"},
+    {file = "sqlparse-0.4.4-py3-none-any.whl", hash = "sha256:5430a4fe2ac7d0f93e66f1efc6e1338a41884b7ddf2a350cedd20ccc4d9d28f3"},
+    {file = "sqlparse-0.4.4.tar.gz", hash = "sha256:d446183e84b8349fa3061f0fe7f06ca94ba65b426946ffebe6e3e8295332420c"},
 ]
+
+[package.extras]
+dev = ["build", "flake8"]
+doc = ["sphinx"]
+test = ["pytest", "pytest-cov"]
 
 [[package]]
 name = "tomli"
@@ -935,4 +881,4 @@ ifaddr = ">=0.1.7"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "f108ad808cdcd3009228c8db93b68178d225936328eb6ddff197c38e60eb32c5"
+content-hash = "db6d5d33e37c62071a9f87865948ed361352bb89aabd504db9fc1fcdd8c27879"
