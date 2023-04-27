@@ -16,6 +16,7 @@ python-dotenv = "^1.0.0"
 rich = "^13.3.3"
 typer = "^0.7.0"
 zeroconf = "^0.56.0"
+macrostrat-dinosaur = "^1.0.2"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.3.0"

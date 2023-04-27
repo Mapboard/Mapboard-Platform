@@ -13,7 +13,7 @@ from typer import Typer
 from dotenv import load_dotenv
 from time import sleep
 from .definitions import MAPBOARD_ROOT
-from macrostrat.utils import get_logger
+from macrostrat.utils import get_logger, setup_stderr_logs
 import threading
 
 load_dotenv(MAPBOARD_ROOT / ".env")
@@ -41,8 +41,11 @@ class ControlCommand(Typer):
         super().__init__(*args, **kwargs)
         self.name = name
 
-        def callback(ctx: Context):
+        def callback(ctx: Context, verbose: bool = False):
             ctx.obj = ApplicationConfig(self.name)
+
+            if verbose:
+                setup_stderr_logs("mapboard")
 
         callback.__doc__ = f"""{self.name} command-line interface"""
 
