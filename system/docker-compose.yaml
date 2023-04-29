@@ -34,7 +34,7 @@ services:
     image: mapboard-server
     build: ../mapboard-server
     # Command with reloader
-    command: uvicorn --reload --host '' mapboard.server:app
+    command: uvicorn --reload --host '' --reload-include '*.sql' mapboard.server:app
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@database:5432/${POSTGRES_DB}
     volumes:

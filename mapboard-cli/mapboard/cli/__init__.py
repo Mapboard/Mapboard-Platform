@@ -4,8 +4,11 @@ from macrostrat.database import Database, run_sql
 from macrostrat.dinosaur import create_migration
 from typer.main import get_command
 from os import environ
+import pytest
+
 from psycopg2.sql import Identifier, Literal, SQL
 from .core import app, cli, _compose, console
+from .definitions import MAPBOARD_ROOT
 
 POSTGRES_USER = environ.get("POSTGRES_USER") or "postgres"
 POSTGRES_PASSWORD = environ.get("POSTGRES_PASSWORD") or "postgres"
@@ -15,9 +18,19 @@ DATABASE_URL = f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@localhost:{MAP
 
 
 @app.command()
+def test(args: list[str] = []):
+    """Run mapboard-server tests"""
+
+    testdir = MAPBOARD_ROOT / "mapboard-server"
+
+    pytest.main([str(testdir), *args])
+
+
+@app.command()
 def create_fixtures():
     """Create database fixtures"""
     console.print(f"Creating fixtures in database [cyan bold]{POSTGRES_DB}[/]...")
+    print(DATABASE_URL)
     db = Database(DATABASE_URL)
     apply_fixtures(db)
 
