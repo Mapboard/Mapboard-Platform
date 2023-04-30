@@ -1,7 +1,7 @@
 import sys
 from pathlib import Path
 from macrostrat.database import Database, run_sql
-from macrostrat.dinosaur import create_migration
+from macrostrat.dinosaur import create_migration, temp_database
 from typer.main import get_command
 from os import environ
 import pytest
@@ -20,10 +20,15 @@ DATABASE_URL = f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@localhost:{MAP
 @app.command()
 def test(args: list[str] = []):
     """Run mapboard-server tests"""
-
     testdir = MAPBOARD_ROOT / "mapboard-server"
+    test_database = f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@localhost:{MAPBOARD_DB_PORT}/mapboard_test_database"
+    environ.update({"TESTING_DATABASE": test_database})
 
-    pytest.main([str(testdir), *args])
+    with temp_database(test_database) as engine:
+        db = Database(engine.url)
+        print(engine.url)
+        apply_fixtures(db)
+        pytest.main([str(testdir), *args])
 
 
 @app.command()
