@@ -3,8 +3,10 @@ from pathlib import Path
 from macrostrat.database import Database, run_sql
 from macrostrat.dinosaur import create_migration, temp_database
 from typer.main import get_command
+from typing import Optional
 from os import environ
 import pytest
+import click
 
 from psycopg2.sql import Identifier, Literal, SQL
 from .core import app, cli, _compose, console
@@ -18,31 +20,21 @@ DATABASE_URL = f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@localhost:{MAP
 
 
 @app.command()
-def test(args: list[str] = []):
-    """Run mapboard-server tests"""
-    testdir = MAPBOARD_ROOT / "mapboard-server"
-    test_database = f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@localhost:{MAPBOARD_DB_PORT}/mapboard_test_database"
-    environ.update({"TESTING_DATABASE": test_database})
-
-    with temp_database(test_database) as engine:
-        db = Database(engine.url)
-        print(engine.url)
-        apply_fixtures(db)
-        pytest.main([str(testdir), *args])
-
-
-@app.command()
 def create_fixtures():
     """Create database fixtures"""
     console.print(f"Creating fixtures in database [cyan bold]{POSTGRES_DB}[/]...")
     print(DATABASE_URL)
     db = Database(DATABASE_URL)
-    apply_fixtures(db)
+    srid = environ.get("MAPBOARD_SRID")
+    if srid is not None:
+        srid = int(srid)
+    apply_fixtures(db, srid=srid)
 
 
-def apply_fixtures(database: Database):
+def apply_fixtures(database: Database, srid: Optional[int] = 4326):
     fixtures = Path(__file__).parent / "fixtures" / "server"
     files = list(fixtures.rglob("*.sql"))
+    files.sort()
     for fixture in files:
         database.run_sql(
             fixture,
@@ -51,7 +43,7 @@ def apply_fixtures(database: Database):
                 topo_schema=Identifier("map_topology"),
                 cache_schema=Identifier("mapboard_cache"),
                 index_prefix=SQL("mapboard"),
-                srid=Literal(32733),
+                srid=Literal(srid),
                 tms_srid=Literal(3857),
             ),
         )
@@ -87,5 +79,30 @@ def migrate(apply: bool = False, allow_unsafe: bool = False):
             print(stmt, file=sys.stdout)
 
 
+@click.command(
+    "test",
+    context_settings=dict(
+        ignore_unknown_options=True,
+        help_option_names=[],
+        max_content_width=160,
+        # Doesn't appear to have landed in Click 7? Or some other reason we can't access...
+        # short_help_width=160,
+    ),
+)
+@click.argument("args", nargs=-1, type=click.UNPROCESSED)
+def test(args=[]):
+    """Run mapboard-server tests"""
+    testdir = MAPBOARD_ROOT / "mapboard-server"
+    test_database = f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@localhost:{MAPBOARD_DB_PORT}/mapboard_test_database"
+    environ.update({"TESTING_DATABASE": test_database})
+
+    with temp_database(test_database) as engine:
+        db = Database(engine.url)
+        print(engine.url)
+        apply_fixtures(db)
+        pytest.main([str(testdir), *args])
+
+
 cli = get_command(app)
 cli.add_command(_compose, "compose")
+cli.add_command(test, "test")
