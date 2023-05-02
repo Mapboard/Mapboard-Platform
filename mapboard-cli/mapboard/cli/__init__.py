@@ -99,7 +99,7 @@ def test(args=[]):
     with temp_database(test_database) as engine:
         db = Database(engine.url)
         print(engine.url)
-        apply_fixtures(db)
+        apply_fixtures(db, srid=32612)
         pytest.main([str(testdir), *args])
 
 
