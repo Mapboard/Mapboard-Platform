@@ -14,6 +14,7 @@ from dotenv import load_dotenv
 from time import sleep
 from .definitions import MAPBOARD_ROOT
 from macrostrat.utils import get_logger, setup_stderr_logs
+import logging
 import threading
 
 load_dotenv(MAPBOARD_ROOT / ".env")
@@ -46,6 +47,12 @@ class ControlCommand(Typer):
 
             if verbose:
                 setup_stderr_logs("mapboard")
+            else:
+                # Disable all logging
+                # TODO: This is a hack, we shouldn't have to explicitly disable
+                # logging in the CLI. Perhaps there's somewhere that it's being
+                # enabled that we haven't chased down?
+                setup_stderr_logs("", level=logging.CRITICAL)
 
         callback.__doc__ = f"""{self.name} command-line interface"""
 
