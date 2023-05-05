@@ -8,6 +8,7 @@ from os import environ
 import pytest
 import click
 
+from .compose import compose
 from psycopg2.sql import Identifier, Literal, SQL
 from .core import app, cli, _compose, console
 from .definitions import MAPBOARD_ROOT
@@ -16,14 +17,18 @@ POSTGRES_USER = environ.get("POSTGRES_USER") or "postgres"
 POSTGRES_PASSWORD = environ.get("POSTGRES_PASSWORD") or "postgres"
 POSTGRES_DB = environ.get("POSTGRES_DB") or "postgres"
 MAPBOARD_DB_PORT = environ.get("MAPBOARD_DB_PORT") or 54391
-DATABASE_URL = f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@localhost:{MAPBOARD_DB_PORT}/{POSTGRES_DB}"
+
+
+def connection_string(database: str):
+    """Get a connection string for a given database"""
+    return f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@localhost:{MAPBOARD_DB_PORT}/{database}"
 
 
 @app.command()
-def create_fixtures():
-    """Create database fixtures"""
-    console.print(f"Creating fixtures in database [cyan bold]{POSTGRES_DB}[/]...")
-    print(DATABASE_URL)
+def create_fixtures(database: str):
+    """Create fixtures in a given database"""
+    console.print(f"Creating fixtures in database [cyan bold]{database}[/]...")
+    DATABASE_URL = connection_string(database)
     db = Database(DATABASE_URL)
     srid = environ.get("MAPBOARD_SRID")
     if srid is not None:
@@ -49,9 +54,23 @@ def apply_fixtures(database: Database, srid: Optional[int] = 4326):
         )
 
 
+@app.command(name="create")
+def create_project(database: str, srid: int = 4326):
+    """Create a Mapboard project dataabase"""
+    if database.startswith("mapboard"):
+        raise ValueError("Project names beginning with 'mapboard' are reserved")
+
+    compose("exec database", "createdb", "-U", "mapboard_admin", database)
+    DATABASE_URL = connection_string(database)
+    db = Database(DATABASE_URL)
+    apply_fixtures(db, srid=srid)
+
+
 @app.command()
-def migrate(apply: bool = False, allow_unsafe: bool = False):
-    """Migrate the Mapboard database to the latest version"""
+def migrate(database: str, apply: bool = False, allow_unsafe: bool = False):
+    """Migrate a Mapboard project database to the latest version"""
+    console.print(f"Migrating database [cyan bold]{database}[/]...")
+    DATABASE_URL = connection_string(database)
     db = Database(DATABASE_URL)
     uri = db.engine.url._replace(database="mapboard_temp_migrate")
     migration = create_migration(
