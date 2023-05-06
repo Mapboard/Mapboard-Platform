@@ -56,7 +56,7 @@ def apply_fixtures(database: Database, srid: Optional[int] = 4326):
 
 @app.command(name="create")
 def create_project(database: str, srid: int = 4326):
-    """Create a Mapboard project dataabase"""
+    """Create a Mapboard project database"""
     if database.startswith("mapboard"):
         raise ValueError("Project names beginning with 'mapboard' are reserved")
 
