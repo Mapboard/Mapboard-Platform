@@ -9,7 +9,9 @@ import { Spot } from "./spots";
 import { mapReducer, defaultState } from "./actions";
 import { MapComponent } from "./map";
 import { Routes, BrowserRouter, Route } from "react-router-dom";
+import { APIProvider } from "@macrostrat/ui-components";
 import { Inspector } from "./inspector";
+import { sourceURL } from "./config";
 
 function InfoModal({ isOpen, onClose, spots = [] }) {
   if (!isOpen) return null;
@@ -91,6 +93,6 @@ export function MapApp() {
   return h(
     DarkModeProvider,
     { followSystem: true },
-    h(BrowserRouter, h(MapAppRoutes))
+    h(APIProvider, { baseURL: sourceURL }, [h(BrowserRouter, h(MapAppRoutes))])
   );
 }
