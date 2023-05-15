@@ -46,5 +46,5 @@ def follow_logs(app_name: str, command_name: str, container: str, **kwargs):
     # Should integrate this into the macrostrat.utils.cmd function
     env = kwargs.pop("env", _build_compose_env())
     return Popen(
-        ["docker", "compose", "logs", "-f", "--since=1s", container], env=env, **kwargs
+        ["docker", "compose", "logs", "-f", "--tail=100", container], env=env, **kwargs
     )

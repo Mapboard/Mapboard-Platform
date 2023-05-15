@@ -135,6 +135,18 @@ def up(
         cfg.print("All containers built successfully.", style="green bold")
 
     running_containers = check_status(cfg.name, cfg.name.lower())
+
+    logs = follow_logs(
+        cfg.name,
+        cfg.name.lower(),
+        container,
+        stdout=PIPE,
+        stderr=STDOUT,
+        bufsize=1,
+        encoding="utf-8",
+    )
+    sleep(0.05)
+
     cfg.print("Starting :app_name: server...", style="bold")
     compose("start")
 
@@ -142,28 +154,20 @@ def up(
         cfg.print("Reloading gateway server...", style="bold")
         compose("exec -w /etc/caddy gateway caddy reload")
 
-    with follow_logs(
-        cfg.name,
-        cfg.name.lower(),
-        container,
-    ) as proc:
-        while True:
-            output = proc.stdout.readline()
-            if output == "" and proc.poll() is not None:
-                break
-            if output:
-                print(output.strip())
-        rc = proc.poll()
-        return rc
+    while True:
+        realtime_output = logs.stdout.readline()
+
+        if realtime_output == "" and logs.poll() is not None:
+            break
+
+        if realtime_output:
+            print(realtime_output.strip(), flush=True)
 
     # # wait for logging subprocess
     # assert isinstance(log_cmd, Popen)
     # # detach from parent process
     # try:
-    #     while log_cmd.poll() is None:
-    #         # grab stdin and print
-    #         console.print(log_cmd.stdout.read())
-    #         sleep(1)
+
     # finally:
     #     log_cmd.terminate()
     #     log_cmd.wait()
