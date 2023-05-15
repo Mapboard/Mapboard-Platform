@@ -14,6 +14,11 @@ def compose(*args, **kwargs):
     env = environ.copy()
     env["COMPOSE_PROJECT_NAME"] = "mapboard"
     env["COMPOSE_FILE"] = str(MAPBOARD_ROOT / "system" / "docker-compose.yaml")
+    wait = kwargs.pop("wait_for_completion", True)
+    # Should integrate this into the macrostrat.utils.cmd function
+    if not wait:
+        return Popen(["docker", "compose", *args], env=env, **kwargs)
+
     return cmd("docker", "compose", *args, env=env, **kwargs)
 
 
@@ -32,10 +37,10 @@ def check_status(app_name: str, command_name: str):
     return running_containers
 
 
-def follow_logs(app_name: str, command_name: str, container: str):
+def follow_logs(app_name: str, command_name: str, container: str, **kwargs):
     console.print("[green bold]Following container logs")
     console.print(f"[dim]- Press Ctrl+c to exit ({app_name} will keep running).")
     console.print(
         f"[dim]- {app_name} can be stopped with the [cyan]{command_name} down[/cyan] command."
     )
-    compose("logs", "-f", "--since=1s", container)
+    return compose("logs", "-f", "--since=1s", container, **kwargs)
