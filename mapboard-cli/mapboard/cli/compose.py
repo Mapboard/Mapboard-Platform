@@ -38,19 +38,3 @@ def check_status(app_name: str, command_name: str):
         )
     console.print()
     return running_containers
-
-
-def follow_logs(app_name: str, command_name: str, container: str, **kwargs):
-    console.print("[green bold]Following container logs")
-    console.print(f"[dim]- Press Ctrl+c to exit ({app_name} will keep running).")
-    console.print(
-        f"[dim]- {app_name} can be stopped with the [cyan]{command_name} down[/cyan] command."
-    )
-    # Should integrate this into the macrostrat.utils.cmd function
-    env = kwargs.pop("env", _build_compose_env())
-    args = ["docker", "compose", "logs", "-f", "--since=1s"]
-    log.debug(" ".join(args))
-    sleep(0.05)
-    if container is not None and container != "":
-        args.append(container)
-    return Popen(args, env=env, **kwargs)

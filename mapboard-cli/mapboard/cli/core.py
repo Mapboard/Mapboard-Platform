@@ -5,7 +5,7 @@ import click
 import rich
 import sys
 from os import environ
-from .compose import compose, check_status, follow_logs
+from .compose import compose, check_status
 from typer.core import TyperGroup
 from typer.models import TyperInfo
 from typer import Context
@@ -13,14 +13,11 @@ from typer import Typer
 from dotenv import load_dotenv
 from time import sleep
 from .definitions import MAPBOARD_ROOT
-from .branding import AppConfig
+from .system import AppConfig
 from macrostrat.utils import get_logger, setup_stderr_logs
 from contextlib import contextmanager
+from click import Group as ClickGroup
 import logging
-import io
-from subprocess import Popen, PIPE, STDOUT, TimeoutExpired
-import threading
-import tempfile
 
 from .follow_logs import follow_logs_with_reloader, Result
 
@@ -43,12 +40,16 @@ class OrderCommands(TyperGroup):
 class ControlCommand(Typer):
     name: str
 
+    app: AppConfig
+    _click: ClickGroup
+
     def __init__(self, name, *args, **kwargs):
         kwargs.setdefault("add_completion", False)
         kwargs.setdefault("no_args_is_help", True)
         kwargs.setdefault("cls", OrderCommands)
         kwargs.setdefault("name", name)
         super().__init__(*args, **kwargs)
+        self.app = AppConfig(name, command_name=kwargs.pop("command_name", None))
         self.name = name
 
         app_module = kwargs.pop("app_module", name)
@@ -65,15 +66,23 @@ class ControlCommand(Typer):
                 # enabled that we haven't chased down?
                 setup_stderr_logs("", level=logging.CRITICAL)
 
-        callback.__doc__ = f"""{self.name} command-line interface"""
+        callback.__doc__ = f"""{self.app.name} command-line interface"""
 
         self.registered_callback = TyperInfo(callback=callback)
 
+        self._click = typer.main.get_command(self)
+        self.build_commands()
 
-app = ControlCommand(name="Mapboard")
+    def build_commands(self):
+        self.command(rich_help_panel="System")(up)
+        self.command(rich_help_panel="System")(down)
+        self.command(rich_help_panel="System")(restart)
+        self.add_click_command(_compose, "compose")
+
+    def add_click_command(self, *args, **kwargs):
+        self._click.add_command(*args, **kwargs)
 
 
-@app.command()
 def up(
     ctx: Context, container: str = typer.Argument(None), force_recreate: bool = False
 ):
@@ -128,7 +137,6 @@ def up(
         return
 
 
-@app.command()
 def down(ctx: Context):
     """Stop the server."""
     app = ctx.find_object(AppConfig)
@@ -138,7 +146,6 @@ def down(ctx: Context):
     compose("down", "--remove-orphans")
 
 
-@app.command()
 def restart(ctx: Context, container: str = typer.Argument(None)):
     """Restart the server and follow logs."""
     ctx.invoke(up, ctx, container, force_recreate=True)
@@ -158,7 +165,3 @@ def restart(ctx: Context, container: str = typer.Argument(None)):
 def _compose(args):
     """Run docker compose commands in the appropriate context"""
     compose(*args)
-
-
-cli = typer.main.get_command(app)
-cli.add_command(_compose, "compose")

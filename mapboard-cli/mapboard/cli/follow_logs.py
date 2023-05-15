@@ -1,27 +1,17 @@
-import fcntl
-import io
-import logging
 import os
 import sys
 import tempfile
+import fcntl
 import termios
-import threading
 from contextlib import contextmanager
 from os import environ
-from subprocess import PIPE, STDOUT, Popen, TimeoutExpired, run
+from subprocess import Popen
 from time import sleep
 
-import click
-import rich
-from dotenv import load_dotenv
-from macrostrat.utils import cmd, get_logger, setup_stderr_logs, split_args
-from rich.console import Console
-from typer import Context, Typer
-from typer.core import TyperGroup
-from typer.models import TyperInfo
+from macrostrat.utils import get_logger
 from enum import Enum
 
-from .branding import AppConfig
+from .system import AppConfig
 from .compose import _build_compose_env, console
 
 log = get_logger(__name__)

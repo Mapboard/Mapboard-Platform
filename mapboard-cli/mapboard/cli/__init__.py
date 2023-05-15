@@ -10,8 +10,9 @@ import click
 
 from .compose import compose
 from psycopg2.sql import Identifier, Literal, SQL
-from .core import app, cli, _compose, console
+from .core import ControlCommand
 from .definitions import MAPBOARD_ROOT
+from .compose import console, compose
 
 POSTGRES_USER = environ.get("POSTGRES_USER") or "postgres"
 POSTGRES_PASSWORD = environ.get("POSTGRES_PASSWORD") or "postgres"
@@ -22,6 +23,9 @@ MAPBOARD_DB_PORT = environ.get("MAPBOARD_DB_PORT") or 54391
 def connection_string(database: str):
     """Get a connection string for a given database"""
     return f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@localhost:{MAPBOARD_DB_PORT}/{database}"
+
+
+app = ControlCommand(name="Mapboard")
 
 
 @app.command()
@@ -122,6 +126,4 @@ def test(args=[]):
         pytest.main([str(testdir), *args])
 
 
-cli = get_command(app)
-cli.add_command(_compose, "compose")
-cli.add_command(test, "test")
+app.add_click_command(test, "test")
