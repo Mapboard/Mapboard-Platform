@@ -16,7 +16,7 @@ from .definitions import MAPBOARD_ROOT
 from .system import AppConfig
 from macrostrat.utils import get_logger, setup_stderr_logs
 from contextlib import contextmanager
-from click import Group as ClickGroup
+from click import Group
 import logging
 
 from .follow_logs import follow_logs_with_reloader, Result
@@ -41,7 +41,7 @@ class ControlCommand(Typer):
     name: str
 
     app: AppConfig
-    _click: ClickGroup
+    _click: Group
 
     def __init__(self, name, *args, **kwargs):
         kwargs.setdefault("add_completion", False)
@@ -70,17 +70,40 @@ class ControlCommand(Typer):
 
         self.registered_callback = TyperInfo(callback=callback)
 
-        self._click = typer.main.get_command(self)
+        # Click commands must be added after Typer commands in the current design.
+        self._click_commands = []
+
         self.build_commands()
 
     def build_commands(self):
-        self.command(rich_help_panel="System")(up)
-        self.command(rich_help_panel="System")(down)
-        self.command(rich_help_panel="System")(restart)
-        self.add_click_command(_compose, "compose")
+        for cmd in [up, down, restart]:
+            if cmd.__doc__ is not None:
+                cmd.__doc__ = self.app.replace_names(cmd.__doc__)
+            self.command(rich_help_panel="System")(cmd)
+        self.add_click_command(_compose, "compose", rich_help_panel="System")
 
-    def add_click_command(self, *args, **kwargs):
-        self._click.add_command(*args, **kwargs)
+    def add_click_command(self, cmd, *args, **kwargs):
+        """Add a click command for lazy initialization
+        params:
+            cmd: click command
+            args: args to pass to click.add_command
+            kwargs: kwargs to pass to click.add_command
+            rich_help_panel: name of rich help panel to add to
+        """
+        rich_help_panel = kwargs.pop("rich_help_panel", None)
+        if rich_help_panel is not None:
+            setattr(cmd, "rich_help_panel", rich_help_panel)
+        cfunc = lambda _click: _click.add_command(cmd, *args, **kwargs)
+        self._click_commands.append(cfunc)
+
+    def __call__(self):
+        """Run this command using its underlying click object."""
+        cmd = typer.main.get_command(self)
+        assert isinstance(cmd, click.Group)
+        self._click = cmd
+        for cfunc in self._click_commands:
+            cfunc(self._click)
+        return self._click()
 
 
 def up(
@@ -138,7 +161,7 @@ def up(
 
 
 def down(ctx: Context):
-    """Stop the server."""
+    """Stop all :app_name: services."""
     app = ctx.find_object(AppConfig)
     if app is None:
         raise ValueError("Could not find application config")
@@ -147,7 +170,7 @@ def down(ctx: Context):
 
 
 def restart(ctx: Context, container: str = typer.Argument(None)):
-    """Restart the server and follow logs."""
+    """Restart the :app_name: server and follow logs."""
     ctx.invoke(up, ctx, container, force_recreate=True)
 
 

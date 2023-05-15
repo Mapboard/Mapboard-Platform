@@ -13,7 +13,9 @@ class AppConfig:
         self.console = Console()
         super().__init__()
 
-    def info(self, text, style=None):
+    def replace_names(self, text: str) -> str:
         text = text.replace(":app_name:", self.name)
-        text = text.replace(":command_name:", self.name.lower())
-        self.console.print(text, style=style)
+        return text.replace(":command_name:", self.name.lower())
+
+    def info(self, text, style=None):
+        self.console.print(self.replace_names(text), style=style)
