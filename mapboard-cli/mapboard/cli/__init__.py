@@ -7,14 +7,17 @@ from os import environ
 import pytest
 import click
 
-from .compose import compose
 from psycopg2.sql import Identifier, Literal, SQL
-from .core import Application
+from macrostrat.app_frame import Application
 from .definitions import MAPBOARD_ROOT
-from .compose import console, compose
+from macrostrat.app_frame.compose import console, compose
 from dotenv import load_dotenv
 
-load_dotenv()
+# For some reason, environment variables aren't loading correctly
+# using the app_frame module. Or maybe, env vars set there
+# aren't available outside of module code.
+load_dotenv(MAPBOARD_ROOT / ".env")
+
 
 # Could probably manage this within the application config.
 
@@ -32,7 +35,6 @@ app_ = Application(
     restart_commands={"gateway": "caddy reload --config /etc/caddy/Caddyfile"},
     app_module="mapboard.server",
     compose_files=[MAPBOARD_ROOT / "system" / "docker-compose.yaml"],
-    load_dotenv=MAPBOARD_ROOT / ".env",
 )
 app = app_.control_command()
 
