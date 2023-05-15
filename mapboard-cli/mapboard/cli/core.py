@@ -13,6 +13,7 @@ from typer import Typer
 from dotenv import load_dotenv
 from time import sleep
 from .definitions import MAPBOARD_ROOT
+from .branding import AppConfig
 from macrostrat.utils import get_logger, setup_stderr_logs
 from contextlib import contextmanager
 import logging
@@ -20,6 +21,8 @@ import io
 from subprocess import Popen, PIPE, STDOUT, TimeoutExpired
 import threading
 import tempfile
+
+from .follow_logs import follow_logs_with_reloader, Result
 
 from .compose import console
 
@@ -29,8 +32,6 @@ environ["DOCKER_SCAN_SUGGEST"] = "false"
 environ["DOCKER_BUILDKIT"] = "1"
 
 log = get_logger(__name__)
-
-import termios, fcntl, sys, os
 
 
 class OrderCommands(TyperGroup):
@@ -53,7 +54,7 @@ class ControlCommand(Typer):
         app_module = kwargs.pop("app_module", name)
 
         def callback(ctx: Context, verbose: bool = False):
-            ctx.obj = ApplicationConfig(self.name)
+            ctx.obj = AppConfig(self.name)
 
             if verbose:
                 setup_stderr_logs(app_module)
@@ -69,38 +70,7 @@ class ControlCommand(Typer):
         self.registered_callback = TyperInfo(callback=callback)
 
 
-class ApplicationConfig:
-    name: str
-
-    def __init__(self, name: str):
-        self.name = name
-
-    def print(self, text, style=None):
-        text = text.replace(":app_name:", self.name)
-        text = text.replace(":command_name:", self.name.lower())
-        console.print(text, style=style)
-
-
 app = ControlCommand(name="Mapboard")
-
-
-@contextmanager
-def wait_for_keys():
-    fd = sys.stdin.fileno()
-
-    oldterm = termios.tcgetattr(fd)
-    newattr = termios.tcgetattr(fd)
-    newattr[3] = newattr[3] & ~termios.ICANON & ~termios.ECHO
-    termios.tcsetattr(fd, termios.TCSANOW, newattr)
-
-    oldflags = fcntl.fcntl(fd, fcntl.F_GETFL)
-    fcntl.fcntl(fd, fcntl.F_SETFL, oldflags | os.O_NONBLOCK)
-
-    try:
-        yield
-    finally:
-        termios.tcsetattr(fd, termios.TCSAFLUSH, oldterm)
-        fcntl.fcntl(fd, fcntl.F_SETFL, oldflags)
 
 
 @app.command()
@@ -108,8 +78,8 @@ def up(
     ctx: Context, container: str = typer.Argument(None), force_recreate: bool = False
 ):
     """Start the :app_name: server and follow logs."""
-    cfg = ctx.find_object(ApplicationConfig)
-    if cfg is None:
+    app = ctx.find_object(AppConfig)
+    if app is None:
         raise ValueError("Could not find application config")
     if container is None:
         container = ""
@@ -126,58 +96,45 @@ def up(
         container,
     )
     if res.returncode != 0:
-        cfg.print(
+        app.info(
             "One or more containers did not build successfully, aborting.",
             style="red bold",
         )
         sys.exit(res.returncode)
     else:
-        cfg.print("All containers built successfully.", style="green bold")
+        app.info("All containers built successfully.", style="green bold")
 
-    running_containers = check_status(cfg.name, cfg.name.lower())
+    running_containers = check_status(app.name, app.name.lower())
 
-    logs = follow_logs(
-        cfg.name,
-        cfg.name.lower(),
-        container,
-        stdout=PIPE,
-        stderr=STDOUT,
-        bufsize=1,
-        encoding="utf-8",
-    )
-    sleep(0.05)
-
-    cfg.print("Starting :app_name: server...", style="bold")
+    app.info("Starting :app_name: server...", style="bold")
     compose("start")
 
     if "gateway" in running_containers:
-        cfg.print("Reloading gateway server...", style="bold")
+        app.info("Reloading gateway server...", style="bold")
         compose("exec -w /etc/caddy gateway caddy reload")
 
-    while True:
-        realtime_output = logs.stdout.readline()
-
-        if realtime_output == "" and logs.poll() is not None:
-            break
-
-        if realtime_output:
-            print(realtime_output.strip(), flush=True)
-
-    # # wait for logging subprocess
-    # assert isinstance(log_cmd, Popen)
-    # # detach from parent process
-    # try:
-
-    # finally:
-    #     log_cmd.terminate()
-    #     log_cmd.wait()
+    res = follow_logs_with_reloader(app, container)
+    if res == Result.RESTART:
+        app.info("Restarting :app_name: server...", style="bold")
+        ctx.invoke(up, ctx, container)
+    elif res == Result.EXIT:
+        app.info("Stopping :app_name: server...", style="bold")
+        ctx.invoke(down, ctx)
+    elif res == Result.CONTINUE:
+        app.info(
+            "[bold]Detaching from logs[/bold] [dim](:app_name: will continue to run)[/dim]",
+            style="bold",
+        )
+        return
 
 
 @app.command()
 def down(ctx: Context):
     """Stop the server."""
-    cfg = ctx.find_object(ApplicationConfig)
-    cfg.print("Stopping :app_name: server...", style="bold")
+    app = ctx.find_object(AppConfig)
+    if app is None:
+        raise ValueError("Could not find application config")
+    app.info("Stopping :app_name: server...", style="bold")
     compose("down", "--remove-orphans")
 
 
@@ -205,19 +162,3 @@ def _compose(args):
 
 cli = typer.main.get_command(app)
 cli.add_command(_compose, "compose")
-
-
-@contextmanager
-def tempfifo(mode="wb"):
-    tmpdir = tempfile.mkdtemp()
-    filename = os.path.join(tmpdir, "myfifo")
-    try:
-        # os.mkfifo(filename)
-        fifo = open(filename, mode)
-        yield fifo
-        fifo.close()
-
-        # write stuff to fifo
-    finally:
-        os.remove(filename)
-        os.rmdir(tmpdir)

@@ -1,12 +1,15 @@
 from os import environ
-from macrostrat.utils import cmd
+from macrostrat.utils import cmd, split_args, get_logger
 from rich.console import Console
-from subprocess import Popen
+from time import sleep
+from subprocess import Popen, run
 
 from .definitions import MAPBOARD_ROOT
 
 
 console = Console()
+
+log = get_logger(__name__)
 
 
 def _build_compose_env():
@@ -45,6 +48,9 @@ def follow_logs(app_name: str, command_name: str, container: str, **kwargs):
     )
     # Should integrate this into the macrostrat.utils.cmd function
     env = kwargs.pop("env", _build_compose_env())
-    return Popen(
-        ["docker", "compose", "logs", "-f", "--tail=100", container], env=env, **kwargs
-    )
+    args = ["docker", "compose", "logs", "-f", "--since=1s"]
+    log.debug(" ".join(args))
+    sleep(0.05)
+    if container is not None and container != "":
+        args.append(container)
+    return Popen(args, env=env, **kwargs)
