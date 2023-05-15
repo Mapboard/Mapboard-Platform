@@ -13,9 +13,18 @@ from typer import Typer
 from dotenv import load_dotenv
 from time import sleep
 from .definitions import MAPBOARD_ROOT
+from .branding import AppConfig
 from macrostrat.utils import get_logger, setup_stderr_logs
+from contextlib import contextmanager
 import logging
+import io
+from subprocess import Popen, PIPE, STDOUT, TimeoutExpired
 import threading
+import tempfile
+
+from .follow_logs import follow_logs_with_reloader, Result
+
+from .compose import console
 
 load_dotenv(MAPBOARD_ROOT / ".env")
 
@@ -42,11 +51,13 @@ class ControlCommand(Typer):
         super().__init__(*args, **kwargs)
         self.name = name
 
+        app_module = kwargs.pop("app_module", name)
+
         def callback(ctx: Context, verbose: bool = False):
-            ctx.obj = ApplicationConfig(self.name)
+            ctx.obj = AppConfig(self.name)
 
             if verbose:
-                setup_stderr_logs("mapboard")
+                setup_stderr_logs(app_module)
             else:
                 # Disable all logging
                 # TODO: This is a hack, we shouldn't have to explicitly disable
@@ -59,21 +70,6 @@ class ControlCommand(Typer):
         self.registered_callback = TyperInfo(callback=callback)
 
 
-console = rich.console.Console()
-
-
-class ApplicationConfig:
-    name: str
-
-    def __init__(self, name: str):
-        self.name = name
-
-    def print(self, text, style=None):
-        text = text.replace(":app_name:", self.name)
-        text = text.replace(":command_name:", self.name.lower())
-        console.print(text, style=style)
-
-
 app = ControlCommand(name="Mapboard")
 
 
@@ -81,8 +77,10 @@ app = ControlCommand(name="Mapboard")
 def up(
     ctx: Context, container: str = typer.Argument(None), force_recreate: bool = False
 ):
-    """Start the Mapboard server and follow logs."""
-    cfg = ctx.find_object(ApplicationConfig)
+    """Start the :app_name: server and follow logs."""
+    app = ctx.find_object(AppConfig)
+    if app is None:
+        raise ValueError("Could not find application config")
     if container is None:
         container = ""
 
@@ -98,45 +96,45 @@ def up(
         container,
     )
     if res.returncode != 0:
-        cfg.print(
+        app.info(
             "One or more containers did not build successfully, aborting.",
             style="red bold",
         )
         sys.exit(res.returncode)
     else:
-        cfg.print("All containers built successfully.", style="green bold")
+        app.info("All containers built successfully.", style="green bold")
 
-    running_containers = check_status(cfg.name, cfg.name.lower())
-    cfg.print("Starting :app_name: server...", style="bold")
+    running_containers = check_status(app.name, app.name.lower())
+
+    app.info("Starting :app_name: server...", style="bold")
     compose("start")
 
     if "gateway" in running_containers:
-        cfg.print("Reloading gateway server...", style="bold")
+        app.info("Reloading gateway server...", style="bold")
         compose("exec -w /etc/caddy gateway caddy reload")
 
-    thread = threading.Thread(
-        target=follow_logs, args=(cfg.name, cfg.name.lower(), container)
-    )
-    thread.start()
-
-    # Wait for input
-    restart = False
-    # Can't figure out how to get restarting to work properly
-    try:
-        thread.wait()
-    finally:
-        # Stop the thread
-        thread.join()
-
-    if restart:
-        ctx.invoke(up, ctx, container, force_recreate=True)
+    res = follow_logs_with_reloader(app, container)
+    if res == Result.RESTART:
+        app.info("Restarting :app_name: server...", style="bold")
+        ctx.invoke(up, ctx, container)
+    elif res == Result.EXIT:
+        app.info("Stopping :app_name: server...", style="bold")
+        ctx.invoke(down, ctx)
+    elif res == Result.CONTINUE:
+        app.info(
+            "[bold]Detaching from logs[/bold] [dim](:app_name: will continue to run)[/dim]",
+            style="bold",
+        )
+        return
 
 
 @app.command()
 def down(ctx: Context):
     """Stop the server."""
-    cfg = ctx.find_object(ApplicationConfig)
-    cfg.print("Stopping :app_name: server...", style="bold")
+    app = ctx.find_object(AppConfig)
+    if app is None:
+        raise ValueError("Could not find application config")
+    app.info("Stopping :app_name: server...", style="bold")
     compose("down", "--remove-orphans")
 
 

@@ -1,19 +1,27 @@
 from os import environ
-from macrostrat.utils import cmd
+from macrostrat.utils import cmd, split_args, get_logger
 from rich.console import Console
-from subprocess import Popen
+from time import sleep
+from subprocess import Popen, run
 
 from .definitions import MAPBOARD_ROOT
 
 
 console = Console()
 
+log = get_logger(__name__)
 
-def compose(*args, **kwargs):
-    """Run docker compose commands in the appropriate context"""
+
+def _build_compose_env():
     env = environ.copy()
     env["COMPOSE_PROJECT_NAME"] = "mapboard"
     env["COMPOSE_FILE"] = str(MAPBOARD_ROOT / "system" / "docker-compose.yaml")
+    return env
+
+
+def compose(*args, **kwargs):
+    """Run docker compose commands in the appropriate context"""
+    env = kwargs.pop("env", _build_compose_env())
     return cmd("docker", "compose", *args, env=env, **kwargs)
 
 
@@ -32,10 +40,17 @@ def check_status(app_name: str, command_name: str):
     return running_containers
 
 
-def follow_logs(app_name: str, command_name: str, container: str):
+def follow_logs(app_name: str, command_name: str, container: str, **kwargs):
     console.print("[green bold]Following container logs")
     console.print(f"[dim]- Press Ctrl+c to exit ({app_name} will keep running).")
     console.print(
         f"[dim]- {app_name} can be stopped with the [cyan]{command_name} down[/cyan] command."
     )
-    compose("logs", "-f", "--since=1s", container)
+    # Should integrate this into the macrostrat.utils.cmd function
+    env = kwargs.pop("env", _build_compose_env())
+    args = ["docker", "compose", "logs", "-f", "--since=1s"]
+    log.debug(" ".join(args))
+    sleep(0.05)
+    if container is not None and container != "":
+        args.append(container)
+    return Popen(args, env=env, **kwargs)
