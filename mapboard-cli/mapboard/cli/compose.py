@@ -9,16 +9,16 @@ from .definitions import MAPBOARD_ROOT
 console = Console()
 
 
-def compose(*args, **kwargs):
-    """Run docker compose commands in the appropriate context"""
+def _build_compose_env():
     env = environ.copy()
     env["COMPOSE_PROJECT_NAME"] = "mapboard"
     env["COMPOSE_FILE"] = str(MAPBOARD_ROOT / "system" / "docker-compose.yaml")
-    wait = kwargs.pop("wait_for_completion", True)
-    # Should integrate this into the macrostrat.utils.cmd function
-    if not wait:
-        return Popen(["docker", "compose", *args], env=env, **kwargs)
+    return env
 
+
+def compose(*args, **kwargs):
+    """Run docker compose commands in the appropriate context"""
+    env = kwargs.pop("env", _build_compose_env())
     return cmd("docker", "compose", *args, env=env, **kwargs)
 
 
@@ -43,4 +43,8 @@ def follow_logs(app_name: str, command_name: str, container: str, **kwargs):
     console.print(
         f"[dim]- {app_name} can be stopped with the [cyan]{command_name} down[/cyan] command."
     )
-    return compose("logs", "-f", "--since=1s", container, **kwargs)
+    # Should integrate this into the macrostrat.utils.cmd function
+    env = kwargs.pop("env", _build_compose_env())
+    return Popen(
+        ["docker", "compose", "logs", "-f", "--since=1s", container], env=env, **kwargs
+    )

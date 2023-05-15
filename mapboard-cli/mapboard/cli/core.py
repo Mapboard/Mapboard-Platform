@@ -142,47 +142,31 @@ def up(
         cfg.print("Reloading gateway server...", style="bold")
         compose("exec -w /etc/caddy gateway caddy reload")
 
-    print("Test")
-
-    with tempfifo(mode="wb") as buffer, open(buffer.name, "rb") as reader:
-        print("buffer", buffer.name)
-        log_cmd = follow_logs(
-            cfg.name,
-            cfg.name.lower(),
-            container,
-            wait_for_completion=False,
-            stdout=buffer,
-        )
-        # wait for logging subprocess
-        assert isinstance(log_cmd, Popen)
-        # detach from parent process
-        while log_cmd.poll() is None:
-            console.print("polling")
-            console.print(reader.read().decode("utf-8"))
-            sleep(0.5)
-            key = sys.stdin.read()
-            if key == "\x03":
+    with follow_logs(
+        cfg.name,
+        cfg.name.lower(),
+        container,
+    ) as proc:
+        while True:
+            output = proc.stdout.readline()
+            if output == "" and proc.poll() is not None:
                 break
-            console.print("key", key)
-        # Read the remaining
-        sys.stdout.write(reader.read().decode("utf-8"))
+            if output:
+                print(output.strip())
+        rc = proc.poll()
+        return rc
 
-        # stdout = log_cmd.stdout.readlines()
-        # for line in stdout:
-        #     console.print(line.decode("utf-8"), end="")
-
-        try:
-            with wait_for_keys():
-                while True:
-                    try:
-                        key = sys.stdin.read(1)
-                        if key == "\x03":
-                            break
-                    except IOError:
-                        pass
-        finally:
-            log_cmd.terminate()
-            log_cmd.wait()
+    # # wait for logging subprocess
+    # assert isinstance(log_cmd, Popen)
+    # # detach from parent process
+    # try:
+    #     while log_cmd.poll() is None:
+    #         # grab stdin and print
+    #         console.print(log_cmd.stdout.read())
+    #         sleep(1)
+    # finally:
+    #     log_cmd.terminate()
+    #     log_cmd.wait()
 
 
 @app.command()
