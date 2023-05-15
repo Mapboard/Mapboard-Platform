@@ -4,28 +4,17 @@ from rich.console import Console
 from time import sleep
 from subprocess import Popen, run
 
-from .definitions import MAPBOARD_ROOT
-
-
 console = Console()
 
 log = get_logger(__name__)
 
 
-def _build_compose_env():
-    env = environ.copy()
-    env["COMPOSE_PROJECT_NAME"] = "mapboard"
-    env["COMPOSE_FILE"] = str(MAPBOARD_ROOT / "system" / "docker-compose.yaml")
-    return env
-
-
 def compose(*args, **kwargs):
     """Run docker compose commands in the appropriate context"""
-    env = kwargs.pop("env", _build_compose_env())
-    return cmd("docker", "compose", *args, env=env, **kwargs)
+    return cmd("docker", "compose", *args, **kwargs)
 
 
-def check_status(app_name: str, command_name: str):
+def check_status(app_name: str, command_name: str) -> list[str]:
     # Check if containers are running
     res = compose("ps --services --filter status=running", capture_output=True)
     running_containers = res.stdout.decode("utf-8").strip()
@@ -37,4 +26,5 @@ def check_status(app_name: str, command_name: str):
             f" or [cyan]{command_name} up --force-recreate[/cyan]."
         )
     console.print()
-    return running_containers
+    containers = running_containers.split(",")
+    return [c.strip() for c in containers]

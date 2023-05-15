@@ -2,7 +2,6 @@ import sys
 from pathlib import Path
 from macrostrat.database import Database, run_sql
 from macrostrat.dinosaur import create_migration, temp_database
-from typer.main import get_command
 from typing import Optional
 from os import environ
 import pytest
@@ -10,22 +9,32 @@ import click
 
 from .compose import compose
 from psycopg2.sql import Identifier, Literal, SQL
-from .core import ControlCommand
+from .core import Application
 from .definitions import MAPBOARD_ROOT
 from .compose import console, compose
+from dotenv import load_dotenv
 
-POSTGRES_USER = environ.get("POSTGRES_USER") or "postgres"
-POSTGRES_PASSWORD = environ.get("POSTGRES_PASSWORD") or "postgres"
-POSTGRES_DB = environ.get("POSTGRES_DB") or "postgres"
-MAPBOARD_DB_PORT = environ.get("MAPBOARD_DB_PORT") or 54391
+load_dotenv()
+
+# Could probably manage this within the application config.
 
 
 def connection_string(database: str):
+    POSTGRES_USER = environ.get("POSTGRES_USER") or "postgres"
+    POSTGRES_PASSWORD = environ.get("POSTGRES_PASSWORD") or "postgres"
+    MAPBOARD_DB_PORT = environ.get("MAPBOARD_DB_PORT") or 54391
     """Get a connection string for a given database"""
     return f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@localhost:{MAPBOARD_DB_PORT}/{database}"
 
 
-app = ControlCommand(name="Mapboard")
+app_ = Application(
+    "Mapboard",
+    restart_commands={"gateway": "caddy reload --config /etc/caddy/Caddyfile"},
+    app_module="mapboard.server",
+    compose_files=[MAPBOARD_ROOT / "system" / "docker-compose.yaml"],
+    load_dotenv=MAPBOARD_ROOT / ".env",
+)
+app = app_.control_command()
 
 
 @app.command()
@@ -116,6 +125,10 @@ def migrate(database: str, apply: bool = False, allow_unsafe: bool = False):
 def test(args=[]):
     """Run mapboard-server tests"""
     testdir = MAPBOARD_ROOT / "mapboard-server"
+    POSTGRES_USER = environ.get("POSTGRES_USER") or "postgres"
+    POSTGRES_PASSWORD = environ.get("POSTGRES_PASSWORD") or "postgres"
+    MAPBOARD_DB_PORT = environ.get("MAPBOARD_DB_PORT") or 54391
+
     test_database = f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@localhost:{MAPBOARD_DB_PORT}/mapboard_test_database"
     environ.update({"TESTING_DATABASE": test_database})
 

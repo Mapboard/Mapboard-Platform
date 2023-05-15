@@ -7,17 +7,15 @@ from contextlib import contextmanager
 from os import environ
 from subprocess import Popen
 from time import sleep
-
+from .core import Application
 from macrostrat.utils import get_logger
 from enum import Enum
 
-from .system import AppConfig
-from .compose import _build_compose_env, console
 
 log = get_logger(__name__)
 
 
-def follow_logs(app: AppConfig, container: str, **kwargs):
+def follow_logs(app: Application, container: str, **kwargs):
     app.info("Following container logs", style="green bold")
     app.info(
         f"- Press [bold]q[/bold] or [bold]Ctrl+c[/bold] to exit logs (:app_name: will keep running)."
@@ -27,10 +25,9 @@ def follow_logs(app: AppConfig, container: str, **kwargs):
     )
     app.info(
         f"- Press [bold]x[/bold] or run [cyan]:command_name: down[/cyan] to stop :app_name:.",
-        style="dim",
     )
     # Should integrate this into the macrostrat.utils.cmd function
-    env = kwargs.pop("env", _build_compose_env())
+    # env = kwargs.pop("env", _build_compose_env())
     args = ["docker", "compose", "logs", "-f", "--since=1s"]
     log.debug(" ".join(args))
     sleep(0.1)
@@ -38,7 +35,7 @@ def follow_logs(app: AppConfig, container: str, **kwargs):
 
     if container is not None and container != "":
         args.append(container)
-    return Popen(args, env=env, **kwargs)
+    return Popen(args, **kwargs)
 
 
 class Result(Enum):
@@ -48,7 +45,7 @@ class Result(Enum):
 
 
 def follow_logs_with_reloader(
-    app: AppConfig,
+    app: Application,
     container: str,
 ) -> Result:
     proc = follow_logs(app, container)
