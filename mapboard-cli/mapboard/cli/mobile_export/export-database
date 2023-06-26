@@ -1,0 +1,56 @@
+#!/bin/bash
+
+dbname="$1"
+dbfile="$2"
+
+script_dir=$(dirname -- "$(readlink -f -- "$BASH_SOURCE")")
+sql_dir="$script_dir/mobile-export"
+
+rm -f "$dbfile"
+
+ogr2ogr -f SQLite \
+  -nlt "MULTILINESTRING" \
+  -dsco "SPATIALITE=YES" \
+  -sql "@$sql_dir/linework.sql" \
+  -nln "linework" \
+  -overwrite \
+  -lco FID=id \
+  "$dbfile" PG:dbname=$dbname
+
+ogr2ogr -f SQLite \
+  -nlt "MULTIPOLYGON" \
+  -dsco "SPATIALITE=YES" \
+  -sql "@$sql_dir/polygon.sql" \
+  -nln "polygon" \
+  -overwrite \
+  -lco FID=id \
+  "$dbfile" PG:dbname=$dbname
+
+ogrinfo "$dbfile" -sql "SELECT CreateSpatialIndex('linework','geometry')"
+ogrinfo "$dbfile" -sql "SELECT CreateSpatialIndex('polygon','geometry')"
+
+commandfile=$(mktemp)
+
+# create temporary init script
+cat <<EOF > $commandfile
+.read $sql_dir/linework-type.sql
+.mode csv linework_type
+.import /dev/stdin linework_type
+EOF
+# import
+psql $dbname \
+  -c "COPY (SELECT id,name,color,topology FROM map_digitizer.linework_type) TO STDOUT WITH CSV" \
+| sqlite3 --init $commandfile $dbfile
+rm -f $commandfile
+
+cat <<EOF > $commandfile
+.read $sql_dir/polygon-type.sql
+.mode csv polygon_type
+.import /dev/stdin polygon_type
+EOF
+# import
+psql $dbname \
+  -c "COPY (SELECT id,name,color,topology FROM map_digitizer.polygon_type) TO STDOUT WITH CSV" \
+| sqlite3 --init $commandfile $dbfile
+rm -f $commandfile
+
