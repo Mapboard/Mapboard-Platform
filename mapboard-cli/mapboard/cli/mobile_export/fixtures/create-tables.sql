@@ -1,3 +1,5 @@
+SELECT InitSpatialMetaData();
+
 -- Autoincrement prevents the reuse of values over the database lifetime.
 CREATE TABLE map_layer (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -29,22 +31,16 @@ CREATE TABLE linework_type (
 );
 
 INSERT INTO map_layer (id, name, description, topological, parent, position)
-VALUES (1, 'default', 'Default layer', 1, NULL, 0)
-WHERE NOT EXISTS (
-  SELECT * FROM map_layer
-);
+VALUES (1, 'default', 'Default layer', 1, NULL, 0);
+--WHERE NOT EXISTS (SELECT * FROM map_layer);
 
 INSERT INTO linework_type (id, name, color, topology)
-VALUES ('default', 'Default', '#000000', 'main')
-WHERE NOT EXISTS (
-  SELECT * FROM linework_type
-);
+VALUES ('default', 'Default', '#000000', 'main');
+--WHERE NOT EXISTS (SELECT * FROM linework_type);
 
 INSERT INTO polygon_type (id, name, color, topology)
-VALUES ('default', 'Default', '#000000', 'main')
-WHERE NOT EXISTS (
-  SELECT * FROM polygon_type
-);
+VALUES ('default', 'Default', '#000000', 'main');
+--WHERE NOT EXISTS (SELECT * FROM polygon_type);
 
 
 CREATE TABLE polygon (

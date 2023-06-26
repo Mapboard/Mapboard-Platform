@@ -17,6 +17,9 @@ pytest = "^7.3.1"
 python = "^3.10"
 python-daemon = "^3.0.1"
 zeroconf = "^0.56.0"
+ipython = "^8.14.0"
+migra = "^3.0.1663481299"
+rich = "^13.4.2"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.3.0"
