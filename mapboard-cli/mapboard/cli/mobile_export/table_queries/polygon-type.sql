@@ -1,0 +1,1 @@
+SELECT id, name, color, 'main' topology FROM mapboard.polygon_type

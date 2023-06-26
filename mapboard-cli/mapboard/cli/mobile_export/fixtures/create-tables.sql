@@ -1,5 +1,11 @@
 SELECT InitSpatialMetaData();
 
+-- We have to replicate migrations table...
+-- ideally migrations would be idempotent
+CREATE TABLE grdb_migrations (
+  identifier TEXT NOT NULL PRIMARY KEY
+);
+
 -- Autoincrement prevents the reuse of values over the database lifetime.
 CREATE TABLE map_layer (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -31,16 +37,16 @@ CREATE TABLE linework_type (
 );
 
 INSERT INTO map_layer (id, name, description, topological, parent, position)
-VALUES (1, 'default', 'Default layer', 1, NULL, 0);
---WHERE NOT EXISTS (SELECT * FROM map_layer);
+VALUES (0, 'default', 'Default layer', 1, NULL, 0)
+ON CONFLICT DO NOTHING;
 
 INSERT INTO linework_type (id, name, color, topology)
-VALUES ('default', 'Default', '#000000', 'main');
---WHERE NOT EXISTS (SELECT * FROM linework_type);
+VALUES ('default', 'Default', '#000000', 'main')
+ON CONFLICT DO NOTHING;
 
 INSERT INTO polygon_type (id, name, color, topology)
-VALUES ('default', 'Default', '#000000', 'main');
---WHERE NOT EXISTS (SELECT * FROM polygon_type);
+VALUES ('default', 'Default', '#000000', 'main')
+ON CONFLICT DO NOTHING;
 
 
 CREATE TABLE polygon (
@@ -50,7 +56,7 @@ CREATE TABLE polygon (
   map_width FLOAT,
   pixel_width FLOAT,
   created DATETIME,
-  layer INTEGER NOT NULL DEFAULT 1 REFERENCES map_layer(id)
+  layer INTEGER NOT NULL DEFAULT 0 REFERENCES map_layer(id)
 );
 
 
@@ -61,7 +67,7 @@ CREATE TABLE linework (
   map_width FLOAT,
   pixel_width FLOAT,
   created DATETIME,
-  layer INTEGER NOT NULL DEFAULT 1 REFERENCES map_layer(id)
+  layer INTEGER NOT NULL DEFAULT 0 REFERENCES map_layer(id)
 );
 
 -- Add geometry columns

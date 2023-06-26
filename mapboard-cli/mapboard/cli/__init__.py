@@ -84,10 +84,17 @@ def migrate(database: str, apply: bool = False, allow_unsafe: bool = False):
     console.print(f"Migrating database [cyan bold]{database}[/]...")
     DATABASE_URL = connection_string(database)
     db = Database(DATABASE_URL)
+
+    srid = db.session.execute(
+        "SELECT Find_SRID('mapboard', 'linework', 'geometry')"
+    ).scalar()
+
+    _apply_fixtures = lambda _db: apply_fixtures(_db, srid=srid)
+
     uri = db.engine.url._replace(database="mapboard_temp_migrate")
     migration = create_migration(
         db,
-        apply_fixtures,
+        _apply_fixtures,
         target_url=uri,
         safe=not allow_unsafe,
         redirect=sys.stderr,
