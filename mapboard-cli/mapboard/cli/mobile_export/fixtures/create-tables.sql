@@ -1,23 +1,73 @@
-CREATE TABLE linework (
-  id SERIAL PRIMARY KEY,
-  geometry geometry(MultiLineString,32733) NOT NULL,
-  arbitrary boolean,
-  type text NOT NULL DEFAULT '''arbitrary'''::text REFERENCES map_digitizer.linework_type(id) ON UPDATE CASCADE,
-  certainty integer,
-  map_width numeric,
-  pixel_width numeric,
-  created timestamp without time zone DEFAULT now()
+-- Autoincrement prevents the reuse of values over the database lifetime.
+CREATE TABLE map_layer (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL UNIQUE,
+  description TEXT,
+  topological BOOLEAN NOT NULL DEFAULT 1,
+  parent INTEGER CHECK (id != parent) REFERENCES map_layer(id),
+  position INTEGER NOT NULL DEFAULT 0
 );
-SELECT CreateSpatialIndex('linework','geometry');
+
+CREATE TABLE mapboard_config (
+  key TEXT PRIMARY KEY,
+  value TEXT
+);
+
+CREATE TABLE polygon_type (
+  id TEXT PRIMARY KEY,
+  name TEXT,
+  color TEXT,
+  topology TEXT
+);
+
+
+CREATE TABLE linework_type (
+  id TEXT PRIMARY KEY,
+  name TEXT,
+  color TEXT,
+  topology TEXT
+);
+
+INSERT INTO map_layer (id, name, description, topological, parent, position)
+VALUES (1, 'default', 'Default layer', 1, NULL, 0)
+WHERE NOT EXISTS (
+  SELECT * FROM map_layer
+);
+
+INSERT INTO linework_type (id, name, color, topology)
+VALUES ('default', 'Default', '#000000', 'main')
+WHERE NOT EXISTS (
+  SELECT * FROM linework_type
+);
+
+INSERT INTO polygon_type (id, name, color, topology)
+VALUES ('default', 'Default', '#000000', 'main')
+WHERE NOT EXISTS (
+  SELECT * FROM polygon_type
+);
+
 
 CREATE TABLE polygon (
-  id integer DEFAULT nextval('map_digitizer.polygon_id_seq'::regclass) PRIMARY KEY,
-  geometry geometry(MultiPolygon,32733) NOT NULL,
-  type text REFERENCES mapping.unit(id) ON UPDATE CASCADE,
-  arbitrary boolean,
-  certainty integer,
-  map_width double precision,
-  pixel_width double precision,
-  created timestamp without time zone DEFAULT now()
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  certainty INTEGER,
+  type TEXT NOT NULL DEFAULT 'default' REFERENCES polygon_type(id),
+  map_width FLOAT,
+  pixel_width FLOAT,
+  created DATETIME,
+  layer INTEGER NOT NULL DEFAULT 1 REFERENCES map_layer(id)
 );
-SELECT CreateSpatialIndex('polygon','geometry');
+
+
+CREATE TABLE linework (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  certainty INTEGER,
+  type TEXT NOT NULL DEFAULT 'default' REFERENCES linework_type(id),
+  map_width FLOAT,
+  pixel_width FLOAT,
+  created DATETIME,
+  layer INTEGER NOT NULL DEFAULT 1 REFERENCES map_layer(id)
+);
+
+-- Add geometry columns
+SELECT AddGeometryColumn('polygon', 'geometry', :SRID, 'MULTIPOLYGON', 'XY');
+SELECT AddGeometryColumn('linework', 'geometry', :SRID, 'MULTILINESTRING', 'XY');
