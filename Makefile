@@ -1,4 +1,6 @@
 all:
+	pip install "poetry>=1.5.1"
+	python -m venv .venv
 	cd mapboard-cli && poetry install
 
 install:

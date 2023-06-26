@@ -69,5 +69,12 @@ CREATE TABLE linework (
 );
 
 -- Add geometry columns
-SELECT AddGeometryColumn('polygon', 'geometry', :SRID, 'MULTIPOLYGON', 'XY');
-SELECT AddGeometryColumn('linework', 'geometry', :SRID, 'MULTILINESTRING', 'XY');
+SELECT AddGeometryColumn('polygon', 'geometry', :SRID, 'MULTIPOLYGON', 'XY', 1);
+SELECT AddGeometryColumn('linework', 'geometry', :SRID, 'MULTILINESTRING', 'XY', 1);
+
+SELECT CreateSpatialIndex('polygon','geometry');
+SELECT CreateSpatialIndex('linework','geometry');
+
+-- Save space in spatial reference system tables
+DELETE FROM spatial_ref_sys_aux WHERE srid NOT IN (:SRID, 3857, 4326, -1);
+DELETE FROM spatial_ref_sys WHERE srid NOT IN (:SRID, 3857, 4326, -1);
