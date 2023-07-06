@@ -1,19 +1,18 @@
+from json import dumps
 from pathlib import Path
-from ..config import connection_string
+
+from geoalchemy2 import Geometry
 from macrostrat.database import Database, run_sql
-from macrostrat.database.utils import connection_args
 from rich import print
 from rich.progress import Progress
-
-from geoalchemy2 import Geometry, Geography
-from sqlalchemy import create_engine
-from sqlalchemy.event import listen
-from sqlalchemy.orm import sessionmaker, scoped_session, Session
 from rich.traceback import install
-from sqlalchemy import Table, MetaData, func
-from sqlalchemy.sql import insert, select
+from sqlalchemy import MetaData, create_engine
+from sqlalchemy.event import listen
 from sqlalchemy.exc import IntegrityError
-from json import dumps
+from sqlalchemy.orm import scoped_session, sessionmaker
+from sqlalchemy.sql import insert
+
+from ..config import connection_string
 
 install(show_locals=True)
 
@@ -67,18 +66,19 @@ def export_database(project: str, output: Path, overwrite: bool = False):
     # Set up geometry columns
     meta.tables["polygon"].c.geometry.type = Geometry("MULTIPOLYGON", srid=SRID)
     meta.tables["linework"].c.geometry.type = Geometry("MULTILINESTRING", srid=SRID)
-
     cfg = meta.tables["mapboard_config"]
 
     # Ideally this would be synthesized automatically by the app, but it isn't yet
-    bkend_config = {"type": "Spatialite", "address": "file:///unknown", "srid": SRID}
-    name = output.stem
-    location = "Unknown"
+    backend_config = {"type": "Spatialite", "address": "file:///unknown", "srid": SRID}
+    config = {
+        "backend": dumps(backend_config),
+        "name": output.stem,
+        "location": "Unknown",
+    }
 
     stmt = insert(cfg)
-    session.execute(stmt.values(key="backend", value=dumps(bkend_config)))
-    session.execute(stmt.values(key="name", value=name))
-    session.execute(stmt.values(key="location", value=location))
+    for key, value in config.items():
+        session.execute(stmt.values(key=key, value=value))
     session.commit()
 
     migrations = ["v1", "v2.0", "v2.3", "layers.0", "layers.1"]
@@ -112,12 +112,6 @@ def export_database(project: str, output: Path, overwrite: bool = False):
                     print(e)
                 progress.update(task, advance=1)
             session.commit()
-
-    # Insert data
-
-    # fake_conn = db.engine.raw_connection()
-    # fake_cur = fake_conn.cursor()
-    # fake_cur.copy_expert(copy_stmt, sys.stdout)
 
 
 def setup_spatialite(db_path: Path):
