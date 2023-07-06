@@ -12,6 +12,8 @@ from macrostrat.app_frame import Application
 from .definitions import MAPBOARD_ROOT
 from macrostrat.app_frame.compose import console, compose
 from dotenv import load_dotenv
+from .mobile_export import export_database
+from .config import connection_string
 
 # For some reason, environment variables aren't loading correctly
 # using the app_frame module. Or maybe, env vars set there
@@ -20,14 +22,6 @@ load_dotenv(MAPBOARD_ROOT / ".env")
 
 
 # Could probably manage this within the application config.
-
-
-def connection_string(database: str):
-    POSTGRES_USER = environ.get("POSTGRES_USER") or "postgres"
-    POSTGRES_PASSWORD = environ.get("POSTGRES_PASSWORD") or "postgres"
-    MAPBOARD_DB_PORT = environ.get("MAPBOARD_DB_PORT") or 54391
-    """Get a connection string for a given database"""
-    return f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@localhost:{MAPBOARD_DB_PORT}/{database}"
 
 
 app_ = Application(
@@ -81,16 +75,26 @@ def create_project(database: str, srid: int = 4326):
     apply_fixtures(db, srid=srid)
 
 
+app.command(name="export")(export_database)
+
+
 @app.command()
 def migrate(database: str, apply: bool = False, allow_unsafe: bool = False):
     """Migrate a Mapboard project database to the latest version"""
     console.print(f"Migrating database [cyan bold]{database}[/]...")
     DATABASE_URL = connection_string(database)
     db = Database(DATABASE_URL)
+
+    srid = db.session.execute(
+        "SELECT Find_SRID('mapboard', 'linework', 'geometry')"
+    ).scalar()
+
+    _apply_fixtures = lambda _db: apply_fixtures(_db, srid=srid)
+
     uri = db.engine.url._replace(database="mapboard_temp_migrate")
     migration = create_migration(
         db,
-        apply_fixtures,
+        _apply_fixtures,
         target_url=uri,
         safe=not allow_unsafe,
         redirect=sys.stderr,
