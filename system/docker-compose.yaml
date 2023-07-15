@@ -25,7 +25,7 @@ services:
       timeout: 5s
       retries: 5
     ports:
-      - "${MAPBOARD_DB_PORT:-54391}:5432"
+      - "${MAPBOARD_DB_PORT:-54398}:5432"
     expose:
       - 5432
     volumes:
@@ -34,7 +34,7 @@ services:
     image: mapboard-server
     build: ../mapboard-server
     # Command with reloader
-    command: uvicorn --reload --host '' --reload-include '*.sql' mapboard.server:app
+    command: uvicorn --reload --host '' --log-level debug --reload-include '*.sql' mapboard.server:app
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@database:5432/${POSTGRES_DB}
     volumes:

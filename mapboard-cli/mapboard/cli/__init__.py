@@ -133,14 +133,13 @@ def test(args=[]):
     testdir = MAPBOARD_ROOT / "mapboard-server"
     POSTGRES_USER = environ.get("POSTGRES_USER") or "postgres"
     POSTGRES_PASSWORD = environ.get("POSTGRES_PASSWORD") or "postgres"
-    MAPBOARD_DB_PORT = environ.get("MAPBOARD_DB_PORT") or 54391
+    MAPBOARD_DB_PORT = environ.get("MAPBOARD_DB_PORT") or 54398
 
     test_database = f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@localhost:{MAPBOARD_DB_PORT}/mapboard_test_database"
     environ.update({"TESTING_DATABASE": test_database})
 
     with temp_database(test_database) as engine:
         db = Database(engine.url)
-        print(engine.url)
         apply_fixtures(db, srid=32612)
         pytest.main([str(testdir), *args])
 
