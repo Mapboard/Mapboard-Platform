@@ -27,7 +27,7 @@ async function fitBounds(map) {
   let bounds = null;
   try {
     const res = await axios.get(sourceURL + "/feature-server/meta");
-    bounds = res.data?.projectBounds;
+    bounds = res.data?.projectBounds ?? [-135, 60, -132, 67];
   } catch (err) {
     console.log("Error fetching bounds", err);
   }

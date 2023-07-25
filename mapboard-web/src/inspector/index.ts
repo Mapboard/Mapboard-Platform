@@ -9,12 +9,12 @@ const map3DStyle = {
   sources: {
     mapboard_polygon: {
       type: "vector",
-      tiles: [sourceURL + "/polygon/tile/{z}/{x}/{y}.pbf"],
+      tiles: [sourceURL + "/polygon/tile/{z}/{x}/{y}"],
       volatile: true,
     },
     mapboard_line: {
       type: "vector",
-      tiles: [sourceURL + "/line/tile/{z}/{x}/{y}.pbf"],
+      tiles: [sourceURL + "/line/tile/{z}/{x}/{y}"],
       volatile: true,
     },
   },
@@ -56,7 +56,7 @@ export function Inspector() {
   const meta = useAPIResult("/meta");
   if (meta == null) return null;
 
-  const bounds = meta.projectBounds;
+  const bounds = meta.projectBounds ?? [-135, 60, -132, 67];
 
   // Get camera params
   const camera = {

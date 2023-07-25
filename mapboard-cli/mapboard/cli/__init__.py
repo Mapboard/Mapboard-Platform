@@ -6,9 +6,12 @@ from typing import Optional
 from os import environ
 import pytest
 import click
+import logging
 
+from subprocess import run as _run
 from psycopg2.sql import Identifier, Literal, SQL
 from macrostrat.app_frame import Application
+from macrostrat.utils import setup_stderr_logs
 from .definitions import MAPBOARD_ROOT
 from macrostrat.app_frame.compose import console, compose
 from dotenv import load_dotenv
@@ -30,6 +33,8 @@ app_ = Application(
     app_module="mapboard.server",
     compose_files=[MAPBOARD_ROOT / "system" / "docker-compose.yaml"],
 )
+app_.setup_logs(verbose=True)
+setup_stderr_logs("macrostrat.utils", level=logging.DEBUG)
 app = app_.control_command()
 
 
@@ -115,6 +120,36 @@ def migrate(database: str, apply: bool = False, allow_unsafe: bool = False):
             run_sql(db.session, stmt)
         else:
             print(stmt, file=sys.stdout)
+
+
+@app.command()
+def copy_database(database: str, new_database: str):
+    """Copy a Mapboard project database"""
+    console.print(
+        f"Copying database [cyan bold]{database}[/] to [cyan bold]{new_database}[/]..."
+    )
+
+    env = dict(
+        PGUSER=environ.get("POSTGRES_USER") or "postgres",
+        PGPASSWORD=environ.get("POSTGRES_PASSWORD") or "postgres",
+        PGHOST="localhost",
+        PGPORT="5432",
+    )
+
+    envargs = []
+    for k, v in env.items():
+        envargs.extend(["-e", f"{k}={v}"])
+
+    compose("exec", *envargs, "database", "createdb", new_database)
+    compose(
+        "exec",
+        *envargs,
+        "database",
+        "bash",
+        "-c",
+        f'"pg_dump {database} | psql {new_database}"',
+        shell=True,
+    )
 
 
 @click.command(
