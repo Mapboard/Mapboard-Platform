@@ -7,14 +7,18 @@ from os import environ
 import pytest
 import click
 import logging
+import typer
 
 from subprocess import run as _run
 from psycopg2.sql import Identifier, Literal, SQL
 from macrostrat.app_frame import Application
+from sqlalchemy import text
 from macrostrat.utils import setup_stderr_logs
 from .definitions import MAPBOARD_ROOT
 from macrostrat.app_frame.compose import console, compose
+from subprocess import run
 from dotenv import load_dotenv
+import json
 from .mobile_export import export_database
 from .config import connection_string
 
@@ -82,6 +86,11 @@ def create_project(database: str, srid: int = 4326):
 
 app.command(name="export")(export_database)
 
+def get_srid(db: Database) -> int:
+    return db.session.execute(
+        text("SELECT Find_SRID('mapboard', 'linework', 'geometry')")
+    ).scalar()
+
 
 @app.command()
 def migrate(database: str, apply: bool = False, allow_unsafe: bool = False):
@@ -90,9 +99,7 @@ def migrate(database: str, apply: bool = False, allow_unsafe: bool = False):
     DATABASE_URL = connection_string(database)
     db = Database(DATABASE_URL)
 
-    srid = db.session.execute(
-        "SELECT Find_SRID('mapboard', 'linework', 'geometry')"
-    ).scalar()
+    srid = get_srid(db)
 
     _apply_fixtures = lambda _db: apply_fixtures(_db, srid=srid)
 
@@ -151,6 +158,34 @@ def copy_database(database: str, new_database: str):
         shell=True,
     )
 
+# Allow extra args to be passed to yarn
+@app.command(
+    name="topology",
+    short_help="Watch topology for changes",
+    context_settings={"allow_extra_args": True, "ignore_unknown_options": True}
+)
+def watch_topology(ctx: typer.Context, project: str):
+    """Watch a project's topology for changes"""
+    cfg_dir = MAPBOARD_ROOT/"cfg"
+    cfg_dir.mkdir(exist_ok=True)
+    cfg_file = cfg_dir/f"{project}.json"
+    db_url = connection_string(project)
+
+    db = Database(db_url)
+
+    srid = get_srid(db)
+
+    cfg = {
+        "connection": db_url,
+        "topo_schema": "map_topology",
+        "data_schema": "mapboard",
+        "srid": srid,
+        "tolerance": 0.1
+    }
+    cfg_file.write_text(json.dumps(cfg, indent=2))
+    workdir = MAPBOARD_ROOT/"postgis-geologic-map"
+
+    run(["yarn", "run", "ts-node", "--transpile-only", "src/geologic-map", *ctx.args], cwd=workdir, env={**environ, "GEOLOGIC_MAP_CONFIG": str(cfg_file.absolute())})
 
 @click.command(
     "test",

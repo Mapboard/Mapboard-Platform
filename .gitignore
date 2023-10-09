@@ -2,3 +2,4 @@ data
 .env
 .venv
 !mapboard-cli/.venv
+cfg
