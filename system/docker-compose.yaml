@@ -12,7 +12,7 @@ services:
   database:
     # PostgreSQL 13 is needed in order to allow force-dropping the database
     # (in testing mode)
-    image: postgis/postgis:15-3.3
+    image: ${POSTGRES_CONTAINER:-postgis/postgis:15-3.4}
     restart: unless-stopped
     environment:
       - POSTGRES_USER
