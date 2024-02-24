@@ -14,6 +14,7 @@ from dotenv import load_dotenv
 from macrostrat.app_frame import Application
 from macrostrat.app_frame.compose import compose, console
 from macrostrat.database import Database, run_sql
+from macrostrat.database.utils import create_database, database_exists
 from macrostrat.dinosaur import create_migration, temp_database
 from macrostrat.utils import setup_stderr_logs
 from psycopg2.sql import SQL, Identifier, Literal
@@ -27,8 +28,6 @@ from .mobile_export import export_database
 # using the app_frame module. Or maybe, env vars set there
 # aren't available outside of module code.
 load_dotenv(MAPBOARD_ROOT / ".env")
-
-
 # Could probably manage this within the application config.
 
 
@@ -43,9 +42,29 @@ setup_stderr_logs("macrostrat.utils", level=logging.DEBUG)
 app = app_.control_command()
 
 
+def create_core_fixtures():
+    """Create fixtures for the core mapboard database"""
+    console.print("Creating fixtures in core database...")
+    DATABASE_URL = connection_string("mapboard")
+    db = Database(DATABASE_URL)
+
+    if not database_exists(db.engine.url):
+        create_database(db.engine.url)
+
+    fixtures = Path(__file__).parent.parent.parent / "core-fixtures"
+    files = list(fixtures.rglob("*.sql"))
+    files.sort()
+    for fixture in files:
+        db.run_sql(fixture)
+
+
 @app.command()
-def create_fixtures(database: str):
-    """Create fixtures in a given database"""
+def create_fixtures(project: Optional[str] = None):
+    """Create fixtures for a given project"""
+    if project is None:
+        return create_core_fixtures()
+    database = project
+
     console.print(f"Creating fixtures in database [cyan bold]{database}[/]...")
     DATABASE_URL = connection_string(database)
     db = Database(DATABASE_URL)
