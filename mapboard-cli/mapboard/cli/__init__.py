@@ -41,16 +41,18 @@ app_.setup_logs(verbose=True)
 setup_stderr_logs("macrostrat.utils", level=logging.DEBUG)
 app = app_.control_command()
 
+core_db = Database(connection_string("mapboard"))
+
 
 def create_core_fixtures():
     """Create fixtures for the core mapboard database"""
     console.print("Creating fixtures in core database...")
-    DATABASE_URL = connection_string("mapboard")
-    db = Database(DATABASE_URL)
+    if not database_exists(core_db.engine.url):
+        create_database(core_db.engine.url)
+    apply_core_fixtures(core_db)
 
-    if not database_exists(db.engine.url):
-        create_database(db.engine.url)
 
+def apply_core_fixtures(db: Database):
     fixtures = Path(__file__).parent.parent.parent / "core-fixtures"
     files = list(fixtures.rglob("*.sql"))
     files.sort()
@@ -60,7 +62,7 @@ def create_core_fixtures():
 
 @app.command()
 def create_fixtures(project: Optional[str] = None):
-    """Create fixtures for a given project"""
+    """Create database fixtures"""
     if project is None:
         return create_core_fixtures()
     database = project
@@ -98,8 +100,16 @@ def create_project(database: str, srid: int = 4326):
     if database.startswith("mapboard"):
         raise ValueError("Project names beginning with 'mapboard' are reserved")
 
-    compose("exec database", "createdb", "-U", "mapboard_admin", database)
     DATABASE_URL = connection_string(database)
+    if not database_exists(DATABASE_URL):
+        create_database(DATABASE_URL)
+
+    # Add a record to the core database
+    core_db.run_sql(
+        "INSERT INTO projects (slug, title, database, srid) VALUES (:slug, :title, :database, :srid)",
+        params=dict(slug=database, title=database, database=database, srid=srid),
+    )
+
     db = Database(DATABASE_URL)
     apply_fixtures(db, srid=srid)
 
@@ -114,15 +124,20 @@ def get_srid(db: Database) -> int:
 
 
 @app.command()
-def migrate(database: str, apply: bool = False, allow_unsafe: bool = False):
+def migrate(
+    database: Optional[str] = None, apply: bool = False, allow_unsafe: bool = False
+):
     """Migrate a Mapboard project database to the latest version"""
     console.print(f"Migrating database [cyan bold]{database}[/]...")
-    DATABASE_URL = connection_string(database)
-    db = Database(DATABASE_URL)
-
-    srid = get_srid(db)
-
-    _apply_fixtures = lambda _db: apply_fixtures(_db, srid=srid)
+    if database is None:
+        database = "mapboard"
+        db = core_db
+        _apply_fixtures = lambda _db: apply_core_fixtures(_db)
+    else:
+        DATABASE_URL = connection_string(database)
+        db = Database(DATABASE_URL)
+        srid = get_srid(db)
+        _apply_fixtures = lambda _db: apply_fixtures(_db, srid=srid)
 
     uri = db.engine.url._replace(database="mapboard_temp_migrate")
     migration = create_migration(
