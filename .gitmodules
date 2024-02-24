@@ -1,9 +1,6 @@
 [submodule "postgis-geologic-map"]
 	path = postgis-geologic-map
 	url = https://github.com/davenquinn/postgis-geologic-map.git
-[submodule "mapboard-server"]
-	path = mapboard-server
-	url = https://github.com/davenquinn/mapboard-server.git
 [submodule "mapboard-web/web-components"]
 	path = mapboard-web/web-components
 	url = https://github.com/UW-Macrostrat/web-components.git

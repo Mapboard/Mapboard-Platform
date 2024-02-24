@@ -35,7 +35,7 @@ load_dotenv(MAPBOARD_ROOT / ".env")
 app_ = Application(
     "Mapboard",
     restart_commands={"gateway": "caddy reload --config /etc/caddy/Caddyfile"},
-    app_module="mapboard.server",
+    log_modules=["mapboard.server"],
     compose_files=[MAPBOARD_ROOT / "system" / "docker-compose.yaml"],
 )
 app_.setup_logs(verbose=True)
