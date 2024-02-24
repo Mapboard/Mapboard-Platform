@@ -8,11 +8,10 @@ version = "0.1.0"
 
 [tool.poetry.dependencies]
 click = "^8.1.3"
-"macrostrat.app_frame" = "^1.0.5"
-"macrostrat.database" = "3.0.0-dev2"
-"macrostrat.dinosaur" = "3.0.0-dev1"
-"macrostrat.utils" = "^1.1.0"
-"mapboard.server" = { path = "../mapboard-server", develop = true }
+"macrostrat.app_frame" = "^1.2.3"
+"macrostrat.database" = "^3.1.2"
+"macrostrat.dinosaur" = "^3.0.0"
+"macrostrat.utils" = "^1.2.1"
 pytest = "^7.3.1"
 python = "^3.10"
 python-daemon = "^3.0.1"

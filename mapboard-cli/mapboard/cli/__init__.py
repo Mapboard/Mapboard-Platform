@@ -1,26 +1,27 @@
+import json
+import logging
 import sys
+from os import environ
 from pathlib import Path
+from subprocess import run
+from subprocess import run as _run
+from typing import Optional
+
+import click
+import pytest
+import typer
+from dotenv import load_dotenv
+from macrostrat.app_frame import Application
+from macrostrat.app_frame.compose import compose, console
 from macrostrat.database import Database, run_sql
 from macrostrat.dinosaur import create_migration, temp_database
-from typing import Optional
-from os import environ
-import pytest
-import click
-import logging
-import typer
-
-from subprocess import run as _run
-from psycopg2.sql import Identifier, Literal, SQL
-from macrostrat.app_frame import Application
-from sqlalchemy import text
 from macrostrat.utils import setup_stderr_logs
-from .definitions import MAPBOARD_ROOT
-from macrostrat.app_frame.compose import console, compose
-from subprocess import run
-from dotenv import load_dotenv
-import json
-from .mobile_export import export_database
+from psycopg2.sql import SQL, Identifier, Literal
+from sqlalchemy import text
+
 from .config import connection_string
+from .definitions import MAPBOARD_ROOT
+from .mobile_export import export_database
 
 # For some reason, environment variables aren't loading correctly
 # using the app_frame module. Or maybe, env vars set there
@@ -85,6 +86,7 @@ def create_project(database: str, srid: int = 4326):
 
 
 app.command(name="export")(export_database)
+
 
 def get_srid(db: Database) -> int:
     return db.session.execute(
@@ -158,34 +160,41 @@ def copy_database(database: str, new_database: str):
         shell=True,
     )
 
+
 # Allow extra args to be passed to yarn
 @app.command(
     name="topology",
     short_help="Watch topology for changes",
-    context_settings={"allow_extra_args": True, "ignore_unknown_options": True}
+    context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
 )
 def watch_topology(ctx: typer.Context, project: str):
     """Watch a project's topology for changes"""
-    cfg_dir = MAPBOARD_ROOT/"cfg"
+    cfg_dir = MAPBOARD_ROOT / "cfg"
     cfg_dir.mkdir(exist_ok=True)
-    cfg_file = cfg_dir/f"{project}.json"
+    cfg_file = cfg_dir / f"{project}.json"
     db_url = connection_string(project)
 
     db = Database(db_url)
+    console.log(db_url)
 
     srid = get_srid(db)
 
     cfg = {
-        "connection": db_url,
+        "connection": db_url.replace("localhost", "0.0.0.0"),
         "topo_schema": "map_topology",
         "data_schema": "mapboard",
         "srid": srid,
-        "tolerance": 0.1
+        "tolerance": 0.1,
     }
     cfg_file.write_text(json.dumps(cfg, indent=2))
-    workdir = MAPBOARD_ROOT/"postgis-geologic-map"
+    workdir = MAPBOARD_ROOT / "postgis-geologic-map"
 
-    run(["yarn", "run", "ts-node", "--transpile-only", "src/geologic-map", *ctx.args], cwd=workdir, env={**environ, "GEOLOGIC_MAP_CONFIG": str(cfg_file.absolute())})
+    run(
+        ["yarn", "run", "ts-node", "--transpile-only", "src/geologic-map", *ctx.args],
+        cwd=workdir,
+        env={**environ, "GEOLOGIC_MAP_CONFIG": str(cfg_file.absolute())},
+    )
+
 
 @click.command(
     "test",
