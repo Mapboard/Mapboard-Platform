@@ -12,7 +12,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy.sql import insert
 
-from ..config import connection_string
+from ..settings import connection_string
 
 install(show_locals=True)
 
