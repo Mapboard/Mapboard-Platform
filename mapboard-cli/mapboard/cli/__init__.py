@@ -4,7 +4,6 @@ import sys
 from os import environ
 from pathlib import Path
 from subprocess import run
-from subprocess import run as _run
 from typing import Optional
 
 import click
