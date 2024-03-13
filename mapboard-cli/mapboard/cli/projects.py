@@ -47,7 +47,7 @@ def copy_database(name: str, new_database: str):
     )
     db = Database(connection_string(name))
     new_db = Database(connection_string(new_database))
-    task = move_database(db.engine, new_db.engine)
+    task = move_database(db.engine, new_db.engine, postgres_container=POSTGRES_IMAGE)
     asyncio.run(task)
 
 
@@ -57,8 +57,7 @@ def dump_database(name: str, dumpfile: Path):
     DATABASE_URL = connection_string(name)
     db = Database(DATABASE_URL)
     task = pg_dump_to_file(dumpfile, db.engine, postgres_container=POSTGRES_IMAGE)
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(task)
+    asyncio.run(task)
 
 
 async def move_database(
@@ -68,7 +67,7 @@ async def move_database(
 ):
     """Transfer tables from one database to another."""
     source = await pg_dump(from_database, **kwargs)
-    dest = await pg_restore(to_database, **kwargs)
+    dest = await pg_restore(to_database, create=True, **kwargs)
 
     await asyncio.gather(
         asyncio.create_task(print_stream_progress(source.stdout, dest.stdin)),
