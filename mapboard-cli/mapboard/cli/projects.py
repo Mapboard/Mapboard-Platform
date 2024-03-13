@@ -57,7 +57,8 @@ def dump_database(name: str, dumpfile: Path):
     DATABASE_URL = connection_string(name)
     db = Database(DATABASE_URL)
     task = pg_dump_to_file(dumpfile, db.engine, postgres_container=POSTGRES_IMAGE)
-    asyncio.run(task)
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(task)
 
 
 async def move_database(
