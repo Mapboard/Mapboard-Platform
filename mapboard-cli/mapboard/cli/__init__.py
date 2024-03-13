@@ -1,50 +1,75 @@
-import sys
-from pathlib import Path
-from macrostrat.database import Database, run_sql
-from macrostrat.dinosaur import create_migration, temp_database
-from typing import Optional
-from os import environ
-import pytest
-import click
-import logging
-import typer
-
-from subprocess import run as _run
-from psycopg2.sql import Identifier, Literal, SQL
-from macrostrat.app_frame import Application
-from sqlalchemy import text
-from macrostrat.utils import setup_stderr_logs
-from .definitions import MAPBOARD_ROOT
-from macrostrat.app_frame.compose import console, compose
-from subprocess import run
-from dotenv import load_dotenv
 import json
-from .mobile_export import export_database
+import logging
+import sys
+from os import environ
+from pathlib import Path
+from subprocess import run
+from typing import Optional
+
+import click
+import pytest
+import typer
+from dotenv import load_dotenv
+from macrostrat.app_frame import Application
+from macrostrat.app_frame.compose import compose, console
+from macrostrat.database import Database, run_sql
+from macrostrat.database.utils import create_database, database_exists
+from macrostrat.dinosaur import create_migration, temp_database
+from macrostrat.utils import setup_stderr_logs
+from psycopg2.sql import SQL, Identifier, Literal
+from sqlalchemy import text
+
 from .config import connection_string
+from .definitions import MAPBOARD_ROOT
+from .mobile_export import export_database
 
 # For some reason, environment variables aren't loading correctly
 # using the app_frame module. Or maybe, env vars set there
 # aren't available outside of module code.
 load_dotenv(MAPBOARD_ROOT / ".env")
-
-
 # Could probably manage this within the application config.
 
 
 app_ = Application(
     "Mapboard",
-    restart_commands={"gateway": "caddy reload --config /etc/caddy/Caddyfile"},
-    app_module="mapboard.server",
+    restart_commands={
+        "gateway": "caddy reload --config /etc/caddy/Caddyfile",
+    },
+    log_modules=["mapboard.server"],
     compose_files=[MAPBOARD_ROOT / "system" / "docker-compose.yaml"],
 )
 app_.setup_logs(verbose=True)
 setup_stderr_logs("macrostrat.utils", level=logging.DEBUG)
 app = app_.control_command()
 
+core_db = Database(connection_string("mapboard"))
+
+
+def create_core_fixtures():
+    """Create fixtures for the core mapboard database"""
+    console.print("Creating fixtures in core database...")
+    if not database_exists(core_db.engine.url):
+        create_database(core_db.engine.url)
+    apply_core_fixtures(core_db)
+    # Reload Postgrest
+    core_db.run_query("SELECT pg_notify('pgrst', 'reload schema')")
+
+
+def apply_core_fixtures(db: Database):
+    fixtures = Path(__file__).parent.parent.parent / "core-fixtures"
+    files = list(fixtures.rglob("*.sql"))
+    files.sort()
+    for fixture in files:
+        db.run_sql(fixture)
+
 
 @app.command()
-def create_fixtures(database: str):
-    """Create fixtures in a given database"""
+def create_fixtures(project: Optional[str] = None):
+    """Create database fixtures"""
+    if project is None:
+        return create_core_fixtures()
+    database = project
+
     console.print(f"Creating fixtures in database [cyan bold]{database}[/]...")
     DATABASE_URL = connection_string(database)
     db = Database(DATABASE_URL)
@@ -78,13 +103,22 @@ def create_project(database: str, srid: int = 4326):
     if database.startswith("mapboard"):
         raise ValueError("Project names beginning with 'mapboard' are reserved")
 
-    compose("exec database", "createdb", "-U", "mapboard_admin", database)
     DATABASE_URL = connection_string(database)
+    if not database_exists(DATABASE_URL):
+        create_database(DATABASE_URL)
+
+    # Add a record to the core database
+    core_db.run_sql(
+        "INSERT INTO projects (slug, title, database, srid) VALUES (:slug, :title, :database, :srid)",
+        params=dict(slug=database, title=database, database=database, srid=srid),
+    )
+
     db = Database(DATABASE_URL)
     apply_fixtures(db, srid=srid)
 
 
 app.command(name="export")(export_database)
+
 
 def get_srid(db: Database) -> int:
     return db.session.execute(
@@ -93,15 +127,20 @@ def get_srid(db: Database) -> int:
 
 
 @app.command()
-def migrate(database: str, apply: bool = False, allow_unsafe: bool = False):
+def migrate(
+    database: Optional[str] = None, apply: bool = False, allow_unsafe: bool = False
+):
     """Migrate a Mapboard project database to the latest version"""
     console.print(f"Migrating database [cyan bold]{database}[/]...")
-    DATABASE_URL = connection_string(database)
-    db = Database(DATABASE_URL)
-
-    srid = get_srid(db)
-
-    _apply_fixtures = lambda _db: apply_fixtures(_db, srid=srid)
+    if database is None:
+        database = "mapboard"
+        db = core_db
+        _apply_fixtures = lambda _db: apply_core_fixtures(_db)
+    else:
+        DATABASE_URL = connection_string(database)
+        db = Database(DATABASE_URL)
+        srid = get_srid(db)
+        _apply_fixtures = lambda _db: apply_fixtures(_db, srid=srid)
 
     uri = db.engine.url._replace(database="mapboard_temp_migrate")
     migration = create_migration(
@@ -158,34 +197,41 @@ def copy_database(database: str, new_database: str):
         shell=True,
     )
 
+
 # Allow extra args to be passed to yarn
 @app.command(
     name="topology",
     short_help="Watch topology for changes",
-    context_settings={"allow_extra_args": True, "ignore_unknown_options": True}
+    context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
 )
 def watch_topology(ctx: typer.Context, project: str):
     """Watch a project's topology for changes"""
-    cfg_dir = MAPBOARD_ROOT/"cfg"
+    cfg_dir = MAPBOARD_ROOT / "cfg"
     cfg_dir.mkdir(exist_ok=True)
-    cfg_file = cfg_dir/f"{project}.json"
+    cfg_file = cfg_dir / f"{project}.json"
     db_url = connection_string(project)
 
     db = Database(db_url)
+    console.log(db_url)
 
     srid = get_srid(db)
 
     cfg = {
-        "connection": db_url,
+        "connection": db_url.replace("localhost", "0.0.0.0"),
         "topo_schema": "map_topology",
         "data_schema": "mapboard",
         "srid": srid,
-        "tolerance": 0.1
+        "tolerance": 0.1,
     }
     cfg_file.write_text(json.dumps(cfg, indent=2))
-    workdir = MAPBOARD_ROOT/"postgis-geologic-map"
+    workdir = MAPBOARD_ROOT / "postgis-geologic-map"
 
-    run(["yarn", "run", "ts-node", "--transpile-only", "src/geologic-map", *ctx.args], cwd=workdir, env={**environ, "GEOLOGIC_MAP_CONFIG": str(cfg_file.absolute())})
+    run(
+        ["yarn", "run", "ts-node", "--transpile-only", "src/geologic-map", *ctx.args],
+        cwd=workdir,
+        env={**environ, "GEOLOGIC_MAP_CONFIG": str(cfg_file.absolute())},
+    )
+
 
 @click.command(
     "test",

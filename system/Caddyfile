@@ -3,12 +3,10 @@
 	http_port 8000
 }
 
-:8000
-
-# Reverse proxy to the API and rewrite the path
-route /api* {
-	uri strip_prefix /api
-	reverse_proxy * app:8080
-	# Cors
-	header Access-Control-Allow-Origin *
+:8000 {
+	# Reverse proxy to the API
+	route /api/* {
+		uri strip_prefix /api
+		reverse_proxy postgrest:3000
+	}
 }
