@@ -32,7 +32,9 @@ load_dotenv(MAPBOARD_ROOT / ".env")
 
 app_ = Application(
     "Mapboard",
-    restart_commands={"gateway": "caddy reload --config /etc/caddy/Caddyfile"},
+    restart_commands={
+        "gateway": "caddy reload --config /etc/caddy/Caddyfile",
+    },
     log_modules=["mapboard.server"],
     compose_files=[MAPBOARD_ROOT / "system" / "docker-compose.yaml"],
 )
@@ -49,6 +51,8 @@ def create_core_fixtures():
     if not database_exists(core_db.engine.url):
         create_database(core_db.engine.url)
     apply_core_fixtures(core_db)
+    # Reload Postgrest
+    core_db.run_query("SELECT pg_notify('pgrst', 'reload schema')")
 
 
 def apply_core_fixtures(db: Database):
