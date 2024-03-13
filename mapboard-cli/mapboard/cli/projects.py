@@ -1,13 +1,16 @@
+from asyncio import run
 from os import environ
+from pathlib import Path
 
 from macrostrat.app_frame.compose import compose, console
 from macrostrat.database import Database
+from macrostrat.database.transfer import pg_dump_to_file
 from macrostrat.database.utils import create_database, database_exists
 from typer import Typer
 
 from .fixtures import apply_fixtures
 from .mobile_export import export_database
-from .settings import connection_string, core_db
+from .settings import POSTGRES_IMAGE, connection_string, core_db
 
 app = Typer(name="projects", no_args_is_help=True)
 
@@ -63,3 +66,12 @@ def copy_database(database: str, new_database: str):
         f'"pg_dump {database} | psql {new_database}"',
         shell=True,
     )
+
+
+@app.command(name="dump")
+def dump_database(name: str, dumpfile: Path):
+    """Dump a Mapboard project database to a file"""
+    DATABASE_URL = connection_string(name)
+    db = Database(DATABASE_URL)
+    task = pg_dump_to_file(dumpfile, db.engine, postgres_container=POSTGRES_IMAGE)
+    run(task)

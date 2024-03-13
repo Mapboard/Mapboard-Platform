@@ -6,6 +6,8 @@ from macrostrat.database import Database
 
 MAPBOARD_CLI_ROOT = Path(__file__).parent
 MAPBOARD_ROOT = MAPBOARD_CLI_ROOT.parent.parent.parent
+POSTGRES_IMAGE = environ.get("POSTGRES_IMAGE") or "postgis/postgis:13-3.1"
+
 
 # For some reason, environment variables aren't loading correctly
 # using the app_frame module. Or maybe, env vars set there

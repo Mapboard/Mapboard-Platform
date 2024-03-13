@@ -533,13 +533,13 @@ typer = ">=0.9.0,<0.10.0"
 
 [[package]]
 name = "macrostrat-database"
-version = "3.2.0"
+version = "3.2.1"
 description = "A SQLAlchemy-based database toolkit."
 optional = false
 python-versions = ">=3.8,<4.0"
 files = [
-    {file = "macrostrat_database-3.2.0-py3-none-any.whl", hash = "sha256:a1796766816c81157f8e7abf5765ebfed4ee690a4fc34ffc3097ae616d8aada6"},
-    {file = "macrostrat_database-3.2.0.tar.gz", hash = "sha256:c7b871e7f998797781242be35ea71d48db04491550dec96a04d731e2185f0eb5"},
+    {file = "macrostrat_database-3.2.1-py3-none-any.whl", hash = "sha256:45fe8ba01617e8a066ed43124bb11d1ba64cc877edf880566b0354f530f400db"},
+    {file = "macrostrat_database-3.2.1.tar.gz", hash = "sha256:edc6e2809a459c5f347d5ca59c39064d347b78a0637b48e2c03e09ed2466581c"},
 ]
 
 [package.dependencies]
@@ -1445,4 +1445,4 @@ ifaddr = ">=0.1.7"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "2ef6ddfc1ad5092661dead933233c3c610438228062aef3a83df0d65b88c365b"
+content-hash = "4768bd010d2999d644308404d0f3954b39b9b3cc4bb8356cd32ba21b1b1df059"
