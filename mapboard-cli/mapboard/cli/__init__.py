@@ -2,33 +2,22 @@ import json
 import logging
 import sys
 from os import environ
-from pathlib import Path
 from subprocess import run
 from typing import Optional
 
 import click
 import pytest
 import typer
-from dotenv import load_dotenv
 from macrostrat.app_frame import Application
 from macrostrat.app_frame.compose import compose, console
 from macrostrat.database import Database, run_sql
-from macrostrat.database.utils import create_database, database_exists
 from macrostrat.dinosaur import create_migration, temp_database
 from macrostrat.utils import setup_stderr_logs
-from psycopg2.sql import SQL, Identifier, Literal
 from sqlalchemy import text
 
-from .config import connection_string
-from .definitions import MAPBOARD_ROOT
-from .mobile_export import export_database
-
-# For some reason, environment variables aren't loading correctly
-# using the app_frame module. Or maybe, env vars set there
-# aren't available outside of module code.
-load_dotenv(MAPBOARD_ROOT / ".env")
-# Could probably manage this within the application config.
-
+from .fixtures import apply_core_fixtures, apply_fixtures, create_core_fixtures
+from .projects import app as projects_app
+from .settings import MAPBOARD_ROOT, connection_string, core_db
 
 app_ = Application(
     "Mapboard",
@@ -42,25 +31,7 @@ app_.setup_logs(verbose=True)
 setup_stderr_logs("macrostrat.utils", level=logging.DEBUG)
 app = app_.control_command()
 
-core_db = Database(connection_string("mapboard"))
-
-
-def create_core_fixtures():
-    """Create fixtures for the core mapboard database"""
-    console.print("Creating fixtures in core database...")
-    if not database_exists(core_db.engine.url):
-        create_database(core_db.engine.url)
-    apply_core_fixtures(core_db)
-    # Reload Postgrest
-    core_db.run_query("SELECT pg_notify('pgrst', 'reload schema')")
-
-
-def apply_core_fixtures(db: Database):
-    fixtures = Path(__file__).parent.parent.parent / "core-fixtures"
-    files = list(fixtures.rglob("*.sql"))
-    files.sort()
-    for fixture in files:
-        db.run_sql(fixture)
+app.add_typer(projects_app, help="Manage Mapboard projects")
 
 
 @app.command()
@@ -77,47 +48,6 @@ def create_fixtures(project: Optional[str] = None):
     if srid is not None:
         srid = int(srid)
     apply_fixtures(db, srid=srid)
-
-
-def apply_fixtures(database: Database, srid: Optional[int] = 4326):
-    fixtures = Path(__file__).parent / "fixtures" / "server"
-    files = list(fixtures.rglob("*.sql"))
-    files.sort()
-    for fixture in files:
-        database.run_sql(
-            fixture,
-            params=dict(
-                data_schema=Identifier("mapboard"),
-                topo_schema=Identifier("map_topology"),
-                cache_schema=Identifier("mapboard_cache"),
-                index_prefix=SQL("mapboard"),
-                srid=Literal(srid),
-                tms_srid=Literal(3857),
-            ),
-        )
-
-
-@app.command(name="create")
-def create_project(database: str, srid: int = 4326):
-    """Create a Mapboard project database"""
-    if database.startswith("mapboard"):
-        raise ValueError("Project names beginning with 'mapboard' are reserved")
-
-    DATABASE_URL = connection_string(database)
-    if not database_exists(DATABASE_URL):
-        create_database(DATABASE_URL)
-
-    # Add a record to the core database
-    core_db.run_sql(
-        "INSERT INTO projects (slug, title, database, srid) VALUES (:slug, :title, :database, :srid)",
-        params=dict(slug=database, title=database, database=database, srid=srid),
-    )
-
-    db = Database(DATABASE_URL)
-    apply_fixtures(db, srid=srid)
-
-
-app.command(name="export")(export_database)
 
 
 def get_srid(db: Database) -> int:
@@ -166,36 +96,6 @@ def migrate(
             run_sql(db.session, stmt)
         else:
             print(stmt, file=sys.stdout)
-
-
-@app.command()
-def copy_database(database: str, new_database: str):
-    """Copy a Mapboard project database"""
-    console.print(
-        f"Copying database [cyan bold]{database}[/] to [cyan bold]{new_database}[/]..."
-    )
-
-    env = dict(
-        PGUSER=environ.get("POSTGRES_USER") or "postgres",
-        PGPASSWORD=environ.get("POSTGRES_PASSWORD") or "postgres",
-        PGHOST="localhost",
-        PGPORT="5432",
-    )
-
-    envargs = []
-    for k, v in env.items():
-        envargs.extend(["-e", f"{k}={v}"])
-
-    compose("exec", *envargs, "database", "createdb", new_database)
-    compose(
-        "exec",
-        *envargs,
-        "database",
-        "bash",
-        "-c",
-        f'"pg_dump {database} | psql {new_database}"',
-        shell=True,
-    )
 
 
 # Allow extra args to be passed to yarn
