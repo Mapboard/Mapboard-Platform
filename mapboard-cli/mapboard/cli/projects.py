@@ -1,11 +1,12 @@
-from asyncio import run
-from os import environ
+import asyncio
 from pathlib import Path
 
-from macrostrat.app_frame.compose import compose, console
+from macrostrat.app_frame.compose import console
 from macrostrat.database import Database
-from macrostrat.database.transfer import pg_dump_to_file
+from macrostrat.database.transfer import pg_dump, pg_dump_to_file, pg_restore
+from macrostrat.database.transfer.utils import print_stdout, print_stream_progress
 from macrostrat.database.utils import create_database, database_exists
+from sqlalchemy import Engine
 from typer import Typer
 
 from .fixtures import apply_fixtures
@@ -39,33 +40,15 @@ app.command(name="export")(export_database)
 
 
 @app.command(name="copy")
-def copy_database(database: str, new_database: str):
+def copy_database(name: str, new_database: str):
     """Copy a Mapboard project database"""
     console.print(
-        f"Copying database [cyan bold]{database}[/] to [cyan bold]{new_database}[/]..."
+        f"Copying database [cyan bold]{name}[/] to [cyan bold]{new_database}[/]..."
     )
-
-    env = dict(
-        PGUSER=environ.get("POSTGRES_USER") or "postgres",
-        PGPASSWORD=environ.get("POSTGRES_PASSWORD") or "postgres",
-        PGHOST="localhost",
-        PGPORT="5432",
-    )
-
-    envargs = []
-    for k, v in env.items():
-        envargs.extend(["-e", f"{k}={v}"])
-
-    compose("exec", *envargs, "database", "createdb", new_database)
-    compose(
-        "exec",
-        *envargs,
-        "database",
-        "bash",
-        "-c",
-        f'"pg_dump {database} | psql {new_database}"',
-        shell=True,
-    )
+    db = Database(connection_string(name))
+    new_db = Database(connection_string(new_database))
+    task = move_database(db.engine, new_db.engine)
+    asyncio.run(task)
 
 
 @app.command(name="dump")
@@ -74,4 +57,20 @@ def dump_database(name: str, dumpfile: Path):
     DATABASE_URL = connection_string(name)
     db = Database(DATABASE_URL)
     task = pg_dump_to_file(dumpfile, db.engine, postgres_container=POSTGRES_IMAGE)
-    run(task)
+    asyncio.run(task)
+
+
+async def move_database(
+    from_database: Engine,
+    to_database: Engine,
+    **kwargs,
+):
+    """Transfer tables from one database to another."""
+    source = await pg_dump(from_database, **kwargs)
+    dest = await pg_restore(to_database, **kwargs)
+
+    await asyncio.gather(
+        asyncio.create_task(print_stream_progress(source.stdout, dest.stdin)),
+        asyncio.create_task(print_stdout(source.stderr)),
+        asyncio.create_task(print_stdout(dest.stderr)),
+    )

@@ -9,7 +9,7 @@ import click
 import pytest
 import typer
 from macrostrat.app_frame import Application
-from macrostrat.app_frame.compose import compose, console
+from macrostrat.app_frame.compose import console
 from macrostrat.database import Database, run_sql
 from macrostrat.dinosaur import create_migration, temp_database
 from macrostrat.utils import setup_stderr_logs

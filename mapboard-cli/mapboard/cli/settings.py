@@ -6,7 +6,6 @@ from macrostrat.database import Database
 
 MAPBOARD_CLI_ROOT = Path(__file__).parent
 MAPBOARD_ROOT = MAPBOARD_CLI_ROOT.parent.parent.parent
-POSTGRES_IMAGE = environ.get("POSTGRES_IMAGE") or "postgis/postgis:13-3.1"
 
 
 # For some reason, environment variables aren't loading correctly
@@ -23,5 +22,7 @@ def connection_string(database: str):
     """Get a connection string for a given database"""
     return f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@localhost:{MAPBOARD_DB_PORT}/{database}"
 
+
+POSTGRES_IMAGE = environ.get("POSTGRES_IMAGE") or "postgis/postgis:13-3.1"
 
 core_db = Database(connection_string("mapboard"))
