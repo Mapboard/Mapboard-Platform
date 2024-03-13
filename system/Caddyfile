@@ -3,7 +3,10 @@
 	http_port 8000
 }
 
-:8000
-
-# Reverse proxy to the API
-reverse_proxy postgrest:3000
+:8000 {
+	# Reverse proxy to the API
+	route /api/* {
+		uri strip_prefix /api
+		reverse_proxy postgrest:3000
+	}
+}
