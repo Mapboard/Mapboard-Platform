@@ -65,7 +65,6 @@ def migrate(
     database: Optional[str] = None, apply: bool = False, allow_unsafe: bool = False
 ):
     """Migrate a Mapboard project database to the latest version"""
-    console.print(f"Migrating database [cyan bold]{database}[/]...")
     if database is None:
         database = "mapboard"
         db = core_db
@@ -75,6 +74,8 @@ def migrate(
         db = Database(DATABASE_URL)
         srid = get_srid(db)
         _apply_fixtures = lambda _db: apply_fixtures(_db, srid=srid)
+
+    console.print(f"Migrating database [cyan bold]{database}[/]...")
 
     uri = db.engine.url._replace(database="mapboard_temp_migrate")
     migration = create_migration(
