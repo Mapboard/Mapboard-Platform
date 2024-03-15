@@ -15,12 +15,14 @@ load_dotenv(MAPBOARD_ROOT / ".env")
 # Could probably manage this within the application config.
 
 
-def connection_string(database: str):
+def connection_string(database: str, container_internal: bool = False):
     POSTGRES_USER = environ.get("POSTGRES_USER") or "postgres"
     POSTGRES_PASSWORD = environ.get("POSTGRES_PASSWORD") or "postgres"
-    MAPBOARD_DB_PORT = environ.get("MAPBOARD_DB_PORT") or 54398
+    PORT = environ.get("MAPBOARD_DB_PORT") or 54398
     """Get a connection string for a given database"""
-    return f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@localhost:{MAPBOARD_DB_PORT}/{database}"
+    HOST = environ.get("POSTGRES_HOST") or "localhost"
+
+    return f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{HOST}:{PORT}/{database}"
 
 
 POSTGRES_IMAGE = environ.get("POSTGRES_IMAGE") or "postgis/postgis:13-3.1"

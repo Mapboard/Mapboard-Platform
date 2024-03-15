@@ -1,23 +1,21 @@
 import json
 import logging
-import sys
 from os import environ
 from subprocess import run
-from typing import Optional
 
 import click
 import pytest
 import typer
 from macrostrat.app_frame import Application
 from macrostrat.app_frame.compose import console
-from macrostrat.database import Database, run_sql
-from macrostrat.dinosaur import create_migration, temp_database
+from macrostrat.database import Database
+from macrostrat.dinosaur import temp_database
 from macrostrat.utils import setup_stderr_logs
-from sqlalchemy import text
 
-from .fixtures import apply_core_fixtures, apply_fixtures, create_core_fixtures
+from .database import db_app, get_srid
+from .fixtures import apply_fixtures
 from .projects import app as projects_app
-from .settings import MAPBOARD_ROOT, connection_string, core_db
+from .settings import MAPBOARD_ROOT, connection_string
 
 app_ = Application(
     "Mapboard",
@@ -32,70 +30,7 @@ setup_stderr_logs("macrostrat.utils", level=logging.DEBUG)
 app = app_.control_command()
 
 app.add_typer(projects_app, help="Manage Mapboard projects")
-
-
-@app.command()
-def create_fixtures(project: Optional[str] = None):
-    """Create database fixtures"""
-    if project is None:
-        return create_core_fixtures()
-    database = project
-
-    console.print(f"Creating fixtures in database [cyan bold]{database}[/]...")
-    DATABASE_URL = connection_string(database)
-    db = Database(DATABASE_URL)
-    srid = environ.get("MAPBOARD_SRID")
-    if srid is not None:
-        srid = int(srid)
-    apply_fixtures(db, srid=srid)
-
-
-def get_srid(db: Database) -> int:
-    return db.session.execute(
-        text("SELECT Find_SRID('mapboard', 'linework', 'geometry')")
-    ).scalar()
-
-
-@app.command()
-def migrate(
-    database: Optional[str] = None, apply: bool = False, allow_unsafe: bool = False
-):
-    """Migrate a Mapboard project database to the latest version"""
-    console.print(f"Migrating database [cyan bold]{database}[/]...")
-    if database is None:
-        database = "mapboard"
-        db = core_db
-        _apply_fixtures = lambda _db: apply_core_fixtures(_db)
-    else:
-        DATABASE_URL = connection_string(database)
-        db = Database(DATABASE_URL)
-        srid = get_srid(db)
-        _apply_fixtures = lambda _db: apply_fixtures(_db, srid=srid)
-
-    uri = db.engine.url._replace(database="mapboard_temp_migrate")
-    migration = create_migration(
-        db,
-        _apply_fixtures,
-        target_url=uri,
-        safe=not allow_unsafe,
-        redirect=sys.stderr,
-    )
-    statements = list(migration.changes_omitting_views())
-    n_statements = len(statements)
-    if not allow_unsafe:
-        statements = [stmt for stmt in statements if "drop" not in stmt.lower()]
-    n_pruned = len(statements)
-    if n_pruned < n_statements:
-        console.print(f"Ignored {n_statements - n_pruned} unsafe statements")
-
-    console.print("===MIGRATION BELOW THIS LINE===")
-    for stmt in statements:
-        if not allow_unsafe and "drop" in stmt.lower():
-            continue
-        if apply:
-            run_sql(db.session, stmt)
-        else:
-            print(stmt, file=sys.stdout)
+app.add_typer(db_app, help="Database management")
 
 
 # Allow extra args to be passed to yarn
