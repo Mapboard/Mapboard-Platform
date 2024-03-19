@@ -5,8 +5,13 @@
 
 :8000 {
 	# Reverse proxy to the API
+	route /pg-api/* {
+		uri strip_prefix /pg-api
+		reverse_proxy postgrest:3000
+	}
+
 	route /api/* {
 		uri strip_prefix /api
-		reverse_proxy postgrest:3000
+		reverse_proxy mapboard_server:8080
 	}
 }

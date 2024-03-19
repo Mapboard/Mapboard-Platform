@@ -42,7 +42,16 @@ services:
       - PGRST_DB_ANON_ROLE=web_anon
     ports:
       - "3000:3000"
-    
+  mapboard_server:
+    image: mapboard-server
+    restart: unless-stopped
+    environment:
+      - MAPBOARD_DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@database:5432/${POSTGRES_DB}
+  topology_manager:
+    build: ../postgis-geologic-map
+    command: ["echo", "Hello, world!"]
+
+
 volumes:
   db_cluster:
 

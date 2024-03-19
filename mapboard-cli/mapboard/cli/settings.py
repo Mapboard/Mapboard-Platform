@@ -16,11 +16,15 @@ load_dotenv(MAPBOARD_ROOT / ".env")
 
 
 def connection_string(database: str, container_internal: bool = False):
+    """Get a connection string for a given database"""
     POSTGRES_USER = environ.get("POSTGRES_USER") or "postgres"
     POSTGRES_PASSWORD = environ.get("POSTGRES_PASSWORD") or "postgres"
-    PORT = environ.get("MAPBOARD_DB_PORT") or 54398
-    """Get a connection string for a given database"""
-    HOST = environ.get("POSTGRES_HOST") or "localhost"
+    if container_internal:
+        PORT = 5432
+        HOST = "database"
+    else:
+        PORT = environ.get("MAPBOARD_DB_PORT") or 54398
+        HOST = environ.get("POSTGRES_HOST") or "localhost"
 
     return f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{HOST}:{PORT}/{database}"
 
