@@ -46,7 +46,7 @@ services:
     image: mapboard-server
     restart: unless-stopped
     environment:
-      - MAPBOARD_DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@database:5432/provo
+      - MAPBOARD_DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@database:5432/${POSTGRES_DB}
   topology_manager:
     build: ../postgis-geologic-map
     command: ["echo", "Hello, world!"]
