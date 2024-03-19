@@ -9,4 +9,9 @@
 		uri strip_prefix /api
 		reverse_proxy postgrest:3000
 	}
+
+	route /edit/* {
+		uri strip_prefix /edit
+		reverse_proxy mapboard_server:8080
+	}
 }

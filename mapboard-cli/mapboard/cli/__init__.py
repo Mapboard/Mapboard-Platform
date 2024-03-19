@@ -1,5 +1,7 @@
 import json
 import logging
+from base64 import b64encode
+from binascii import hexlify
 from os import environ
 from subprocess import run
 
@@ -7,7 +9,7 @@ import click
 import pytest
 import typer
 from macrostrat.app_frame import Application
-from macrostrat.app_frame.compose import console
+from macrostrat.app_frame.compose import compose, console
 from macrostrat.database import Database
 from macrostrat.dinosaur import temp_database
 from macrostrat.utils import setup_stderr_logs
@@ -43,28 +45,32 @@ def watch_topology(ctx: typer.Context, project: str):
     """Watch a project's topology for changes"""
     cfg_dir = MAPBOARD_ROOT / "cfg"
     cfg_dir.mkdir(exist_ok=True)
-    cfg_file = cfg_dir / f"{project}.json"
-    db_url = connection_string(project)
+    db_url = connection_string(project, container_internal=True)
 
-    db = Database(db_url)
-    console.log(db_url)
-
+    db_url_external = connection_string(project).replace("localhost", "0.0.0.0")
+    db = Database(db_url_external)
     srid = get_srid(db)
 
     cfg = {
-        "connection": db_url.replace("localhost", "0.0.0.0"),
+        "connection": db_url,
         "topo_schema": "map_topology",
         "data_schema": "mapboard",
         "srid": srid,
         "tolerance": 0.1,
     }
-    cfg_file.write_text(json.dumps(cfg, indent=2))
-    workdir = MAPBOARD_ROOT / "postgis-geologic-map"
+    cfg_str = json.dumps(cfg)
+    # Encode to hex
+    cfg_str = hexlify(cfg_str.encode("utf-8")).decode("utf-8")
 
-    run(
-        ["yarn", "run", "ts-node", "--transpile-only", "src/geologic-map", *ctx.args],
-        cwd=workdir,
-        env={**environ, "GEOLOGIC_MAP_CONFIG": str(cfg_file.absolute())},
+    # escape the JSON string
+
+    compose(
+        "run",
+        "--rm",
+        "--env",
+        f"GEOLOGIC_MAP_CONFIG_JSON={cfg_str}",
+        "topology_manager",
+        *ctx.args,
     )
 
 
