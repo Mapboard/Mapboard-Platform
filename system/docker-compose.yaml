@@ -6,6 +6,8 @@ services:
     restart: unless-stopped
     ports:
       - "8000:8000"
+    environment:
+      - MAPBOARD_API_ADDRESS
     volumes:
       # Caddyfile
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
@@ -46,6 +48,8 @@ services:
     build: ${MAPBOARD_SERVER_SRC_DIR}
     image: mapboard-server
     restart: unless-stopped
+    profiles:
+      - production
     environment:
       - MAPBOARD_DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@database:5432/${POSTGRES_DB}
       - LOG_LEVEL=info

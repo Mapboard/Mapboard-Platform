@@ -19,6 +19,21 @@ from .fixtures import apply_fixtures
 from .projects import app as projects_app
 from .settings import MAPBOARD_ROOT, connection_string
 
+
+def prepare_compose_env(app) -> dict[str, str]:
+    """Prepare the environment for docker-compose"""
+    if environ.get("COMPOSE_PROFILES") != None:
+        # We're using a user-set custom profile; don't override it
+        return {}
+
+    compose_profiles = []
+
+    if environ.get("MAPBOARD_API_ADDRESS") == None:
+        compose_profiles.append("production")
+
+    return {"COMPOSE_PROFILES": " ".join(compose_profiles)}
+
+
 app_ = Application(
     "Mapboard",
     restart_commands={
@@ -26,6 +41,7 @@ app_ = Application(
     },
     log_modules=["mapboard.server"],
     compose_files=[MAPBOARD_ROOT / "system" / "docker-compose.yaml"],
+    env=prepare_compose_env,
 )
 app_.setup_logs(verbose=True)
 setup_stderr_logs("macrostrat.utils", level=logging.DEBUG)
