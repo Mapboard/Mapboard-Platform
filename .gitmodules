@@ -1,5 +1,5 @@
 [submodule "postgis-geologic-map"]
-	path = postgis-geologic-map
+	path = topology-manager
 	url = https://github.com/davenquinn/postgis-geologic-map.git
 [submodule "mapboard-web/web-components"]
 	path = mapboard-web/web-components
