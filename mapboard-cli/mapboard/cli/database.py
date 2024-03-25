@@ -10,7 +10,7 @@ from macrostrat.database.transfer.utils import raw_database_url
 from macrostrat.dinosaur import create_migration
 from macrostrat.utils.shell import run
 from sqlalchemy import text
-from typer import Context, Typer
+from typer import Argument, Context, Typer
 
 from .fixtures import apply_core_fixtures, apply_fixtures, create_core_fixtures
 from .settings import connection_string, core_db
@@ -34,9 +34,10 @@ def create_fixtures(project: Optional[str] = None):
     apply_fixtures(db, srid=srid)
 
 
-def get_srid(db: Database) -> Optional[int]:
+def get_srid(db: Database, schema="mapboard") -> Optional[int]:
     return db.session.execute(
-        text("SELECT Find_SRID('mapboard', 'linework', 'geometry')")
+        text("SELECT Find_SRID(:schema, :table, 'geometry')"),
+        dict(schema=schema, table="linework"),
     ).scalar()
 
 
@@ -62,18 +63,27 @@ def psql(ctx: Context, database: Optional[str] = None):
 
 @db_app.command()
 def migrate(
-    database: Optional[str] = None, apply: bool = False, allow_unsafe: bool = False
+    project: Optional[str] = Argument(None),
+    apply: bool = False,
+    allow_unsafe: bool = False,
 ):
     """Migrate a Mapboard project database to the latest version"""
-    if database is None:
+    if project is None:
+        project = "mapboard"
         database = "mapboard"
         db = core_db
         _apply_fixtures = lambda _db: apply_core_fixtures(_db)
     else:
+        res = core_db.run_query(
+            "SELECT database, data_schema, topo_schema, srid FROM projects WHERE slug = :slug",
+            dict(slug=project),
+        ).one()
+        database = res.database
         DATABASE_URL = connection_string(database)
         db = Database(DATABASE_URL)
-        srid = get_srid(db)
-        _apply_fixtures = lambda _db: apply_fixtures(_db, srid=srid)
+        _apply_fixtures = lambda _db: apply_fixtures(
+            _db, srid=res.srid, data_schema=res.data_schema, topo_schema=res.topo_schema
+        )
 
     console.print(f"Migrating database [cyan bold]{database}[/]...")
 

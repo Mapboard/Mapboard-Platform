@@ -27,18 +27,24 @@ def apply_core_fixtures(db: Database):
         db.run_sql(fixture)
 
 
-def apply_fixtures(database: Database, srid: Optional[int] = 4326):
-    fixtures = Path(__file__).parent / "fixtures" / "server"
+def apply_fixtures(
+    database: Database,
+    *,
+    srid: Optional[int] = 4326,
+    data_schema: str = "mapboard",
+    topo_schema: str = "map_topology",
+):
+    fixtures = Path(__file__).parent / "fixtures"
     files = list(fixtures.rglob("*.sql"))
     files.sort()
     for fixture in files:
         database.run_sql(
             fixture,
             params=dict(
-                data_schema=Identifier("mapboard"),
-                topo_schema=Identifier("map_topology"),
-                cache_schema=Identifier("mapboard_cache"),
-                index_prefix=SQL("mapboard"),
+                data_schema=Identifier(data_schema),
+                topo_schema=Identifier(topo_schema),
+                index_prefix=SQL(data_schema),
+                data_schema_name=Literal(data_schema),
                 srid=Literal(srid),
                 tms_srid=Literal(3857),
             ),
