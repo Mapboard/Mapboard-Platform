@@ -61,6 +61,19 @@ def psql(ctx: Context, database: Optional[str] = None):
     run("docker", "run", *flags, "postgres:15", "psql", DATABASE_URL, *ctx.args)
 
 
+def project_params(project: str):
+    res = core_db.run_query(
+        "SELECT database, data_schema, topo_schema, srid FROM projects WHERE slug = :slug",
+        dict(slug=project),
+    ).one()
+    return dict(
+        database=res.database,
+        data_schema=res.data_schema,
+        topo_schema=res.topo_schema,
+        srid=res.srid,
+    )
+
+
 @db_app.command()
 def migrate(
     project: Optional[str] = Argument(None),
@@ -74,16 +87,11 @@ def migrate(
         db = core_db
         _apply_fixtures = lambda _db: apply_core_fixtures(_db)
     else:
-        res = core_db.run_query(
-            "SELECT database, data_schema, topo_schema, srid FROM projects WHERE slug = :slug",
-            dict(slug=project),
-        ).one()
-        database = res.database
+        params = project_params(project)
+        database = params.pop("database")
         DATABASE_URL = connection_string(database)
         db = Database(DATABASE_URL)
-        _apply_fixtures = lambda _db: apply_fixtures(
-            _db, srid=res.srid, data_schema=res.data_schema, topo_schema=res.topo_schema
-        )
+        _apply_fixtures = lambda _db: apply_fixtures(_db, **params)
 
     console.print(f"Migrating database [cyan bold]{database}[/]...")
 
