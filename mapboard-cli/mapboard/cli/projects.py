@@ -2,10 +2,10 @@ import asyncio
 from pathlib import Path
 
 from macrostrat.app_frame.compose import console
-from macrostrat.database import Database
 from macrostrat.database.transfer import pg_dump, pg_dump_to_file, pg_restore
 from macrostrat.database.transfer.utils import print_stdout, print_stream_progress
 from macrostrat.database.utils import create_database, database_exists
+from mapboard.topology_manager.database import Database
 from sqlalchemy import Engine
 from typer import Typer
 
@@ -17,7 +17,7 @@ app = Typer(name="projects", no_args_is_help=True)
 
 
 @app.command(name="create")
-def create_project(database: str, srid: int = 4326):
+def create_project(database: str, srid: int = 4326, tolerance: float = 0.00001):
     """Create a Mapboard project database"""
     if database.startswith("mapboard"):
         raise ValueError("Project names beginning with 'mapboard' are reserved")
@@ -26,14 +26,21 @@ def create_project(database: str, srid: int = 4326):
     if not database_exists(DATABASE_URL):
         create_database(DATABASE_URL)
 
+    params = dict(
+        srid=srid,
+        data_schema="mapboard",
+        topo_schema="map_topology",
+        tolerance=tolerance,
+    )
+
     # Add a record to the core database
     core_db.run_sql(
-        "INSERT INTO projects (slug, title, database, srid) VALUES (:slug, :title, :database, :srid)",
-        params=dict(slug=database, title=database, database=database, srid=srid),
+        "INSERT INTO projects (slug, title, database, srid, data_schema, topo_schema) VALUES (:slug, :title, :database, :srid, :data_schema, :topo_schema)",
+        params=dict(slug=database, title=database, database=database, **params),
     )
 
     db = Database(DATABASE_URL)
-    apply_fixtures(db, srid=srid)
+    apply_fixtures(db, **params)
 
 
 app.command(name="export")(export_database)

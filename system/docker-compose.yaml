@@ -1,7 +1,7 @@
 version: "3"
 services:
   gateway:
-    # Traefik reverse proxy. We might go back to Nginx or replace this with Caddy in the future.
+    # Reverse proxy
     image: "caddy:2"
     restart: unless-stopped
     ports:
@@ -9,11 +9,8 @@ services:
     environment:
       - MAPBOARD_API_ADDRESS
     volumes:
-      # Caddyfile
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
   database:
-    # PostgreSQL 13 is needed in order to allow force-dropping the database
-    # (in testing mode)
     image: ${POSTGRES_IMAGE:-postgis/postgis:15-3.4}
     restart: unless-stopped
     environment:
@@ -42,8 +39,6 @@ services:
       - PGRST_DB_URI=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@database:5432/${POSTGRES_DB}
       - PGRST_DB_SCHEMA=mapboard_api
       - PGRST_DB_ANON_ROLE=web_anon
-    ports:
-      - "3000:3000"
   mapboard_server:
     build: ${MAPBOARD_SERVER_SRC_DIR}
     image: mapboard-server

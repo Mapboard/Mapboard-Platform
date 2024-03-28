@@ -2,8 +2,9 @@ from pathlib import Path
 from typing import Optional
 
 from macrostrat.app_frame.compose import console
-from macrostrat.database import Database
 from macrostrat.database.utils import create_database, database_exists
+from mapboard.topology_manager.commands import _create_tables
+from mapboard.topology_manager.database import Database
 from psycopg2.sql import SQL, Identifier, Literal
 
 from .settings import core_db
@@ -29,23 +30,16 @@ def apply_core_fixtures(db: Database):
 
 def apply_fixtures(
     database: Database,
-    *,
-    srid: Optional[int] = 4326,
-    data_schema: str = "mapboard",
-    topo_schema: str = "map_topology",
+    **kwargs,
 ):
+    database.set_params(**kwargs)
+
+    _create_tables(database)
+    database.params["tms_srid"] = Literal(3857)
+
     fixtures = Path(__file__).parent / "fixtures"
     files = list(fixtures.rglob("*.sql"))
     files.sort()
     for fixture in files:
-        database.run_sql(
-            fixture,
-            params=dict(
-                data_schema=Identifier(data_schema),
-                topo_schema=Identifier(topo_schema),
-                index_prefix=SQL(data_schema),
-                data_schema_name=Literal(data_schema),
-                srid=Literal(srid),
-                tms_srid=Literal(3857),
-            ),
-        )
+        console.print(fixture)
+        database.run_sql(fixture)

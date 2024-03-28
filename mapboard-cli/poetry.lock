@@ -570,9 +570,9 @@ name = "mapboard-topology-manager"
 version = "4.0.0"
 description = "A PostGIS-based iterative system for building geologic maps"
 optional = false
-python-versions = "^3.11"
+python-versions = "^3.10"
 files = []
-develop = false
+develop = true
 
 [package.dependencies]
 "macrostrat.database" = "^3.2.1"
@@ -1425,4 +1425,4 @@ ifaddr = ">=0.1.7"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "801db2c4bca85f8171f0ee0f2b6d8097afe522a25214bac8fd267bf97e038b1c"
+content-hash = "c32b421e93cc1a67fd9a6cbeedb3097d2d367566ca728f312f4d3951b03f0ba1"

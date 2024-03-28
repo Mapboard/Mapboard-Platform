@@ -5,10 +5,11 @@ from sys import stdin
 from typing import Optional
 
 from macrostrat.app_frame.compose import console
-from macrostrat.database import Database, run_sql
+from macrostrat.database import run_sql
 from macrostrat.database.transfer.utils import raw_database_url
 from macrostrat.dinosaur import create_migration
 from macrostrat.utils.shell import run
+from mapboard.topology_manager.database import Database
 from sqlalchemy import text
 from typer import Argument, Context, Typer
 
@@ -19,7 +20,11 @@ db_app = Typer(name="db", no_args_is_help=True)
 
 
 @db_app.command("init")
-def create_fixtures(project: Optional[str] = None):
+def create_fixtures(
+    project: Optional[str] = None,
+    srid: Optional[int] = None,
+    tolerance: Optional[int] = None,
+):
     """Create database fixtures"""
     if project is None:
         return create_core_fixtures()
@@ -28,10 +33,7 @@ def create_fixtures(project: Optional[str] = None):
     console.print(f"Creating fixtures in database [cyan bold]{database}[/]...")
     DATABASE_URL = connection_string(database)
     db = Database(DATABASE_URL)
-    srid = environ.get("MAPBOARD_SRID")
-    if srid is not None:
-        srid = int(srid)
-    apply_fixtures(db, srid=srid)
+    apply_fixtures(db, srid=srid, tolerance=tolerance)
 
 
 def get_srid(db: Database, schema="mapboard") -> Optional[int]:
