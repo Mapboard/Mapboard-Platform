@@ -5,12 +5,13 @@ from sys import stdin
 from typing import Optional
 
 from macrostrat.app_frame.compose import console
-from macrostrat.database import Database, run_sql
+from macrostrat.database import run_sql
 from macrostrat.database.transfer.utils import raw_database_url
 from macrostrat.dinosaur import create_migration
 from macrostrat.utils.shell import run
+from mapboard.topology_manager.database import Database
 from sqlalchemy import text
-from typer import Context, Typer
+from typer import Argument, Context, Typer
 
 from .fixtures import apply_core_fixtures, apply_fixtures, create_core_fixtures
 from .settings import connection_string, core_db
@@ -19,7 +20,11 @@ db_app = Typer(name="db", no_args_is_help=True)
 
 
 @db_app.command("init")
-def create_fixtures(project: Optional[str] = None):
+def create_fixtures(
+    project: Optional[str] = None,
+    srid: Optional[int] = None,
+    tolerance: Optional[int] = None,
+):
     """Create database fixtures"""
     if project is None:
         return create_core_fixtures()
@@ -28,15 +33,13 @@ def create_fixtures(project: Optional[str] = None):
     console.print(f"Creating fixtures in database [cyan bold]{database}[/]...")
     DATABASE_URL = connection_string(database)
     db = Database(DATABASE_URL)
-    srid = environ.get("MAPBOARD_SRID")
-    if srid is not None:
-        srid = int(srid)
-    apply_fixtures(db, srid=srid)
+    apply_fixtures(db, srid=srid, tolerance=tolerance)
 
 
-def get_srid(db: Database) -> Optional[int]:
+def get_srid(db: Database, schema="mapboard") -> Optional[int]:
     return db.session.execute(
-        text("SELECT Find_SRID('mapboard', 'linework', 'geometry')")
+        text("SELECT Find_SRID(:schema, :table, 'geometry')"),
+        dict(schema=schema, table="linework"),
     ).scalar()
 
 
@@ -60,20 +63,37 @@ def psql(ctx: Context, database: Optional[str] = None):
     run("docker", "run", *flags, "postgres:15", "psql", DATABASE_URL, *ctx.args)
 
 
+def project_params(project: str):
+    res = core_db.run_query(
+        "SELECT database, data_schema, topo_schema, srid FROM projects WHERE slug = :slug",
+        dict(slug=project),
+    ).one()
+    return dict(
+        database=res.database,
+        data_schema=res.data_schema,
+        topo_schema=res.topo_schema,
+        srid=res.srid,
+    )
+
+
 @db_app.command()
 def migrate(
-    database: Optional[str] = None, apply: bool = False, allow_unsafe: bool = False
+    project: Optional[str] = Argument(None),
+    apply: bool = False,
+    allow_unsafe: bool = False,
 ):
     """Migrate a Mapboard project database to the latest version"""
-    if database is None:
+    if project is None:
+        project = "mapboard"
         database = "mapboard"
         db = core_db
         _apply_fixtures = lambda _db: apply_core_fixtures(_db)
     else:
+        params = project_params(project)
+        database = params.pop("database")
         DATABASE_URL = connection_string(database)
         db = Database(DATABASE_URL)
-        srid = get_srid(db)
-        _apply_fixtures = lambda _db: apply_fixtures(_db, srid=srid)
+        _apply_fixtures = lambda _db: apply_fixtures(_db, **params)
 
     console.print(f"Migrating database [cyan bold]{database}[/]...")
 

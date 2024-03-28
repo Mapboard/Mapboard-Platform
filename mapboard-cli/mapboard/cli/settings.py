@@ -31,4 +31,5 @@ def connection_string(database: str, container_internal: bool = False):
 
 POSTGRES_IMAGE = environ.get("POSTGRES_IMAGE") or "postgis/postgis:13-3.1"
 
+
 core_db = Database(connection_string("mapboard"))

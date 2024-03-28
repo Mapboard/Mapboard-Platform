@@ -11,6 +11,6 @@
 
 	route /api/* {
 		uri strip_prefix /api
-		reverse_proxy mapboard_server:8080
+		reverse_proxy {$MAPBOARD_API_ADDRESS:"mapboard_server:8080"}
 	}
 }

@@ -1,5 +1,6 @@
 import json
 import logging
+import sys
 from base64 import b64encode
 from binascii import hexlify
 from os import environ
@@ -14,10 +15,25 @@ from macrostrat.database import Database
 from macrostrat.dinosaur import temp_database
 from macrostrat.utils import setup_stderr_logs
 
-from .database import db_app, get_srid
+from .database import db_app, get_srid, project_params
 from .fixtures import apply_fixtures
 from .projects import app as projects_app
 from .settings import MAPBOARD_ROOT, connection_string
+
+
+def prepare_compose_env(app) -> dict[str, str]:
+    """Prepare the environment for docker-compose"""
+    if environ.get("COMPOSE_PROFILES") != None:
+        # We're using a user-set custom profile; don't override it
+        return {}
+
+    compose_profiles = []
+
+    if environ.get("MAPBOARD_API_ADDRESS") == None:
+        compose_profiles.append("production")
+
+    return {"COMPOSE_PROFILES": " ".join(compose_profiles)}
+
 
 app_ = Application(
     "Mapboard",
@@ -26,6 +42,7 @@ app_ = Application(
     },
     log_modules=["mapboard.server"],
     compose_files=[MAPBOARD_ROOT / "system" / "docker-compose.yaml"],
+    env=prepare_compose_env,
 )
 app_.setup_logs(verbose=True)
 setup_stderr_logs("macrostrat.utils", level=logging.DEBUG)
@@ -37,41 +54,30 @@ app.add_typer(db_app, help="Database management")
 
 # Allow extra args to be passed to yarn
 @app.command(
-    name="topology",
+    name="topo",
     short_help="Watch topology for changes",
     context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
 )
 def watch_topology(ctx: typer.Context, project: str):
     """Watch a project's topology for changes"""
-    cfg_dir = MAPBOARD_ROOT / "cfg"
-    cfg_dir.mkdir(exist_ok=True)
-    db_url = connection_string(project, container_internal=True)
+    params = project_params(project)
+    database = params.pop("database")
 
-    db_url_external = connection_string(project).replace("localhost", "0.0.0.0")
-    db = Database(db_url_external)
-    srid = get_srid(db)
+    db_url = connection_string(database, container_internal=False)
 
-    cfg = {
-        "connection": db_url,
-        "topo_schema": "map_topology",
-        "data_schema": "mapboard",
-        "srid": srid,
-        "tolerance": 0.1,
-    }
-    cfg_str = json.dumps(cfg)
-    # Encode to hex
-    cfg_str = hexlify(cfg_str.encode("utf-8")).decode("utf-8")
-
-    # escape the JSON string
-
-    compose(
-        "run",
-        "--rm",
-        "--env",
-        f"GEOLOGIC_MAP_CONFIG_JSON={cfg_str}",
-        "topology_manager",
-        *ctx.args,
+    environ.update(
+        {
+            "MAPBOARD_DATABASE_URL": db_url,
+            "MAPBOARD_DATA_SCHEMA": params["data_schema"],
+            "MAPBOARD_TOPO_SCHEMA": params["topo_schema"],
+        }
     )
+
+    from mapboard.topology_manager.cli import app
+
+    sys.argv = [f"mapboard topo {project}", *ctx.args]
+
+    app()
 
 
 @click.command(
