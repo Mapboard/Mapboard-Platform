@@ -55,10 +55,10 @@ app.add_typer(db_app, help="Database management")
 # Allow extra args to be passed to yarn
 @app.command(
     name="topo",
-    short_help="Watch topology for changes",
+    short_help="Topology management",
     context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
 )
-def watch_topology(ctx: typer.Context, project: str):
+def _topology(ctx: typer.Context, project: str):
     """Watch a project's topology for changes"""
     params = project_params(project)
     database = params.pop("database")

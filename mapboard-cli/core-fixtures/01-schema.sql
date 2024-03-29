@@ -16,6 +16,8 @@ CREATE TABLE IF NOT EXISTS projects (
   description TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   database TEXT NOT NULL,
+  data_schema TEXT NOT NULL DEFAULT 'mapboard',
+  topo_schema TEXT NOT NULL DEFAULT 'map_topology',
   owner_id INTEGER REFERENCES users(id),
   srid INTEGER NOT NULL REFERENCES spatial_ref_sys(srid) DEFAULT 4326
 );
