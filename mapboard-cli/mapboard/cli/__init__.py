@@ -70,6 +70,8 @@ def _topology(ctx: typer.Context, project: str):
             "MAPBOARD_DATABASE_URL": db_url,
             "MAPBOARD_DATA_SCHEMA": params["data_schema"],
             "MAPBOARD_TOPO_SCHEMA": params["topo_schema"],
+            "MAPBOARD_SRID": str(params["srid"]),
+            "MAPBOARD_TOPO_TOLERANCE": str(params["tolerance"]),
         }
     )
 

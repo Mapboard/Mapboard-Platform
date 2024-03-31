@@ -65,7 +65,7 @@ def psql(ctx: Context, database: Optional[str] = None):
 
 def project_params(project: str):
     res = core_db.run_query(
-        "SELECT database, data_schema, topo_schema, srid FROM projects WHERE slug = :slug",
+        "SELECT database, data_schema, topo_schema, srid, tolerance FROM projects WHERE slug = :slug",
         dict(slug=project),
     ).one()
     return dict(
@@ -73,6 +73,7 @@ def project_params(project: str):
         data_schema=res.data_schema,
         topo_schema=res.topo_schema,
         srid=res.srid,
+        tolerance=res.tolerance,
     )
 
 
