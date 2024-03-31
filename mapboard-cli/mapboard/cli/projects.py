@@ -67,6 +67,14 @@ def dump_database(name: str, dumpfile: Path):
     asyncio.run(task)
 
 
+@app.command(name="run-sql")
+def _run_sql(name: str, fixtures: Path):
+    """Run SQL file on a Mapboard project database"""
+    DATABASE_URL = connection_string(name)
+    db = Database(DATABASE_URL)
+    db.run_fixtures(fixtures)
+
+
 async def move_database(
     from_database: Engine,
     to_database: Engine,
