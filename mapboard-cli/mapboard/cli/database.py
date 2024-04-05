@@ -1,5 +1,6 @@
 import sys
 from os import environ
+from pathlib import Path
 from subprocess import run
 from sys import stdin
 from typing import Optional
@@ -11,7 +12,7 @@ from macrostrat.dinosaur import create_migration
 from macrostrat.utils.shell import run
 from mapboard.topology_manager.database import Database
 from sqlalchemy import text
-from typer import Argument, Context, Typer
+from typer import Argument, Context, Option, Typer
 
 from .fixtures import apply_core_fixtures, apply_fixtures, create_core_fixtures
 from .settings import connection_string, core_db
@@ -63,6 +64,23 @@ def psql(ctx: Context, database: Optional[str] = None):
     run("docker", "run", *flags, "postgres:15", "psql", DATABASE_URL, *ctx.args)
 
 
+@db_app.command(name="run")
+def run_procedure(project: str, name: Optional[str] = Argument(None)):
+    """Run a predefined stored procedure in a project database.
+    If no name is provided, list available procedures."""
+    proc_dir = Path(__file__).parent.parent.parent.parent / "migrations"
+    if name is None:
+        console.print("[bold]Available procedures:")
+        for proc in proc_dir.glob("*.sql"):
+            console.print(proc.stem)
+        return
+
+    proc = proc_dir / f"{name}.sql"
+
+    db = setup_database(project)
+    db.run_fixtures(proc)
+
+
 def project_params(project: str):
     res = core_db.run_query(
         "SELECT database, data_schema, topo_schema, srid, tolerance FROM projects WHERE slug = :slug",
@@ -75,6 +93,14 @@ def project_params(project: str):
         srid=res.srid,
         tolerance=res.tolerance,
     )
+
+
+def setup_database(project: str) -> Database:
+    params = project_params(project)
+    DATABASE_URL = connection_string(params["database"])
+    db = Database(DATABASE_URL)
+    db.set_params(**params)
+    return db
 
 
 @db_app.command()
