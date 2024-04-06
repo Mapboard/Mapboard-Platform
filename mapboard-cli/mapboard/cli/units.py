@@ -22,6 +22,12 @@ def move_unit(
         from_layer_id: int = db.run_query(_q, dict(name=from_layer)).scalar()
         to_layer_id = db.run_query(_q, dict(name=to_layer)).scalar()
 
+        # Insert the relevant row into the map_layer_polygon_type table
+        db.run_query(
+            "INSERT INTO map_layer_polygon_type (map_layer, type) VALUES (:to_layer, :unit) ON CONFLICT DO NOTHING",
+            dict(unit=unit, to_layer=to_layer_id),
+        )
+
         # Update the unit's layer
         db.run_query(
             "UPDATE polygon SET map_layer = :to_layer WHERE type = :unit AND map_layer = :from_layer",
