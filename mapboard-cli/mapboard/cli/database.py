@@ -23,18 +23,14 @@ db_app = Typer(name="db", no_args_is_help=True)
 @db_app.command("init")
 def create_fixtures(
     project: Optional[str] = None,
-    srid: Optional[int] = None,
-    tolerance: Optional[int] = None,
 ):
     """Create database fixtures"""
     if project is None:
         return create_core_fixtures()
-    database = project
 
-    console.print(f"Creating fixtures in database [cyan bold]{database}[/]...")
-    DATABASE_URL = connection_string(database)
-    db = Database(DATABASE_URL)
-    apply_fixtures(db, srid=srid, tolerance=tolerance)
+    console.print(f"Creating fixtures for project [cyan bold]{project}[/]...")
+    db = setup_database(project)
+    apply_fixtures(db)
 
 
 def get_srid(db: Database, schema="mapboard") -> Optional[int]:
@@ -86,6 +82,7 @@ def project_params(project: str):
         "SELECT database, data_schema, topo_schema, srid, tolerance FROM projects WHERE slug = :slug",
         dict(slug=project),
     ).one()
+    print(res)
     return dict(
         database=res.database,
         data_schema=res.data_schema,
@@ -99,7 +96,7 @@ def setup_database(project: str) -> Database:
     params = project_params(project)
     DATABASE_URL = connection_string(params["database"])
     db = Database(DATABASE_URL)
-    db.set_params(**params)
+    db.set_params(env={}, **params)
     return db
 
 

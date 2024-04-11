@@ -30,10 +30,7 @@ def apply_core_fixtures(db: BaseDatabase):
 
 def apply_fixtures(
     database: Database,
-    **kwargs,
 ):
-    database.set_params(**kwargs)
-
     _create_tables(database)
     database.instance_params["tms_srid"] = Literal(3857)
 
