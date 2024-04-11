@@ -117,7 +117,11 @@ def migrate(
         database = params.pop("database")
         DATABASE_URL = connection_string(database)
         db = Database(DATABASE_URL)
-        _apply_fixtures = lambda _db: apply_fixtures(Database(_db.engine.url), **params)
+
+        def _apply_fixtures(_db):
+            _db1 = Database(_db.engine.url)
+            _db1.set_params(env={}, **params)
+            apply_fixtures(_db1)
 
     console.print(f"Migrating database [cyan bold]{database}[/]...")
 

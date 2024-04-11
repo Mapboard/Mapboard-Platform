@@ -9,6 +9,7 @@ from mapboard.topology_manager.database import Database
 from sqlalchemy import Engine
 from typer import Typer
 
+from .database import setup_database
 from .fixtures import apply_fixtures
 from .mobile_export import export_database
 from .settings import POSTGRES_IMAGE, connection_string, core_db
@@ -71,7 +72,7 @@ def dump_database(name: str, dumpfile: Path):
 def _run_sql(name: str, fixtures: Path):
     """Run SQL file on a Mapboard project database"""
     DATABASE_URL = connection_string(name)
-    db = Database(DATABASE_URL)
+    db = setup_database(name)
     db.run_fixtures(fixtures)
 
 
