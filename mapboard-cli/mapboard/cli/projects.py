@@ -17,6 +17,19 @@ from .settings import POSTGRES_IMAGE, connection_string, core_db
 app = Typer(name="projects", no_args_is_help=True)
 
 
+@app.command(name="list")
+def list_projects():
+    """List Mapboard projects"""
+    projects = list(core_db.run_query("SELECT slug, title, database FROM projects"))
+    _databases = set(project.database for project in projects)
+    all_same_database = len(_databases) == 1
+    for project in projects:
+        dst = f"[cyan bold]{project.slug}[/] - {project.title}"
+        if not all_same_database:
+            dst += f" [dim]{project.database}[/dim]"
+        console.print(dst)
+
+
 @app.command(name="create")
 def create_project(database: str, srid: int = 4326, tolerance: float = 0.00001):
     """Create a Mapboard project database"""
@@ -74,6 +87,10 @@ def _run_sql(name: str, fixtures: Path):
     DATABASE_URL = connection_string(name)
     db = setup_database(name)
     db.run_fixtures(fixtures)
+
+
+query = """
+"""
 
 
 async def move_database(
