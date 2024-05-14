@@ -1,3 +1,9 @@
+# Mapboard platform
+
+This codebase provides a platform for running the Mapboard geologic map editing system. It orchestrates
+the core [topological management tools](https://github.com/Mapboard/topology-manager) with the Mapboard editing API (closed-source).
+
+
 ## Running
 
 The Mapboard CLI is the command-line tool that runs the system. It uses the `macrostrat.app_frame` module
