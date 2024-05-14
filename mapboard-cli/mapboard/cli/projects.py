@@ -54,7 +54,7 @@ def create_project(database: str, srid: int = 4326, tolerance: float = 0.00001):
     )
 
     db = Database(DATABASE_URL)
-    apply_fixtures(db, **params)
+    apply_fixtures(db)
 
 
 app.command(name="export")(export_database)
