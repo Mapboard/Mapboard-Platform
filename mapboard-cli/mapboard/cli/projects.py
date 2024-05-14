@@ -9,11 +9,25 @@ from mapboard.topology_manager.database import Database
 from sqlalchemy import Engine
 from typer import Typer
 
+from .database import setup_database
 from .fixtures import apply_fixtures
 from .mobile_export import export_database
 from .settings import POSTGRES_IMAGE, connection_string, core_db
 
 app = Typer(name="projects", no_args_is_help=True)
+
+
+@app.command(name="list")
+def list_projects():
+    """List Mapboard projects"""
+    projects = list(core_db.run_query("SELECT slug, title, database FROM projects"))
+    _databases = set(project.database for project in projects)
+    all_same_database = len(_databases) == 1
+    for project in projects:
+        dst = f"[cyan bold]{project.slug}[/] - {project.title}"
+        if not all_same_database:
+            dst += f" [dim]{project.database}[/dim]"
+        console.print(dst)
 
 
 @app.command(name="create")
@@ -40,7 +54,7 @@ def create_project(database: str, srid: int = 4326, tolerance: float = 0.00001):
     )
 
     db = Database(DATABASE_URL)
-    apply_fixtures(db, **params)
+    apply_fixtures(db)
 
 
 app.command(name="export")(export_database)
@@ -71,8 +85,12 @@ def dump_database(name: str, dumpfile: Path):
 def _run_sql(name: str, fixtures: Path):
     """Run SQL file on a Mapboard project database"""
     DATABASE_URL = connection_string(name)
-    db = Database(DATABASE_URL)
+    db = setup_database(name)
     db.run_fixtures(fixtures)
+
+
+query = """
+"""
 
 
 async def move_database(

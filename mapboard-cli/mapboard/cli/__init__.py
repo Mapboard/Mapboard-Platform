@@ -19,6 +19,8 @@ from .database import db_app, get_srid, project_params
 from .fixtures import apply_fixtures
 from .projects import app as projects_app
 from .settings import MAPBOARD_ROOT, connection_string
+from .units import move_unit
+from .watch import watch
 
 
 def prepare_compose_env(app) -> dict[str, str]:
@@ -51,6 +53,8 @@ app = app_.control_command()
 app.add_typer(projects_app, help="Manage Mapboard projects")
 app.add_typer(db_app, help="Database management")
 
+app.command(name="watch")(watch)
+
 
 # Allow extra args to be passed to yarn
 @app.command(
@@ -80,6 +84,9 @@ def _topology(ctx: typer.Context, project: str):
     sys.argv = [f"mapboard topo {project}", *ctx.args]
 
     app()
+
+
+app.command(name="move-unit")(move_unit)
 
 
 @click.command(
