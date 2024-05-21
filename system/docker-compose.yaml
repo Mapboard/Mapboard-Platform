@@ -48,9 +48,9 @@ services:
     environment:
       - MAPBOARD_DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@database:5432/${POSTGRES_DB}
       - LOG_LEVEL=info
-  topology_manager:
-    build: ../topology-manager
-    command: ["echo", "Hello, world!"]
+  # topology_manager:
+  #   build: ../topology-manager
+  #   command: ["echo", "Hello, world!"]
 
 volumes:
   db_cluster:

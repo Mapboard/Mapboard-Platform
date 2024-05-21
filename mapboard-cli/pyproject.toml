@@ -20,6 +20,7 @@ zeroconf = "^0.56.0"
 ipython = "^8.14.0"
 migra = "^3.0.1647431138"
 rich = "^13.4.2"
+geopandas = "^0.14.4"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.3.0"

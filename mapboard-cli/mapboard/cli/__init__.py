@@ -56,6 +56,11 @@ app.add_typer(db_app, help="Database management")
 app.command(name="watch")(watch)
 
 
+from .ingest import ingest_map
+
+app.command(name="ingest")(ingest_map)
+
+
 # Allow extra args to be passed to yarn
 @app.command(
     name="topo",

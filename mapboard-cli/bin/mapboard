@@ -8,4 +8,4 @@ cli_root=$(dirname $here)
 export PATH=$cli_root/.venv/bin:$PATH
 
 # Run the script
-mapboard $@
+mapboard "$@"

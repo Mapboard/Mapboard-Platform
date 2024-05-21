@@ -31,9 +31,14 @@ def list_projects():
 
 
 @app.command(name="create")
-def create_project(database: str, srid: int = 4326, tolerance: float = 0.00001):
+def create_project(
+    project: str,
+    srid: int = 4326,
+    tolerance: float = 0.00001,
+    database: str = "mapboard",
+):
     """Create a Mapboard project database"""
-    if database.startswith("mapboard"):
+    if database.startswith("mapboard") and database != "mapboard":
         raise ValueError("Project names beginning with 'mapboard' are reserved")
 
     DATABASE_URL = connection_string(database)
@@ -42,8 +47,8 @@ def create_project(database: str, srid: int = 4326, tolerance: float = 0.00001):
 
     params = dict(
         srid=srid,
-        data_schema="mapboard",
-        topo_schema="map_topology",
+        data_schema=project,
+        topo_schema=f"{project}_topology",
         tolerance=tolerance,
     )
 
@@ -53,7 +58,7 @@ def create_project(database: str, srid: int = 4326, tolerance: float = 0.00001):
         params=dict(slug=database, title=database, database=database, **params),
     )
 
-    db = Database(DATABASE_URL)
+    db = setup_database(database)
     apply_fixtures(db)
 
 
