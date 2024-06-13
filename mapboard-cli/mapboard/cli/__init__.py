@@ -42,7 +42,10 @@ app_ = Application(
     restart_commands={
         "gateway": "caddy reload --config /etc/caddy/Caddyfile",
     },
-    log_modules=["mapboard.server", "mapboard.cli"],
+    log_modules=[
+        "mapboard.server",
+        "mapboard.cli",
+    ],
     compose_files=[MAPBOARD_ROOT / "system" / "docker-compose.yaml"],
     env=prepare_compose_env,
 )

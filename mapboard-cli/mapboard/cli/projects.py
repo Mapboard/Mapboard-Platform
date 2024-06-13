@@ -54,7 +54,10 @@ def create_project(
 
     # Add a record to the core database
     core_db.run_sql(
-        "INSERT INTO projects (slug, title, database, srid, data_schema, topo_schema) VALUES (:slug, :title, :database, :srid, :data_schema, :topo_schema)",
+        """
+        INSERT INTO projects (slug, title, database, srid, data_schema, topo_schema)
+        VALUES (:slug, :title, :database, :srid, :data_schema, :topo_schema)
+        """,
         params=dict(slug=database, title=database, database=database, **params),
     )
 
