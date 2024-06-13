@@ -42,7 +42,7 @@ app_ = Application(
     restart_commands={
         "gateway": "caddy reload --config /etc/caddy/Caddyfile",
     },
-    log_modules=["mapboard.server"],
+    log_modules=["mapboard.server", "mapboard.cli"],
     compose_files=[MAPBOARD_ROOT / "system" / "docker-compose.yaml"],
     env=prepare_compose_env,
 )
@@ -55,10 +55,13 @@ app.add_typer(db_app, help="Database management")
 
 app.command(name="watch")(watch)
 
-
 from .ingest import ingest_map
 
 app.command(name="ingest")(ingest_map)
+
+from .criticalmaas import app as cdr_app
+
+app.add_typer(cdr_app, help="CriticalMAAS CDR commands", rich_help_panel="Subsystems")
 
 
 # Allow extra args to be passed to yarn
