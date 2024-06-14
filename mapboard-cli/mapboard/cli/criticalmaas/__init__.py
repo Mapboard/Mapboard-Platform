@@ -145,17 +145,15 @@ def create(cog_id: str, system: str, system_version: str):
         if name is None:
             name = legend["legend_id"]
 
-        db.run_query(
+        db.run_sql(
             "INSERT INTO polygon_type (id, name,  color) VALUES (:id, :name,:color) ON CONFLICT (id) DO NOTHING",
             dict(id=poly_type, name=name, color=color),
         )
 
-        db.run_query(
+        db.run_sql(
             """INSERT INTO map_layer_polygon_type (map_layer, type) VALUES (:map_layer, :type) ON CONFLICT DO NOTHING""",
             dict(map_layer=map_layer, type=poly_type),
         )
-
-        db.session.commit()
 
     polys = get_polygons(cog_id, system=system, system_version=system_version)
 
@@ -163,14 +161,13 @@ def create(cog_id: str, system: str, system_version: str):
         poly_type = poly["legend_id"]
         geom = poly["px_geojson"]
         map_layer = map_layer_index[poly["system"]]
-        db.run_query(
+        db.run_sql(
             """
             INSERT INTO polygon (type, map_layer, geometry, source)
             VALUES (:type, :map_layer, ST_Multi(ST_Scale(ST_SetSRID(ST_GeomFromGeoJSON(:geom), 3857), 1, -1)), :source)
             """,
             dict(type=poly_type, geom=dumps(geom), map_layer=map_layer, source=source),
         )
-        db.session.commit()
 
 
 def get_legend_items(cog_id: str, **kwargs):
@@ -216,3 +213,14 @@ def update_topology(project_id: str):
     db = setup_database(project_id)
     assert db.engine.url.database == "criticalmaas"
     db.run_fixtures(Path(__file__).parent / "update-topology.sql")
+    # Report statistics
+    exp = {
+        "polygon": "polygon seeds",
+        "linework": "boundary lines",
+    }
+    for table in ["polygon", "linework"]:
+        res = db.run_query(
+            f"SELECT count(*) FROM {table} WHERE source = 'expand-topology'",
+            dict(table=Identifier(table)),
+        ).one()
+        console.print(f"- {res[0]} {exp[table]} ")

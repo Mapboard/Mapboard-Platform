@@ -1,7 +1,5 @@
 SET search_path TO {data_schema}, {topo_schema},public;
 
-
-
 -- Polygon seed function
 CREATE OR REPLACE FUNCTION {topo_schema}.build_polygon_seed(polygon geometry)
     RETURNS geometry AS
@@ -70,8 +68,8 @@ FROM map_layer_polygon_type p
 ON CONFLICT DO NOTHING;
 
 -- Delete existing polygon seeds and boundaries
-DELETE FROM linework WHERE source = 'init';
-DELETE FROM polygon WHERE source = 'init';
+DELETE FROM linework WHERE source = 'expand-topology';
+DELETE FROM polygon WHERE source = 'expand-topology';
 
 --- Polygon seeds
 INSERT INTO polygon (geometry, type, map_layer, source)
@@ -79,7 +77,7 @@ SELECT
     ST_Multi(build_polygon_seed(geometry)) geometry,
     p.type,
     ml2.id map_layer,
-    'init'
+    'expand-topology'
 FROM polygon p
          JOIN map_layer ml
               ON ml.id = p.map_layer
@@ -90,10 +88,10 @@ FROM polygon p
 --- Polygon boundaries
 INSERT INTO linework (geometry, type, map_layer, source)
 SELECT
-    (ST_Dump(split_line(ST_Boundary(geometry), 500))).geom,
+    (ST_Dump(split_line(ST_SnapToGrid(ST_Simplify(ST_Boundary(geometry), 0.1), 0.1, 0.1), 500))).geom,
     'boundary',
     ml2.id map_layer,
-    'init'
+    'expand-topology'
 FROM polygon p
  JOIN map_layer ml
       ON ml.id = p.map_layer
