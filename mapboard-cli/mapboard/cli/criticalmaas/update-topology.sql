@@ -1,5 +1,7 @@
 SET search_path TO {data_schema}, {topo_schema},public;
 
+
+
 -- Polygon seed function
 CREATE OR REPLACE FUNCTION {topo_schema}.build_polygon_seed(polygon geometry)
     RETURNS geometry AS
@@ -15,15 +17,35 @@ END;
 $$
 LANGUAGE plpgsql;
 
+CREATE OR REPLACE FUNCTION {topo_schema}.split_line(line geometry, max_length double precision)
+    RETURNS geometry AS $$
+DECLARE
+    i integer;
+    lines geometry[];
+    line_length double precision;
+    line_segment geometry;
+BEGIN
+    lines := ARRAY[]::geometry[];
+    line_length := ST_Length(line);
+    i := 0;
+    WHILE i * max_length < line_length LOOP
+        line_segment := ST_LineSubstring(line, i * max_length / line_length, least((i + 1) * max_length, line_length) / line_length);
+        lines := lines || line_segment;
+        i := i + 1;
+    END LOOP;
+    RETURN ST_Collect(lines);
+END;
+$$ LANGUAGE plpgsql;
+
 -- Create map layers for topological data
-INSERT INTO {data_schema}.map_layer (name, description, topological)
+INSERT INTO map_layer (name, description, topological)
 SELECT name || '_topo', description || ' with Mapboard topology', true
 FROM {data_schema}.map_layer
 WHERE topological = false
 ON CONFLICT (name) DO NOTHING;
 
 -- Create linework types for boundaries
-INSERT INTO {data_schema}.linework_type (id, name)
+INSERT INTO linework_type (id, name)
 SELECT 'boundary', 'Boundary'
 ON CONFLICT DO NOTHING;
 
@@ -68,7 +90,7 @@ FROM polygon p
 --- Polygon boundaries
 INSERT INTO linework (geometry, type, map_layer, source)
 SELECT
-    ST_Multi(ST_Boundary(geometry)),
+    (ST_Dump(split_line(ST_Boundary(geometry), 500))).geom,
     'boundary',
     ml2.id map_layer,
     'init'

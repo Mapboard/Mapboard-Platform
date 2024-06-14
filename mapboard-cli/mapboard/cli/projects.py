@@ -55,14 +55,40 @@ def create_project(
     # Add a record to the core database
     core_db.run_sql(
         """
-        INSERT INTO projects (slug, title, database, srid, data_schema, topo_schema)
-        VALUES (:slug, :title, :database, :srid, :data_schema, :topo_schema)
+        INSERT INTO projects (slug, title, database, srid, data_schema, topo_schema, tolerance)
+        VALUES (:slug, :title, :database, :srid, :data_schema, :topo_schema, :tolerance)
         """,
-        params=dict(slug=database, title=database, database=database, **params),
+        params=dict(slug=project, title=project, database=database, **params),
     )
 
-    db = setup_database(database)
+    db = setup_database(project)
     apply_fixtures(db)
+
+
+@app.command()
+def drop(project: str, apply: bool = False):
+    """Drop a Mapboard project"""
+    db = setup_database(project)
+    params = db.instance_params
+    # Show what will be dropped
+    console.print(f"Project: [cyan bold]{project}[/]")
+    console.print(f"Database: [cyan bold]{db.engine.url.database}[/]")
+    console.print(f"Data schema: [cyan bold]{params['data_schema']}[/]")
+    console.print(f"Topology schema: [cyan bold]{params['topo_schema']}[/]")
+    proj = core_db.run_query(
+        "SELECT * FROM projects WHERE slug = :slug", dict(slug=project)
+    ).one()
+    console.print(proj)
+
+    if not apply:
+        return
+
+    db.run_sql("DROP SCHEMA IF EXISTS {topo_schema} CASCADE")
+    db.run_sql("DROP SCHEMA IF EXISTS {data_schema} CASCADE")
+
+    db.run_sql("SELECT topology.DropTopology(:topo_name)")
+
+    core_db.run_sql("DELETE FROM projects WHERE slug = :slug", dict(slug=project))
 
 
 app.command(name="export")(export_database)

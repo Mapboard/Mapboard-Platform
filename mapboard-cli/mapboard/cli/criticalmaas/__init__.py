@@ -4,7 +4,7 @@ from requests import get
 from rich.console import Console
 from macrostrat.utils import get_logger
 from ..projects import create_project
-from ..database import connection_string
+from ..database import connection_string, setup_database, core_db
 from macrostrat.database import Database
 from psycopg2.sql import Identifier
 from pathlib import Path
@@ -54,25 +54,37 @@ def cdr_get(route: str, params=None):
     ).json()
 
 
+@app.command(name="show")
+def show_versions(cog_id: str):
+    """Show the versions of a CDR map"""
+    versions = cdr_get(f"/features/{cog_id}/system_versions")
+    for version in versions:
+        console.print(version)
+
+
 @app.command(name="create")
-def create(cog_id: str, system_version: str = None):
+def create(cog_id: str, system: str, system_version: str):
     """Create a Mapboard project database for a CDR map"""
-    project_prefix = cog_id[:8]
+
+    # Check that we have a valid set of system versions
+    is_valid = False
+    versions = cdr_get(f"/features/{cog_id}/system_versions")
+    for version in versions:
+        if version[0] == system and version[1] == system_version:
+            is_valid = True
+            break
+    if not is_valid:
+        raise ValueError(f"Invalid system version: {system} {system_version}")
+
+    project_prefix = cog_id[:8] + "_" + system + "_" + system_version
     create_project(
         project_prefix,
         database="criticalmaas",
         srid=3857,
-        tolerance=0.1,
+        tolerance=0.5,
     )
 
-    DATABASE_URL = connection_string("criticalmaas")
-    db = Database(
-        DATABASE_URL,
-        instance_params=dict(
-            data_schema=Identifier(project_prefix),
-            topo_schema=Identifier(f"{project_prefix}_topology"),
-        ),
-    )
+    db = setup_database(project_prefix)
 
     db.run_fixtures(Path(__file__).parent / "constraints.sql")
 
@@ -86,26 +98,9 @@ def create(cog_id: str, system_version: str = None):
             dict(table=Identifier(project_prefix, table)),
         )
 
-    map_layer = db.run_query(
-        "INSERT INTO map_layer (name, description, topological) VALUES ('meta', 'Meta', true) ON CONFLICT DO NOTHING RETURNING id"
-    ).scalar()
+    source = f"{system} {system_version}"
 
-    db.run_query(
-        "INSERT INTO linework_type (id, name) VALUES ('arbitrary', 'Arbitrary')"
-    )
-    db.run_query(
-        "INSERT INTO map_layer_linework_type (map_layer, type) VALUES (:map_layer, 'arbitrary')",
-        dict(map_layer=map_layer),
-    )
-
-    db.session.commit()
-    # Add a fake line to allow the database to load
-    db.run_query(
-        "INSERT INTO linework (type, map_layer, geometry) VALUES ('arbitrary', 1, ST_Multi(ST_SetSRID(ST_GeomFromText('LINESTRING(10000 0, 10001 0)'), 3857)))"
-    )
-    db.session.commit()
-
-    legends = get_legend_items(cog_id, system_version=system_version)
+    legends = get_legend_items(cog_id, system=system, system_version=system_version)
     map_layer_index = {}
     for legend in legends:
         if legend["category"] != "polygon":
@@ -127,7 +122,7 @@ def create(cog_id: str, system_version: str = None):
         if map_layer is None:
             map_layer = db.run_query(
                 """INSERT INTO map_layer (name, description, topological)
-                VALUES (:name, :description, true)
+                VALUES (:name, :description, false)
                 ON CONFLICT (name) DO NOTHING RETURNING id""",
                 dict(name=system, description=desc),
             ).scalar()
@@ -162,15 +157,18 @@ def create(cog_id: str, system_version: str = None):
 
         db.session.commit()
 
-    polys = get_polygons(cog_id, system_version=system_version)
+    polys = get_polygons(cog_id, system=system, system_version=system_version)
 
     for poly in polys:
         poly_type = poly["legend_id"]
         geom = poly["px_geojson"]
         map_layer = map_layer_index[poly["system"]]
         db.run_query(
-            "INSERT INTO polygon (type, map_layer, geometry) VALUES (:type, :map_layer, ST_Multi(ST_SetSRID(ST_GeomFromGeoJSON(:geom), 3857)))",
-            dict(type=poly_type, geom=dumps(geom), map_layer=map_layer),
+            """
+            INSERT INTO polygon (type, map_layer, geometry, source)
+            VALUES (:type, :map_layer, ST_Multi(ST_Scale(ST_SetSRID(ST_GeomFromGeoJSON(:geom), 3857), 1, -1)), :source)
+            """,
+            dict(type=poly_type, geom=dumps(geom), map_layer=map_layer, source=source),
         )
         db.session.commit()
 
@@ -204,16 +202,17 @@ def paged_result_set(route: str, **kwargs):
     console.print(f"Total {feature_type}: {feature_count}")
 
 
-@app.command(name="setup-topology")
-def update_topology(cog_id: str):
-    project_prefix = cog_id[:8]
-    DATABASE_URL = connection_string("criticalmaas")
-    db = Database(
-        DATABASE_URL,
-        instance_params=dict(
-            data_schema=Identifier(project_prefix),
-            topo_schema=Identifier(f"{project_prefix}_topology"),
-        ),
-    )
+@app.command(name="list")
+def list_projects():
+    res = core_db.run_query(
+        "SELECT slug, title FROM projects WHERE database = 'criticalmaas'"
+    ).all()
+    for row in res:
+        console.print(row)
 
+
+@app.command(name="setup-topology")
+def update_topology(project_id: str):
+    db = setup_database(project_id)
+    assert db.engine.url.database == "criticalmaas"
     db.run_fixtures(Path(__file__).parent / "update-topology.sql")
