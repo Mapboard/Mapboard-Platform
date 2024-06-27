@@ -9,6 +9,7 @@ from macrostrat.database import Database
 from psycopg2.sql import Identifier
 from pathlib import Path
 from json import dumps
+from mapboard.topology_manager.commands.update import _update
 
 # import logging
 # import http.client
@@ -224,3 +225,20 @@ def update_topology(project_id: str):
             dict(table=Identifier(table)),
         ).one()
         console.print(f"- {res[0]} {exp[table]} ")
+
+    # Update the topology layers
+    _update(db, bulk=True)
+
+
+@app.command(name="simplify-topology")
+def simplify_topology(project_id: str):
+    db = setup_database(project_id)
+    assert db.engine.url.database == "criticalmaas"
+
+    # Show number of edges and faces
+    res = db.run_query("SELECT count(*) FROM {topo_schema}.edge").one()
+    console.print(f"Edges: {res[0]}")
+    res = db.run_query("SELECT count(*) FROM {topo_schema}.face").one()
+    console.print(f"Faces: {res[0]}")
+
+    db.run_fixtures(Path(__file__).parent / "simplify-topology.sql")
