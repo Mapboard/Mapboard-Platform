@@ -16,6 +16,7 @@ from ..settings import connection_string
 
 install(show_locals=True)
 
+
 # Must use Python built with sqlite3 extension support
 # https://github.com/pyenv/pyenv/issues/1702
 
@@ -31,7 +32,7 @@ def export_database(project: str, output: Path, overwrite: bool = False):
     # Check if project exists
     conn_string = connection_string(project)
     db = Database(conn_string)
-    db.session.execute("SELECT 1")
+    db.run_query("SELECT 1")
     db.session.close()
     print(f"Database [bold]{project}[/bold] exists!")
 
@@ -43,7 +44,7 @@ def export_database(project: str, output: Path, overwrite: bool = False):
     if db_path.exists() and overwrite:
         db_path.unlink()
 
-    SRID: int = db.session.execute(
+    SRID: int = db.run_query(
         "SELECT srid FROM geometry_columns WHERE f_table_schema = :schema AND f_table_name = :table",
         params=dict(schema="mapboard", table="polygon"),
     ).scalar()
@@ -94,11 +95,11 @@ def export_database(project: str, output: Path, overwrite: bool = False):
     with Progress() as progress:
         for f in table_queries.glob("*.sql"):
             sql = f.read_text()
-            query = db.session.execute(sql)
+            query = db.run_query(sql)
             table_name = f.stem.replace("-", "_")
             tbl = meta.tables[table_name]
             insert_stmt = insert(tbl)
-            nrows = db.session.execute(
+            nrows = db.run_query(
                 "SELECT count(*) FROM mapboard." + table_name
             ).scalar_one()
 
@@ -122,7 +123,7 @@ def setup_spatialite(db_path: Path):
 
 def load_spatialite(dbapi_conn, _):
     dbapi_conn.enable_load_extension(True)
-    dbapi_conn.load_extension("/usr/local/lib/mod_spatialite.dylib")
+    dbapi_conn.load_extension("/opt/homebrew/lib/mod_spatialite.dylib")
 
 
 def chunked_iterator(iterable, chunksize):
