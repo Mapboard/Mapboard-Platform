@@ -2,7 +2,7 @@ import "./style.css";
 import "@blueprintjs/core/lib/css/blueprint.css";
 
 import React from "react";
-import { Link } from "../components/Link.js";
+import { Link } from "~/components/link";
 
 export default function LayoutDefault({
   children,

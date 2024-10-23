@@ -1,6 +1,7 @@
 import h from "@macrostrat/hyper";
 import { Spinner } from "@blueprintjs/core";
-import { usePGResult } from "~/api-client";
+import { usePGResult } from "~/utils/api-client";
+import { Link } from "~/components";
 
 export default function Page() {
   return h([
@@ -23,7 +24,9 @@ function ProjectList() {
   }
 
   return h(
-    "ul",
-    projects.map((d) => h("li", d.title)),
+    "ul.projects",
+    projects.map((d) =>
+      h("li", h(Link, { href: "/project/" + d.slug }, d.title)),
+    ),
   );
 }

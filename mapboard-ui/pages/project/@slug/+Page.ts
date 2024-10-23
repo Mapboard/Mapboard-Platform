@@ -1,5 +1,5 @@
 import h from "@macrostrat/hyper";
-import { useParams } from "~/routing";
+import { useParams } from "~/utils/routing";
 
 export function Page() {
   const { slug } = useParams();

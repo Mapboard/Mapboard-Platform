@@ -1,5 +1,5 @@
 import { PostgrestClient } from "@supabase/postgrest-js";
-import { apiBaseURL } from "./settings";
+import { apiBaseURL } from "../settings";
 import { useEffect, useState } from "react";
 
 export const postgrest = new PostgrestClient(apiBaseURL);
