@@ -3,6 +3,8 @@ import { Spinner } from "@blueprintjs/core";
 import { usePGResult } from "~/utils/api-client";
 import { Link } from "~/components";
 import styles from "./main.module.sass";
+import { useData } from "vike-react/useData";
+import type { Data } from "./+data";
 
 const h = hyper.styled(styles);
 
@@ -18,13 +20,7 @@ export default function Page() {
 }
 
 function ProjectList() {
-  const projects = usePGResult((pg) => {
-    return pg.from("projects").select("*").order("id", { ascending: false });
-  }, []);
-
-  if (projects == null) {
-    return h(Spinner);
-  }
+  const projects = useData<Data>();
 
   return h(
     "ul.projects-list",
