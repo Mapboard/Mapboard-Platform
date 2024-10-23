@@ -10,4 +10,7 @@ export default defineConfig({
       "~": path.resolve("./shared"),
     },
   },
+  server: {
+    port: 3002,
+  },
 });

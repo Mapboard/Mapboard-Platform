@@ -1,7 +1,10 @@
-import h from "@macrostrat/hyper";
+import hyper from "@macrostrat/hyper";
 import { Spinner } from "@blueprintjs/core";
 import { usePGResult } from "~/utils/api-client";
 import { Link } from "~/components";
+import styles from "./main.module.sass";
+
+const h = hyper.styled(styles);
 
 export default function Page() {
   return h([
@@ -24,7 +27,7 @@ function ProjectList() {
   }
 
   return h(
-    "ul.projects",
+    "ul.projects-list",
     projects.map((d) =>
       h("li", h(Link, { href: "/project/" + d.slug }, d.title)),
     ),

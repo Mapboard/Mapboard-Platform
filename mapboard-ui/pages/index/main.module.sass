@@ -1,0 +1,30 @@
+:root
+  --background-secondary: #f5f5f5
+  --background-highlight: #f0f0f0
+  --background-active: #e0e0e0
+  --panel-border: 1px solid #ccc
+
+.projects-list
+  list-style: none
+  line-height: 2
+  padding-left: 0
+  background: var(--background-secondary)
+  border: var(--panel-border)
+
+  li
+    border-bottom: var(--panel-border)
+
+    &:last-child
+      border-bottom: none
+
+    a
+      padding: 0.2em 1em
+      display: block
+
+      &:hover
+        background: var(--background-highlight)
+
+      &.active
+        background: var(--background-active)
+  border-radius: 6px
+
