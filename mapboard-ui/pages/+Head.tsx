@@ -1,12 +1,11 @@
 // https://vike.dev/Head
 
 import React from "react";
-import logoUrl from "../assets/logo.svg";
 
 export default function HeadDefault() {
   return (
     <>
-      <link rel="icon" href={logoUrl} />
+      <link rel="icon" type="image/png" href="https://mapboard-gis.app/favicon-32x32.png"></link>
     </>
   );
 }

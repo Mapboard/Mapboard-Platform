@@ -655,6 +655,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@macrostrat/hyper@npm:^2.2.1":
+  version: 2.2.1
+  resolution: "@macrostrat/hyper@npm:2.2.1"
+  dependencies:
+    classnames: "npm:^2.3.1"
+  peerDependencies:
+    "@types/react": ">= 16.0.0 < 19.0.0"
+    react: ">= 0.12.0 < 19.0.0"
+  checksum: 10c0/ba30122032cbad6f04fd052967974d2a16c26f2879873fdcf69ef4757ed52d04c3bce6419e7949c738946b9fa7ab43f829e468cb065921ddbd3f065c76ec13bb
+  languageName: node
+  linkType: hard
+
 "@nodelib/fs.scandir@npm:2.1.5":
   version: 2.1.5
   resolution: "@nodelib/fs.scandir@npm:2.1.5"
@@ -1088,6 +1100,13 @@ __metadata:
   version: 2.0.0
   resolution: "chownr@npm:2.0.0"
   checksum: 10c0/594754e1303672171cc04e50f6c398ae16128eb134a88f801bf5354fd96f205320f23536a045d9abd8b51024a149696e51231565891d4efdab8846021ecf88e6
+  languageName: node
+  linkType: hard
+
+"classnames@npm:^2.3.1":
+  version: 2.5.1
+  resolution: "classnames@npm:2.5.1"
+  checksum: 10c0/afff4f77e62cea2d79c39962980bf316bacb0d7c49e13a21adaadb9221e1c6b9d3cdb829d8bb1b23c406f4e740507f37e1dcf506f7e3b7113d17c5bab787aa69
   languageName: node
   linkType: hard
 
@@ -2143,6 +2162,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "root-workspace-0b6124@workspace:."
   dependencies:
+    "@macrostrat/hyper": "npm:^2.2.1"
     "@types/react": "npm:^18.3.11"
     "@types/react-dom": "npm:^18.3.1"
     "@vitejs/plugin-react": "npm:^4.3.3"
