@@ -1,4 +1,5 @@
 import "./style.css";
+import "@blueprintjs/core/lib/css/blueprint.css";
 
 import React from "react";
 import { Link } from "../components/Link.js";
@@ -20,8 +21,6 @@ export default function LayoutDefault({
         <Logo />
         <Link href="/">Welcome</Link>
         <Link href="/docs">API Docs</Link>
-        <Link href="/todo">Todo</Link>
-        <Link href="/star-wars">Data Fetching</Link>
         {""}
       </Sidebar>
       <Content>{children}</Content>
