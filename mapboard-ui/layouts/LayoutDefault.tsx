@@ -1,9 +1,13 @@
 import "./style.css";
 
 import React from "react";
-import {Link} from "../components/Link.js";
+import { Link } from "../components/Link.js";
 
-export default function LayoutDefault({children}: { children: React.ReactNode }) {
+export default function LayoutDefault({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <div
       style={{
@@ -13,8 +17,9 @@ export default function LayoutDefault({children}: { children: React.ReactNode })
       }}
     >
       <Sidebar>
-        <Logo/>
+        <Logo />
         <Link href="/">Welcome</Link>
+        <Link href="/docs">API Docs</Link>
         <Link href="/todo">Todo</Link>
         <Link href="/star-wars">Data Fetching</Link>
         {""}
@@ -24,7 +29,7 @@ export default function LayoutDefault({children}: { children: React.ReactNode })
   );
 }
 
-function Sidebar({children}: { children: React.ReactNode }) {
+function Sidebar({ children }: { children: React.ReactNode }) {
   return (
     <div
       id="sidebar"
@@ -42,7 +47,7 @@ function Sidebar({children}: { children: React.ReactNode }) {
   );
 }
 
-function Content({children}: { children: React.ReactNode }) {
+function Content({ children }: { children: React.ReactNode }) {
   return (
     <div id="page-container">
       <div
@@ -68,7 +73,12 @@ function Logo() {
       }}
     >
       <a href="/">
-        <img src="https://mapboard-gis.app/img/mapboard-icon.png" height={100} width={100} alt="logo"/>
+        <img
+          src="https://mapboard-gis.app/img/mapboard-icon.png"
+          height={100}
+          width={100}
+          alt="logo"
+        />
       </a>
     </div>
   );
