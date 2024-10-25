@@ -11,7 +11,7 @@
     "module": "ESNext",
     "noEmit": true,
     "moduleResolution": "Bundler",
-    "target": "ES2022",
+    "target": "ES2019",
     "lib": [
       "DOM",
       "DOM.Iterable",
@@ -19,7 +19,8 @@
     ],
     "types": [
       "vite/client",
-      "vike-react"
+      "vike-react",
+      "./global.d.ts"
     ],
     "jsx": "preserve",
     "jsxImportSource": "react",
@@ -29,6 +30,11 @@
       ]
     }
   },
+  "include": [
+    "**/*.ts",
+    "**/*.d.ts",
+    "**/*.tsx"
+  ],
   "exclude": [
     "dist"
   ]

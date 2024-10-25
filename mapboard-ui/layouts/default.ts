@@ -1,22 +1,38 @@
 import "./style.css";
 import "@blueprintjs/core/lib/css/blueprint.css";
 import h from "@macrostrat/hyper";
-import { DarkModeProvider } from "@macrostrat/ui-components";
+import "@macrostrat/style-system";
+import { usePageContext } from "vike-react/usePageContext";
 
 import React from "react";
 import { Link } from "~/components/link";
+import FullscreenLayout from "./fullscreen";
 
-export default function Default({ children }: { children: React.ReactNode }) {
+export default function Layout({ children }: { children: React.ReactNode }) {
+  // Get layout config value
+  const ctx = usePageContext();
+
+  const layout = ctx.config.layout ?? "default";
+
+  if (layout === "fullscreen") {
+    return h(FullscreenLayout, children);
+  }
+
+  return h(DefaultLayout, children);
+}
+
+function DefaultLayout({ children }: { children: React.ReactNode }) {
   return h(
-    DarkModeProvider,
-    h("div", { style: { display: "flex", maxWidth: 900, margin: "auto" } }, [
+    "div",
+    { style: { display: "flex", maxWidth: 900, margin: "auto" } },
+    [
       h(Sidebar, [
         h(Logo),
         h(Link, { href: "/" }, "Welcome"),
         h(Link, { href: "/docs" }, "API Docs"),
       ]),
       h(Content, children),
-    ]),
+    ],
   );
 }
 

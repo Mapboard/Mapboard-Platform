@@ -8,8 +8,9 @@
   "dependencies": {
     "@blueprintjs/core": "^5.13.1",
     "@macrostrat/hyper": "^3.0.0",
-    "@macrostrat/map-interface": "^1.0.5",
-    "@macrostrat/ui-components": "^4.0.4",
+    "@macrostrat/map-interface": "^1.0.7",
+    "@macrostrat/style-system": "^0.1.0",
+    "@macrostrat/ui-components": "^4.0.7",
     "@supabase/postgrest-js": "^1.16.3",
     "@vitejs/plugin-react": "^4.3.3",
     "react": "^18.3.1",

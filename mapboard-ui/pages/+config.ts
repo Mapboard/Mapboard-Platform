@@ -9,10 +9,14 @@ const Layout = "import:../layouts/default.ts:default";
 export default {
   // https://vike.dev/Layout
   Layout,
-
   // https://vike.dev/head-tags
   title: "Mapboard GIS",
+  layout: "default",
   description: "Platform for building geologic maps",
-
+  meta: {
+    layout: {
+      env: { server: true, client: true },
+    },
+  },
   extends: vikeReact,
 } satisfies Config;

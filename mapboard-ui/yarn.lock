@@ -252,7 +252,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@blueprintjs/colors@npm:^5.1.2":
+"@blueprintjs/colors@npm:^5.1.1, @blueprintjs/colors@npm:^5.1.2":
   version: 5.1.2
   resolution: "@blueprintjs/colors@npm:5.1.2"
   dependencies:
@@ -851,9 +851,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@macrostrat/map-interface@npm:^1.0.5":
-  version: 1.0.5
-  resolution: "@macrostrat/map-interface@npm:1.0.5"
+"@macrostrat/map-interface@npm:^1.0.7":
+  version: 1.0.7
+  resolution: "@macrostrat/map-interface@npm:1.0.7"
   dependencies:
     "@macrostrat/hyper": "npm:^3.0.0"
     "@macrostrat/mapbox-react": "npm:^2.2.3"
@@ -873,7 +873,7 @@ __metadata:
     "@blueprintjs/core": ^5.0.0
     react: ^16.8.6||^17.0.0||^18.0.0
     react-dom: ^16.8.6||^17.0.0||^18.0.0
-  checksum: 10c0/127ec242b8a820efacf6cba4e463fc60b327a42b563e80870453e00201021c6e92261223162b6f53eeccb1770d880aabf038371e6ba27629f77b542f81a00b77
+  checksum: 10c0/682ff02c56cd8af722acd44279c0edcfe98bd1e314e298a1ee6ae0185221bb6250cd78cb33577dea3d9e91d215d78fa2576691e3c30f59232652138a4896c440
   languageName: node
   linkType: hard
 
@@ -909,6 +909,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@macrostrat/style-system@npm:^0.1.0":
+  version: 0.1.0
+  resolution: "@macrostrat/style-system@npm:0.1.0"
+  dependencies:
+    "@blueprintjs/colors": "npm:^5.1.1"
+    "@blueprintjs/core": "npm:^5.10.2"
+  checksum: 10c0/22f3bfaf1a363fc83d31439d964ce098c386f5dbf0f33928e0f86a183bd4f13bdfbb5a74c9cea0b99fc493fdf867b740799972922d5083bee4683dbd6e31c5cd
+  languageName: node
+  linkType: hard
+
 "@macrostrat/ui-components@npm:^4.0.4":
   version: 4.0.4
   resolution: "@macrostrat/ui-components@npm:4.0.4"
@@ -937,6 +947,37 @@ __metadata:
     react: ^16.8.6 || ^17 || ^18
     react-dom: ^16.8.6 || ^17 || ^18
   checksum: 10c0/0a4d5f05196c0cd90d31133654d1d40200443f57a019a56a93b2b4fa44b8dba8cc2d5c028a9ddae9828eadb2cc46621db0eb274a58faf1efefae1a20c42ca4bc
+  languageName: node
+  linkType: hard
+
+"@macrostrat/ui-components@npm:^4.0.7":
+  version: 4.0.7
+  resolution: "@macrostrat/ui-components@npm:4.0.7"
+  dependencies:
+    "@blueprintjs/core": "npm:^5.10.2"
+    "@blueprintjs/datetime2": "npm:^2.3.11"
+    "@macrostrat/hyper": "npm:^3.0.0"
+    "@types/react": "npm:^16.14.41 || 17 || 18"
+    "@types/react-dom": "npm:^17 || ^18"
+    axios: "npm:^1.7.7"
+    chroma-js: "npm:^2.4.2||^3.0.0"
+    classnames: "npm:^2.3.0"
+    d3-array: "npm:^3.2.4"
+    immutability-helper: "npm:^3.1.1"
+    query-string: "npm:^9.0.0"
+    react-color: "npm:^2.19.3"
+    react-dropzone: "npm:^11.4.2"
+    react-intersection-observer: "npm:^8.32.1"
+    react-json-tree: "npm:^0.19.0"
+    ui-box: "npm:^5.4.1"
+    underscore: "npm:^1.13.1"
+    use-async-effect: "npm:^2.2.1"
+    use-element-dimensions: "npm:^2.1.3"
+    zustand: "npm:^4.5.1"
+  peerDependencies:
+    react: ^16.8.6 || ^17 || ^18
+    react-dom: ^16.8.6 || ^17 || ^18
+  checksum: 10c0/deb674eb66e7e84692ed3df400290b22f54527f8384efe006edfc741c8134329c339830954c662ba5c1b5829d789f6bef34a2658157c2fc6ccd536c45b52bc15
   languageName: node
   linkType: hard
 
@@ -4797,8 +4838,9 @@ __metadata:
   dependencies:
     "@blueprintjs/core": "npm:^5.13.1"
     "@macrostrat/hyper": "npm:^3.0.0"
-    "@macrostrat/map-interface": "npm:^1.0.5"
-    "@macrostrat/ui-components": "npm:^4.0.4"
+    "@macrostrat/map-interface": "npm:^1.0.7"
+    "@macrostrat/style-system": "npm:^0.1.0"
+    "@macrostrat/ui-components": "npm:^4.0.7"
     "@macrostrat/vite-plugin-hyperstyles": "npm:^1.0.0"
     "@supabase/postgrest-js": "npm:^1.16.3"
     "@types/node": "npm:^22.7.9"
