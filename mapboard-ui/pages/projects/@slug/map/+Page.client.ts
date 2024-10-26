@@ -5,6 +5,8 @@ import { useAPIResult, useInDarkMode } from "@macrostrat/ui-components";
 import type { Data } from "../+data";
 import { useData } from "vike-react/useData";
 import { Spinner } from "@blueprintjs/core";
+import { buildMap3DStyle } from "./style";
+import { useMemo } from "react";
 
 export function Page() {
   const inDarkMode = useInDarkMode();
@@ -13,9 +15,14 @@ export function Page() {
   const style = inDarkMode
     ? "mapbox://styles/jczaplewski/cl5uoqzzq003614o6url9ou9z"
     : "mapbox://styles/jczaplewski/clatdbkw4002q14lov8zx0bm0";
+
+  const baseURL = `${apiDomain}/api/project/${project.slug}`;
+
+  const overlayStyle = useMemo(() => buildMap3DStyle(baseURL), [project.slug]);
+
   return h(
     DevMapPage,
-    { mapboxToken, style, title: project.title },
+    { mapboxToken, style, title: project.title, overlayStyle },
     h(LayerControlPanel, { slug: project.slug }),
   );
 }

@@ -10,9 +10,6 @@ export function Page() {
   return h("div.page", [
     h("h1", project.title),
     h("pre", JSON.stringify(project, null, 2)),
-    h("ul.links", [
-      h("li", h("a", { href: `./${slug}/map` }, "View map")),
-      h("li", h("a", { href: `./${slug}/inspect` }, "Inspector")),
-    ]),
+    h("ul.links", [h("li", h("a", { href: `./${slug}/map` }, "View map"))]),
   ]);
 }

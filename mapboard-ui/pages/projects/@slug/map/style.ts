@@ -1,13 +1,4 @@
-import h from "@macrostrat/hyper";
-import { DevMapPage } from "@macrostrat/map-interface";
-import { useAPIResult } from "@macrostrat/ui-components";
-import { mapboxToken, apiDomain } from "~/settings";
-import { Data } from "../+data";
-
-import { useData } from "vike-react/useData";
-import { useMemo } from "react";
-
-function buildMap3DStyle(baseURL) {
+export function buildMap3DStyle(baseURL) {
   return {
     version: 8,
     sources: {
@@ -70,30 +61,4 @@ function buildMap3DStyle(baseURL) {
       },
     ],
   };
-}
-
-export function Page() {
-  const project = useData<Data>();
-
-  const baseURL = `${apiDomain}/api/project/${project.slug}`;
-
-  const overlayStyle = useMemo(() => buildMap3DStyle(baseURL), [baseURL]);
-
-  // const bounds = meta.projectBounds ?? [-135, 60, -132, 67];
-  //
-  // console.log(meta, bounds);
-  //
-  // // Get camera params
-  // const camera = {
-  //   lat: (bounds[1] + bounds[3]) / 2,
-  //   lng: (bounds[0] + bounds[2]) / 2,
-  //   altitude: 150000,
-  // };
-
-  return h(DevMapPage, {
-    mapboxToken,
-    overlayStyle,
-    //mapPosition: { camera },
-    //style,
-  });
 }
