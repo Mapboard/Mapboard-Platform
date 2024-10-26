@@ -1,9 +1,0 @@
-.parcel-cache
-.env.local
-.yarn/*
-!.yarn/releases
-!.yarn/plugins
-!.yarn/sdks
-.pnp.*
-.vite
-dist
