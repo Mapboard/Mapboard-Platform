@@ -11,6 +11,9 @@ export default defineConfig({
       "~": path.resolve("./shared"),
     },
   },
+  ssr: {
+    noExternal: ["@macrostrat/ui-components"],
+  },
   server: {
     port: 3002,
   },

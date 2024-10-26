@@ -7,6 +7,7 @@ import { usePageContext } from "vike-react/usePageContext";
 import React from "react";
 import { Link } from "~/components/link";
 import FullscreenLayout from "./fullscreen";
+import { DarkModeProvider } from "@macrostrat/ui-components";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   // Get layout config value
@@ -14,11 +15,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   const layout = ctx.config.layout ?? "default";
 
+  let main: React.ReactNode;
   if (layout === "fullscreen") {
-    return h(FullscreenLayout, children);
+    main = h(FullscreenLayout, children);
+  } else {
+    main = h(DefaultLayout, children);
   }
 
-  return h(DefaultLayout, children);
+  return h(DarkModeProvider, main);
 }
 
 function DefaultLayout({ children }: { children: React.ReactNode }) {
@@ -46,7 +50,6 @@ function Sidebar({ children }: { children: React.ReactNode }) {
         display: "flex",
         flexDirection: "column",
         lineHeight: "1.8em",
-        borderRight: "2px solid #eee",
       },
     },
     children,
