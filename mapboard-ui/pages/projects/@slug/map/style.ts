@@ -1,4 +1,4 @@
-export function buildMap3DStyle(baseURL) {
+export function buildMap3DStyle(baseURL, selectedLayer = null) {
   return {
     version: 8,
     sources: {

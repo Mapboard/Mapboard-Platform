@@ -1,5 +1,6 @@
 import { DevMapPage } from "@macrostrat/map-interface";
-import h from "@macrostrat/hyper";
+import hyper from "@macrostrat/hyper";
+import styles from "./map.module.sass";
 import { apiDomain, mapboxToken } from "~/settings";
 import { useAPIResult, useInDarkMode } from "@macrostrat/ui-components";
 import type { Data } from "../+data";
@@ -7,6 +8,10 @@ import { useData } from "vike-react/useData";
 import { Spinner } from "@blueprintjs/core";
 import { buildMap3DStyle } from "./style";
 import { useMemo } from "react";
+import { MapStateProvider, useMapState } from "./state";
+import classNames from "classnames";
+
+const h = hyper.styled(styles);
 
 export function Page() {
   const inDarkMode = useInDarkMode();
@@ -21,9 +26,12 @@ export function Page() {
   const overlayStyle = useMemo(() => buildMap3DStyle(baseURL), [project.slug]);
 
   return h(
-    DevMapPage,
-    { mapboxToken, style, title: project.title, overlayStyle },
-    h(LayerControlPanel, { slug: project.slug }),
+    MapStateProvider,
+    h(
+      DevMapPage,
+      { mapboxToken, style, title: project.title, overlayStyle },
+      h(LayerControlPanel, { slug: project.slug }),
+    ),
   );
 }
 
@@ -48,7 +56,23 @@ function LayerList({ slug }) {
   });
 
   return h(
-    "ul",
-    sortedLayers.map((layer) => h("li", layer.name)),
+    "ul.layer-list",
+    sortedLayers.map((layer) => h(LayerControl, { layer })),
+  );
+}
+
+function LayerControl({ layer }) {
+  const active = useMapState((state) => state.activeLayer);
+  const setActive = useMapState((state) => state.actions.setActiveLayer);
+
+  return h(
+    "li.layer",
+    {
+      onClick() {
+        setActive(layer.id);
+      },
+      className: classNames({ active: active === layer.id }),
+    },
+    [h("span.name", layer.name)],
   );
 }
