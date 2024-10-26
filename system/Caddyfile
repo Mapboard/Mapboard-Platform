@@ -14,4 +14,11 @@
         reverse_proxy {$MAPBOARD_API_ADDRESS:"mapboard_server:8080"}
     }
 
+    # Add CORS headers to every response
+    header {
+        Access-Control-Allow-Origin *
+        Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+        Access-Control-Allow-Headers "Origin, X-Requested-With, Content-Type, Accept, Authorization"
+    }
+
 }
