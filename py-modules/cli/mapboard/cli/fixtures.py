@@ -7,7 +7,7 @@ from mapboard.topology_manager.commands import _create_tables
 from mapboard.topology_manager.database import Database
 from psycopg2.sql import Literal
 
-from .settings import core_db
+from mapboard.core.settings import core_db
 
 
 def create_core_fixtures():

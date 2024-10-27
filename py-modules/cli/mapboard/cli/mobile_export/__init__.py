@@ -12,7 +12,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy.sql import insert
 
-from ..settings import connection_string
+from mapboard.core.settings import connection_string
 
 install(show_locals=True)
 
@@ -129,4 +129,4 @@ def load_spatialite(dbapi_conn, _):
 def chunked_iterator(iterable, chunksize):
     """Yield successive n-sized chunks from l."""
     for i in range(0, len(iterable), chunksize):
-        yield iterable[i : i + chunksize]
+        yield iterable[i: i + chunksize]

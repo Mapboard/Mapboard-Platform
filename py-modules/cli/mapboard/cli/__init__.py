@@ -15,10 +15,11 @@ from macrostrat.database import Database
 from macrostrat.dinosaur import temp_database
 from macrostrat.utils import setup_stderr_logs
 
+from mapboard.core.settings import MAPBOARD_ROOT, connection_string
+
 from .database import db_app, get_srid, project_params
 from .fixtures import apply_fixtures
 from .projects import app as projects_app
-from .settings import MAPBOARD_ROOT, connection_string
 from .units import move_unit
 from .watch import watch
 

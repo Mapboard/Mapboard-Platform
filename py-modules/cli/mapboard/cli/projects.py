@@ -10,11 +10,11 @@ from mapboard.topology_manager.commands.create_tables import _create_tables
 from sqlalchemy import Engine
 from typer import Typer
 from psycopg2.sql import Identifier
+from mapboard.core.settings import POSTGRES_IMAGE, connection_string, core_db
 
 from .database import setup_database
 from .fixtures import apply_fixtures
 from .mobile_export import export_database
-from .settings import POSTGRES_IMAGE, connection_string, core_db
 
 app = Typer(name="projects", no_args_is_help=True)
 

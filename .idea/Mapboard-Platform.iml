@@ -6,6 +6,7 @@
       <sourceFolder url="file://$MODULE_DIR$/mapboard-cli" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/task-runner" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/topology-manager" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/py-modules/api" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/py-modules/cli" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/py-modules/core" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/py-modules/tasks" isTestSource="false" />
