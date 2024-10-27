@@ -37,6 +37,26 @@ files = [
 ]
 
 [[package]]
+name = "anyio"
+version = "4.6.2.post1"
+description = "High level compatibility layer for multiple asynchronous event loop implementations"
+optional = false
+python-versions = ">=3.9"
+files = [
+    {file = "anyio-4.6.2.post1-py3-none-any.whl", hash = "sha256:6d170c36fba3bdd840c73d3868c1e777e33676a69c3a72cf0a0d5d6d8009b61d"},
+    {file = "anyio-4.6.2.post1.tar.gz", hash = "sha256:4c8bc31ccdb51c7f7bd251f51c609e038d63e34219b44aa86e47576389880b4c"},
+]
+
+[package.dependencies]
+idna = ">=2.8"
+sniffio = ">=1.1"
+
+[package.extras]
+doc = ["Sphinx (>=7.4,<8.0)", "packaging", "sphinx-autodoc-typehints (>=1.2.0)", "sphinx-rtd-theme"]
+test = ["anyio[trio]", "coverage[toml] (>=7)", "exceptiongroup (>=1.2.0)", "hypothesis (>=4.0)", "psutil (>=5.9)", "pytest (>=7.0)", "pytest-mock (>=3.6.1)", "trustme", "truststore (>=0.9.1)", "uvloop (>=0.21.0b1)"]
+trio = ["trio (>=0.26.1)"]
+
+[[package]]
 name = "asttokens"
 version = "2.4.1"
 description = "Annotate AST trees with source code positions"
@@ -53,6 +73,17 @@ six = ">=1.12.0"
 [package.extras]
 astroid = ["astroid (>=1,<2)", "astroid (>=2,<4)"]
 test = ["astroid (>=1,<2)", "astroid (>=2,<4)", "pytest"]
+
+[[package]]
+name = "async-timeout"
+version = "4.0.3"
+description = "Timeout context manager for asyncio programs"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "async-timeout-4.0.3.tar.gz", hash = "sha256:4640d96be84d82d02ed59ea2b7105a0f7b33abe8703703cd0ab0bf87c427522f"},
+    {file = "async_timeout-4.0.3-py3-none-any.whl", hash = "sha256:7405140ff1230c310e51dc27b3145b9092d659ce68ff733fb0cefe3ee42be028"},
+]
 
 [[package]]
 name = "attrs"
@@ -83,6 +114,26 @@ files = [
     {file = "billiard-4.2.1-py3-none-any.whl", hash = "sha256:40b59a4ac8806ba2c2369ea98d876bc6108b051c227baffd928c644d15d8f3cb"},
     {file = "billiard-4.2.1.tar.gz", hash = "sha256:12b641b0c539073fc8d3f5b8b7be998956665c4233c7c1fcd66a7e677c4fb36f"},
 ]
+
+[[package]]
+name = "broadcaster"
+version = "0.3.1"
+description = "Simple broadcast channels."
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "broadcaster-0.3.1-py3-none-any.whl", hash = "sha256:433023ab6b6b4a8da9cbba95910eff52b1e767141419659be287cfd49f2a3ecb"},
+    {file = "broadcaster-0.3.1.tar.gz", hash = "sha256:35d1e174a98346d184cc6558979548340e877ae841c65c7e354153a84fe675d6"},
+]
+
+[package.dependencies]
+anyio = ">=3.4.0,<5"
+
+[package.extras]
+kafka = ["aiokafka"]
+postgres = ["asyncpg"]
+redis = ["redis"]
+test = ["pytest", "pytest-asyncio"]
 
 [[package]]
 name = "celery"
@@ -830,7 +881,25 @@ zeroconf = "^0.56.0"
 
 [package.source]
 type = "directory"
-url = "mapboard-cli"
+url = "py-modules/cli"
+
+[[package]]
+name = "mapboard-core"
+version = "1.0.0"
+description = "Runner for Mapboard tasks"
+optional = false
+python-versions = "^3.11"
+files = []
+develop = true
+
+[package.dependencies]
+broadcaster = "^0.3.1"
+celery = "^5.4.0"
+redis = "^5.2.0"
+
+[package.source]
+type = "directory"
+url = "py-modules/core"
 
 [[package]]
 name = "mapboard-task-runner"
@@ -842,11 +911,12 @@ files = []
 develop = true
 
 [package.dependencies]
-celery = "^5.4.0"
+"mapboard.core" = {path = "../core", develop = true}
+"mapboard.topology-manager" = {path = "../topology-manager", develop = true}
 
 [package.source]
 type = "directory"
-url = "task-runner"
+url = "py-modules/task-runner"
 
 [[package]]
 name = "mapboard-topology-manager"
@@ -866,7 +936,7 @@ typer = "^0.9.0"
 
 [package.source]
 type = "directory"
-url = "topology-manager"
+url = "py-modules/topology-manager"
 
 [[package]]
 name = "markdown-it-py"
@@ -1062,8 +1132,8 @@ files = [
 
 [package.dependencies]
 numpy = [
-    {version = ">=1.23.2", markers = "python_version == \"3.11\""},
     {version = ">=1.26.0", markers = "python_version >= \"3.12\""},
+    {version = ">=1.23.2", markers = "python_version == \"3.11\""},
 ]
 python-dateutil = ">=2.8.2"
 pytz = ">=2020.1"
@@ -1268,8 +1338,8 @@ files = [
 annotated-types = ">=0.6.0"
 pydantic-core = "2.23.4"
 typing-extensions = [
-    {version = ">=4.6.1", markers = "python_version < \"3.13\""},
     {version = ">=4.12.2", markers = "python_version >= \"3.13\""},
+    {version = ">=4.6.1", markers = "python_version < \"3.13\""},
 ]
 
 [package.extras]
@@ -1538,6 +1608,24 @@ files = [
 ]
 
 [[package]]
+name = "redis"
+version = "5.2.0"
+description = "Python client for Redis database and key-value store"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "redis-5.2.0-py3-none-any.whl", hash = "sha256:ae174f2bb3b1bf2b09d54bf3e51fbc1469cf6c10aa03e21141f51969801a7897"},
+    {file = "redis-5.2.0.tar.gz", hash = "sha256:0b1087665a771b1ff2e003aa5bdd354f15a70c9e25d5a7dbf9c722c16528a7b0"},
+]
+
+[package.dependencies]
+async-timeout = {version = ">=4.0.3", markers = "python_full_version < \"3.11.3\""}
+
+[package.extras]
+hiredis = ["hiredis (>=3.0.0)"]
+ocsp = ["cryptography (>=36.0.1)", "pyopenssl (==23.2.1)", "requests (>=2.31.0)"]
+
+[[package]]
 name = "requests"
 version = "2.32.3"
 description = "Python HTTP for Humans."
@@ -1677,6 +1765,17 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*"
 files = [
     {file = "six-1.16.0-py2.py3-none-any.whl", hash = "sha256:8abb2f1d86890a2dfb989f9a77cfcfd3e47c2a354b01111771326f8aa26e0254"},
     {file = "six-1.16.0.tar.gz", hash = "sha256:1e61c37477a1626458e36f7b1d82aa5c9b094fa4802892072e49de9c60c4c926"},
+]
+
+[[package]]
+name = "sniffio"
+version = "1.3.1"
+description = "Sniff out which async library your code is running under"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "sniffio-1.3.1-py3-none-any.whl", hash = "sha256:2f6da418d1f1e0fddd844478f41680e794e6051915791a034ff65e5f100525a2"},
+    {file = "sniffio-1.3.1.tar.gz", hash = "sha256:f4324edc670a0f49750a81b895f35c3adb843cca46f0530f79fc1babb23789dc"},
 ]
 
 [[package]]
@@ -2030,4 +2129,4 @@ ifaddr = ">=0.1.7"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "231a4e918ac767af85b6a24a9138856653ea02472c34467aca2ee4ba925887d3"
+content-hash = "fbed3ba4a7a3581c63cc9fd5b0f258ae538ba4ee4f0023908299355eecc61c9f"

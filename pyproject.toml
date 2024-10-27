@@ -8,9 +8,11 @@ package-mode = false
 
 [tool.poetry.dependencies]
 python = "^3.11"
-"mapboard.cli" = { path = "./mapboard-cli", develop = true }
-"mapboard.topology-manager" = { path = "./topology-manager", develop = true }
-"mapboard.task-runner" = { path = "./task-runner", develop = true }
+"mapboard.cli" = { path = "./py-modules/cli", develop = true }
+"mapboard.topology-manager" = { path = "./py-modules/topology-manager", develop = true }
+"mapboard.task-runner" = { path = "./py-modules/task-runner", develop = true }
+"mapboard.core" = { path = "./py-modules/core", develop = true }
+
 
 [build-system]
 requires = ["poetry-core"]

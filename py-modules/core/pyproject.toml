@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "mapboard.core"
+version = "1.0.0"
+description = "Runner for Mapboard tasks"
+authors = ["Your Name <you@example.com>"]
+readme = "README.md"
+private = true
+packages = [{ include = "mapboard" }]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+celery = "^5.4.0"
+broadcaster = "^0.3.1"
+redis = "^5.2.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

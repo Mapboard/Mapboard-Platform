@@ -8,8 +8,8 @@ packages = [{ include = "mapboard" }]
 
 [tool.poetry.dependencies]
 python = "^3.11"
-celery = "^5.4.0"
-
+"mapboard.core" = { path = "../core", develop = true }
+"mapboard.topology-manager" = { path = "../topology-manager", develop = true }
 
 [build-system]
 requires = ["poetry-core"]
