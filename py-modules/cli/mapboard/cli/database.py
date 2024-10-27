@@ -15,7 +15,7 @@ from sqlalchemy import text
 from typer import Argument, Context, Option, Typer
 
 from .fixtures import apply_core_fixtures, apply_fixtures, create_core_fixtures
-from .settings import connection_string, core_db
+from mapboard.core.settings import connection_string, core_db
 
 db_app = Typer(name="db", no_args_is_help=True)
 

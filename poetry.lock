@@ -856,6 +856,22 @@ colorlog = ">=6.5.0,<7.0.0"
 pydantic = ">=1.10.4,<3.0.0"
 
 [[package]]
+name = "mapboard-api"
+version = "1.0.0"
+description = "API for Mapboard"
+optional = false
+python-versions = "^3.11"
+files = []
+develop = true
+
+[package.dependencies]
+broadcaster = "^0.3.1"
+
+[package.source]
+type = "directory"
+url = "py-modules/api"
+
+[[package]]
 name = "mapboard-cli"
 version = "0.1.0"
 description = "A command-line application to control the Mapboard system"
@@ -872,6 +888,7 @@ ipython = "^8.14.0"
 "macrostrat.database" = "^3.3.0"
 "macrostrat.dinosaur" = "^3.0.1"
 "macrostrat.utils" = "^1.2.1"
+"mapboard.core" = {path = "../core", develop = true}
 "mapboard.topology-manager" = {path = "../topology-manager", develop = true}
 migra = "^3.0.1647431138"
 pytest = "^7.3.1"
@@ -893,8 +910,9 @@ files = []
 develop = true
 
 [package.dependencies]
-broadcaster = "^0.3.1"
 celery = "^5.4.0"
+"macrostrat.database" = "^3.3.0"
+python-dotenv = "^1.0.1"
 redis = "^5.2.0"
 
 [package.source]
@@ -2129,4 +2147,4 @@ ifaddr = ">=0.1.7"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "586bb659f257b4537026470a7070ac25a70d61c785df34d20d027c0358be210f"
+content-hash = "b006e15b7f0b6444416e70fdb4abd96c3d852d578e099aa49b257079eb53b5c5"
