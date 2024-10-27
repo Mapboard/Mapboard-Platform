@@ -4,7 +4,6 @@ sends them to the broker for processing.
 """
 import asyncio
 from contextvars import ContextVar
-from datetime import datetime
 from json import loads
 
 from mapboard.topology_manager.commands.update import _update
@@ -67,8 +66,17 @@ def watch_topology(database: str):
 
     # Get a raw connection to listen for notifications
     conn = _raw_connection(main_db)
-    conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
 
+    print(f"Watching database {database} for topology changes...")
+    loop = asyncio.get_event_loop()
+
+    loop.add_reader(conn, create_notify_handler(conn))
+    loop.create_task(update_topology_sequentially(database))
+
+    loop.run_forever()
+
+
+def create_notify_handler(conn):
     cursor = conn.cursor()
     cursor.execute("LISTEN events;")
 
@@ -76,9 +84,8 @@ def watch_topology(database: str):
         conn.poll()
         for notify in conn.notifies:
             json_payload = loads(notify.payload)
-
-            type = json_payload.get("type", None)
-            if type == "test":
+            _type = json_payload.get("type", None)
+            if _type == "test":
                 print("Received test event", json_payload)
                 continue
 
@@ -87,19 +94,9 @@ def watch_topology(database: str):
             status = needs_update.get()
             status.add(schema)
             needs_update.set(status)
-            # We can do this async eventually, hopefully.
-            # _update_topology(database)
-            # if len(needs_update.get()) > 0:
-            #     _update_topology(database)
         conn.notifies.clear()
 
-    print(f"Watching database {database} for topology changes...")
-    loop = asyncio.get_event_loop()
-
-    loop.add_reader(conn, handle_notify)
-    loop.create_task(update_topology_sequentially(database))
-
-    loop.run_forever()
+    return handle_notify
 
 
 async def update_topology_sequentially(database: str):
@@ -110,7 +107,9 @@ async def update_topology_sequentially(database: str):
 
 def _raw_connection(database: Database):
     conn = database.engine.connect()
-    return conn.connection
+    conn = conn.connection
+    conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+    return conn
 
 
 async def _update_topology(database):
@@ -140,7 +139,6 @@ def send_event(database: str):
     db = Database(url)
     conn = _raw_connection(db)
     cursor = conn.cursor()
-    conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
     test_event = dict(
         type="test",
         time=datetime.now().isoformat(),
