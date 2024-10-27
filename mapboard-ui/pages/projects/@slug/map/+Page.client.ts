@@ -14,6 +14,10 @@ import classNames from "classnames";
 const h = hyper.styled(styles);
 
 export function Page() {
+  return h(MapStateProvider, h(PageInner));
+}
+
+function PageInner() {
   const inDarkMode = useInDarkMode();
   const project = useData<Data>();
 
@@ -23,15 +27,17 @@ export function Page() {
 
   const baseURL = `${apiDomain}/api/project/${project.slug}`;
 
-  const overlayStyle = useMemo(() => buildMap3DStyle(baseURL), [project.slug]);
+  const activeLayer = useMapState((state) => state.activeLayer);
+
+  const overlayStyle = useMemo(
+    () => buildMap3DStyle(baseURL, activeLayer),
+    [project.slug, activeLayer],
+  );
 
   return h(
-    MapStateProvider,
-    h(
-      DevMapPage,
-      { mapboxToken, style, title: project.title, overlayStyle },
-      h(LayerControlPanel, { slug: project.slug }),
-    ),
+    DevMapPage,
+    { mapboxToken, style, title: project.title, overlayStyle },
+    h(LayerControlPanel, { slug: project.slug }),
   );
 }
 

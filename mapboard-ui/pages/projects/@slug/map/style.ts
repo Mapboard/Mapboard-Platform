@@ -1,4 +1,10 @@
 export function buildMap3DStyle(baseURL, selectedLayer = null) {
+  console.log("Selected Layer: ", selectedLayer);
+  let filter: any = ["!=", "map_layer", ""];
+  if (selectedLayer != null) {
+    filter = ["==", "map_layer", selectedLayer];
+  }
+
   return {
     version: 8,
     sources: {
@@ -28,6 +34,7 @@ export function buildMap3DStyle(baseURL, selectedLayer = null) {
           "fill-color": ["get", "color"],
           "fill-opacity": 0.2,
         },
+        filter,
       },
       {
         id: "polygons",
@@ -38,6 +45,7 @@ export function buildMap3DStyle(baseURL, selectedLayer = null) {
           "fill-color": ["get", "color"],
           "fill-opacity": 0.5,
         },
+        filter,
       },
       {
         id: "lines",
@@ -48,6 +56,7 @@ export function buildMap3DStyle(baseURL, selectedLayer = null) {
           "line-color": "#000000",
           "line-width": 1.5,
         },
+        filter,
       },
       {
         id: "points",
@@ -58,6 +67,7 @@ export function buildMap3DStyle(baseURL, selectedLayer = null) {
           "circle-color": "#000000",
           "circle-radius": 1,
         },
+        filter,
       },
     ],
   };

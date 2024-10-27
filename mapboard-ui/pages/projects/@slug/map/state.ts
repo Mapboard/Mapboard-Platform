@@ -15,7 +15,15 @@ function createMapStore() {
   return createStore<MapState>((set, get) => ({
     activeLayer: null,
     actions: {
-      setActiveLayer: (layer) => set({ activeLayer: layer }),
+      setActiveLayer: (layer) =>
+        set((state) => {
+          // Toggle the active layer if it's already active
+          let activeLayer: string | null = layer;
+          if (state.activeLayer === layer) {
+            activeLayer = null;
+          }
+          return { activeLayer };
+        }),
     },
   }));
 }
