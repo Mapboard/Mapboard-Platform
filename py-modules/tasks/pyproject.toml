@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "mapboard.task-runner"
+name = "mapboard.tasks"
 version = "1.0.0"
 description = "Runner for Mapboard tasks"
 authors = ["Your Name <you@example.com>"]

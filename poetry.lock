@@ -902,7 +902,7 @@ type = "directory"
 url = "py-modules/core"
 
 [[package]]
-name = "mapboard-task-runner"
+name = "mapboard-tasks"
 version = "1.0.0"
 description = "Runner for Mapboard tasks"
 optional = false
@@ -916,7 +916,7 @@ develop = true
 
 [package.source]
 type = "directory"
-url = "py-modules/task-runner"
+url = "py-modules/tasks"
 
 [[package]]
 name = "mapboard-topology-manager"
@@ -2129,4 +2129,4 @@ ifaddr = ">=0.1.7"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "fbed3ba4a7a3581c63cc9fd5b0f258ae538ba4ee4f0023908299355eecc61c9f"
+content-hash = "586bb659f257b4537026470a7070ac25a70d61c785df34d20d027c0358be210f"

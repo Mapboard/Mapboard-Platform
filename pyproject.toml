@@ -10,7 +10,7 @@ package-mode = false
 python = "^3.11"
 "mapboard.cli" = { path = "./py-modules/cli", develop = true }
 "mapboard.topology-manager" = { path = "./py-modules/topology-manager", develop = true }
-"mapboard.task-runner" = { path = "./py-modules/task-runner", develop = true }
+"mapboard.tasks" = { path = "./py-modules/tasks", develop = true }
 "mapboard.core" = { path = "./py-modules/core", develop = true }
 
 

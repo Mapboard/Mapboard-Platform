@@ -8,7 +8,7 @@
       <sourceFolder url="file://$MODULE_DIR$/topology-manager" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/py-modules/cli" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/py-modules/core" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/py-modules/task-runner" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/py-modules/tasks" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/py-modules/topology-manager" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/.tmp" />
       <excludeFolder url="file://$MODULE_DIR$/temp" />
