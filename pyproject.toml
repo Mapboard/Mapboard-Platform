@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "mapboard-platform"
+version = "1.0.0"
+description = "A platform for creating geologic maps"
+authors = ["Daven Quinn <code@davenquinn.com>"]
+readme = "README.md"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.11"
+"mapboard.cli" = { path = "./mapboard-cli", develop = true }
+"mapboard.topology-manager" = { path = "./topology-manager", develop = true }
+"mapboard.task-runner" = { path = "./task-runner", develop = true }
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
