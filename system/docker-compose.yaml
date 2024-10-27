@@ -1,4 +1,3 @@
-version: "3"
 services:
   gateway:
     # Reverse proxy
@@ -54,10 +53,10 @@ services:
   # The broker and worker containers create an architecture
   # for running import and processing tasks on a separate thread
   # from the web server. These only run in "worker" profile.
-  broker:
-    profiles:
-      - production
-    image: redis:latest
+  #  broker:
+  #    profiles:
+  #      - production
+  #    image: redis:latest
 volumes:
   db_cluster:
 

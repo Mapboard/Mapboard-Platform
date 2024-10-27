@@ -4,6 +4,8 @@
 here=$(dirname $(realpath $0))
 py_root=$(dirname $here)
 
+export MAPBOARD_ROOT=$py_root
+
 # Load the virtual environment
 export PATH=$py_root/.venv/bin:$PATH
 
