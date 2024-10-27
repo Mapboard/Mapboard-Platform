@@ -25,7 +25,7 @@ function ProjectList() {
   return h(
     "ul.projects-list",
     projects.map((d) =>
-      h("li", h(Link, { href: "/project/" + d.slug }, d.title)),
+      h("li", h(Link, { href: "/projects/" + d.slug }, d.title)),
     ),
   );
 }
