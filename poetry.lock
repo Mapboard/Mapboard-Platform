@@ -520,13 +520,13 @@ test = ["aiohttp", "fiona[s3]", "fsspec", "pytest (>=7)", "pytest-cov", "pytz"]
 
 [[package]]
 name = "geoalchemy2"
-version = "0.14.7"
+version = "0.15.2"
 description = "Using SQLAlchemy with Spatial Databases"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "GeoAlchemy2-0.14.7-py3-none-any.whl", hash = "sha256:af592892c58da0b98aa284d400f207f08a643aeee4523f025cef74991f76af14"},
-    {file = "GeoAlchemy2-0.14.7.tar.gz", hash = "sha256:9ff731c4e5b955525cb128ee7173222365e7f084d4b99f6f68e491bac6b44d21"},
+    {file = "GeoAlchemy2-0.15.2-py3-none-any.whl", hash = "sha256:546455dc39f5bcdfc5b871e57d3f7546c8a6f798eb364c474200f488ace6fd32"},
+    {file = "geoalchemy2-0.15.2.tar.gz", hash = "sha256:3af0272db927373e74ee3b064cdc9464ba08defdb945c51745db1b841482f5dc"},
 ]
 
 [package.dependencies]
@@ -797,48 +797,45 @@ typer = ">=0.9.0,<0.10.0"
 
 [[package]]
 name = "macrostrat-database"
-version = "3.4.0"
+version = "3.4.1"
 description = "A SQLAlchemy-based database toolkit."
 optional = false
 python-versions = "<4.0,>=3.8"
 files = [
-    {file = "macrostrat_database-3.4.0-py3-none-any.whl", hash = "sha256:cb9c5a7a6964a070c010686db45f37af5d838a0e8cbc01189a652849c619d022"},
-    {file = "macrostrat_database-3.4.0.tar.gz", hash = "sha256:a0833030c44da945532b1b500a2d0d332cb11e8e4fa2ecd17c462ca02e26c882"},
+    {file = "macrostrat_database-3.4.1-py3-none-any.whl", hash = "sha256:a1cfbaeb81013ee5ce96e740dfcee70fc689e1297e73620844f6231d6cdbeb5d"},
+    {file = "macrostrat_database-3.4.1.tar.gz", hash = "sha256:24adf1c7365a740dd364cb7867ca5b337d5a4fee1825c4ada1cb171efb4ad26d"},
 ]
 
 [package.dependencies]
 aiofiles = ">=23.2.1,<24.0.0"
 click = ">=8.1.3,<9.0.0"
-GeoAlchemy2 = ">=0.14.0,<0.15.0"
+GeoAlchemy2 = ">=0.15.2,<0.16.0"
 "macrostrat.utils" = ">=1.0.0,<2.0.0"
 psycopg2-binary = ">=2.9.6,<3.0.0"
 rich = ">=13.7.1,<14.0.0"
 SQLAlchemy = ">=2.0.18,<3.0.0"
 SQLAlchemy-Utils = ">=0.41.1,<0.42.0"
-sqlparse = ">=0.4.4,<0.5.0"
+sqlparse = ">=0.5.1,<0.6.0"
 
 [[package]]
 name = "macrostrat-dinosaur"
-version = "3.1.0"
+version = "3.1.1"
 description = "Diff-based database migrations"
 optional = false
 python-versions = "<4.0,>=3.8"
 files = [
-    {file = "macrostrat_dinosaur-3.1.0-py3-none-any.whl", hash = "sha256:943ef2436c7e1fca78e07d38fd119fe5101d589ea517d3c4ca6e3761d02ed556"},
-    {file = "macrostrat_dinosaur-3.1.0.tar.gz", hash = "sha256:5219dc19f11b727c0a30e571182c8a6fd63bdc776b9931bf37f6e739fa24990d"},
+    {file = "macrostrat_dinosaur-3.1.1-py3-none-any.whl", hash = "sha256:322d542058b0283509b28d219cf338cddc23476db20fc073a259680c3432547d"},
+    {file = "macrostrat_dinosaur-3.1.1.tar.gz", hash = "sha256:3fc6850ff5ed747c01bf152688aebd4d60d865ca295922fb0b3e2df9f69388ab"},
 ]
 
 [package.dependencies]
 docker = ">=7.0.0,<8.0.0"
-GeoAlchemy2 = ">=0.14.0,<0.15.0"
-"macrostrat.database" = ">=3.1.2,<4.0.0"
+"macrostrat.database" = ">=3.4.1,<4.0.0"
 "macrostrat.utils" = ">=1.2.1,<2.0.0"
 migra = ">=3.0.1621480950,<4.0.0"
 psycopg2-binary = ">=2.9.1,<3.0.0"
 schemainspect = ">=3.0.1616029793,<4.0.0"
 SQLAlchemy = ">=2.0.0,<3.0.0"
-SQLAlchemy-Utils = ">=0.41.1,<0.42.0"
-sqlparse = ">=0.4.0,<0.5.0"
 
 [[package]]
 name = "macrostrat-utils"
@@ -885,10 +882,11 @@ click = "^8.1.3"
 geopandas = "^0.14.4"
 ipython = "^8.14.0"
 "macrostrat.app_frame" = "^1.2.3"
-"macrostrat.database" = "^3.3.0"
-"macrostrat.dinosaur" = "^3.0.1"
+"macrostrat.database" = "^3.4.0"
+"macrostrat.dinosaur" = "^3.1.1"
 "macrostrat.utils" = "^1.2.1"
 "mapboard.core" = {path = "../core", develop = true}
+"mapboard.tasks" = {path = "../tasks", develop = true}
 "mapboard.topology-manager" = {path = "../topology-manager", develop = true}
 migra = "^3.0.1647431138"
 pytest = "^7.3.1"
@@ -912,6 +910,7 @@ develop = true
 [package.dependencies]
 celery = "^5.4.0"
 "macrostrat.database" = "^3.3.0"
+pydantic = "^2.9.2"
 python-dotenv = "^1.0.1"
 redis = "^5.2.0"
 
@@ -946,7 +945,7 @@ files = []
 develop = true
 
 [package.dependencies]
-"macrostrat.database" = "^3.3.0"
+"macrostrat.database" = "^3.4.1"
 "macrostrat.utils" = "^1.2.1"
 python-dotenv = "^1.0.1"
 rich = "^13.7.1"
@@ -1942,19 +1941,18 @@ pg = ["psycopg2"]
 
 [[package]]
 name = "sqlparse"
-version = "0.4.4"
+version = "0.5.1"
 description = "A non-validating SQL parser."
 optional = false
-python-versions = ">=3.5"
+python-versions = ">=3.8"
 files = [
-    {file = "sqlparse-0.4.4-py3-none-any.whl", hash = "sha256:5430a4fe2ac7d0f93e66f1efc6e1338a41884b7ddf2a350cedd20ccc4d9d28f3"},
-    {file = "sqlparse-0.4.4.tar.gz", hash = "sha256:d446183e84b8349fa3061f0fe7f06ca94ba65b426946ffebe6e3e8295332420c"},
+    {file = "sqlparse-0.5.1-py3-none-any.whl", hash = "sha256:773dcbf9a5ab44a090f3441e2180efe2560220203dc2f8c0b0fa141e18b505e4"},
+    {file = "sqlparse-0.5.1.tar.gz", hash = "sha256:bb6b4df465655ef332548e24f08e205afc81b9ab86cb1c45657a7ff173a3a00e"},
 ]
 
 [package.extras]
-dev = ["build", "flake8"]
+dev = ["build", "hatch"]
 doc = ["sphinx"]
-test = ["pytest", "pytest-cov"]
 
 [[package]]
 name = "stack-data"
@@ -2147,4 +2145,4 @@ ifaddr = ">=0.1.7"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "fa7f1bfb36b185272f4979a186f586cdca432e1e0999f60e1faf3e9bba3c4c3d"
+content-hash = "b006e15b7f0b6444416e70fdb4abd96c3d852d578e099aa49b257079eb53b5c5"
