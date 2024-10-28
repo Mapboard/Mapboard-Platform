@@ -1,0 +1,52 @@
+#!/usr/bin/env zsh
+
+# Create raster reference in database for elevation-based queries
+# e.g. http://blog.mathieu-leplatre.info/drape-lines-on-a-dem-with-postgis.html
+here=$(dirname "$(readlink -f "$0")")
+
+function sql() { mapboard db psql --database naukluft "$@" }
+
+
+function import-dem() {
+  dem=$1
+  schema=$2
+  table=$3
+  ## Import data if it isn't already
+  res=$(sql -tA \
+      -c "SELECT count(*) FROM pg_tables WHERE \
+          schemaname='$schema' AND tablename='$table'")
+  if [[ $res != '1' ]]; then
+    sql -c "CREATE SCHEMA $schema"
+    raster2pgsql -c -C -I -M -t 100x100 \
+      "$dem" "$schema.$table" | sql
+  else
+    print -P "Already imported DEM to $schema.%B%F{green}$table%f%b"
+    print -P "Delete this table to start from scratch"
+  fi
+}
+
+NAUKLUFT_DATA_DIR="/Users/Daven/Projects/Naukluft/data"
+
+# Import elevation models
+import-dem \
+  "$NAUKLUFT_DATA_DIR/terrain/ALOS/ALOS_average_dsm_UTM.vrt" \
+  "raster" "alos_dem"
+
+import-dem \
+  "$NAUKLUFT_DATA_DIR/terrain/WorldDEM/spot-dem.vrt" \
+  "raster" "spot_dem"
+
+# print ""
+# print "Importing fixtures and adding missing columns"
+# ## Update `raster.drape` function and add columns
+# #sql -tA -f "$here/sql/create-fixtures.sql"
+
+# print "Updating sections that have changed"
+# ## Update sections that have changed
+# res=$(sql -tA -f "$here/sql/update-sections.sql")
+# ## and update derived data accordingly
+# #sql -tA -f "$here/sql/unit-outcrop.sql" > /dev/null
+
+# if [[ $res != "UPDATE 0" ]]; then
+#   sql -tA -f "$here/sql/unit-outcrop.sql"
+# fi
