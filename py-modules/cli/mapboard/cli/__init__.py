@@ -15,12 +15,13 @@ from macrostrat.database import Database
 from macrostrat.dinosaur import temp_database
 from macrostrat.utils import setup_stderr_logs
 
+from mapboard.core.settings import MAPBOARD_ROOT, connection_string
+from mapboard.core.workers import watch_topology, send_event
+
 from .database import db_app, get_srid, project_params
 from .fixtures import apply_fixtures
 from .projects import app as projects_app
-from .settings import MAPBOARD_ROOT, connection_string
 from .units import move_unit
-from .watch import watch
 
 
 def prepare_compose_env(app) -> dict[str, str]:
@@ -56,7 +57,8 @@ app = app_.control_command()
 app.add_typer(projects_app, help="Manage Mapboard projects")
 app.add_typer(db_app, help="Database management")
 
-app.command(name="watch")(watch)
+app.command(name="watch")(watch_topology)
+app.command(name="send-event")(send_event)
 
 from .ingest import ingest_map
 

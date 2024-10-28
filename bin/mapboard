@@ -2,10 +2,12 @@
 
 # Get the real path of the script
 here=$(dirname $(realpath $0))
-cli_root=$(dirname $here)
+py_root=$(dirname $here)
+
+export MAPBOARD_ROOT=$py_root
 
 # Load the virtual environment
-export PATH=$cli_root/.venv/bin:$PATH
+export PATH=$py_root/.venv/bin:$PATH
 
 # Run the script
 mapboard "$@"

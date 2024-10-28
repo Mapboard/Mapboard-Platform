@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "mapboard.tasks"
+version = "1.0.0"
+description = "Runner for Mapboard tasks"
+authors = ["Your Name <you@example.com>"]
+readme = "README.md"
+packages = [{ include = "mapboard" }]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+"mapboard.core" = { path = "../core", develop = true }
+"mapboard.topology-manager" = { path = "../topology-manager", develop = true }
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

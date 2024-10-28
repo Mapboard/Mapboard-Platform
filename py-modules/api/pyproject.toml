@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "mapboard.api"
+version = "1.0.0"
+description = "API for Mapboard"
+authors = ["Your Name <you@example.com>"]
+readme = "README.md"
+private = true
+packages = [{ include = "mapboard" }]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+broadcaster = "^0.3.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
