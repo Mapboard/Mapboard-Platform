@@ -13,6 +13,7 @@ click = "^8.1.3"
 "macrostrat.dinosaur" = "^3.1.1"
 "macrostrat.utils" = "^1.2.1"
 "mapboard.topology-manager" = { path = "../topology-manager", develop = true }
+"mapboard.cross-sections" = { path = "../cross-sections", develop = true }
 "mapboard.core" = { path = "../core", develop = true }
 "mapboard.tasks" = { path = "../tasks", develop = true }
 pytest = "^7.3.1"

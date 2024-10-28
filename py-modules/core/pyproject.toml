@@ -13,6 +13,7 @@ celery = "^5.4.0"
 redis = "^5.2.0"
 python-dotenv = "^1.0.1"
 "macrostrat.database" = "^3.3.0"
+"mapboard.topology-manager" = { path = "../topology-manager", develop = true }
 pydantic = "^2.9.2"
 
 

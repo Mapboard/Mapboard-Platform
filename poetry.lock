@@ -886,6 +886,7 @@ ipython = "^8.14.0"
 "macrostrat.dinosaur" = "^3.1.1"
 "macrostrat.utils" = "^1.2.1"
 "mapboard.core" = {path = "../core", develop = true}
+"mapboard.cross-sections" = {path = "../cross-sections", develop = true}
 "mapboard.tasks" = {path = "../tasks", develop = true}
 "mapboard.topology-manager" = {path = "../topology-manager", develop = true}
 migra = "^3.0.1647431138"
@@ -910,6 +911,7 @@ develop = true
 [package.dependencies]
 celery = "^5.4.0"
 "macrostrat.database" = "^3.3.0"
+"mapboard.topology-manager" = {path = "../topology-manager", develop = true}
 pydantic = "^2.9.2"
 python-dotenv = "^1.0.1"
 redis = "^5.2.0"
@@ -917,6 +919,24 @@ redis = "^5.2.0"
 [package.source]
 type = "directory"
 url = "py-modules/core"
+
+[[package]]
+name = "mapboard-cross-sections"
+version = "0.1.0"
+description = "Tools to aid the construction of cross sections"
+optional = false
+python-versions = "^3.11"
+files = []
+develop = true
+
+[package.dependencies]
+"macrostrat.database" = "^3.4.0"
+"mapboard.core" = {path = "../core", develop = true}
+typer = "^0.9"
+
+[package.source]
+type = "directory"
+url = "py-modules/cross-sections"
 
 [[package]]
 name = "mapboard-tasks"
@@ -945,7 +965,7 @@ files = []
 develop = true
 
 [package.dependencies]
-"macrostrat.database" = "^3.4.1"
+"macrostrat.database" = "^3.3.0"
 "macrostrat.utils" = "^1.2.1"
 python-dotenv = "^1.0.1"
 rich = "^13.7.1"
@@ -2145,4 +2165,4 @@ ifaddr = ">=0.1.7"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "b006e15b7f0b6444416e70fdb4abd96c3d852d578e099aa49b257079eb53b5c5"
+content-hash = "8fb69d9e2325404201e26777d54dc6b7f1a69d3133b977ad4022de4507b6e9fc"

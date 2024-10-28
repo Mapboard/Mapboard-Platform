@@ -16,6 +16,7 @@ from typer import Argument, Context, Option, Typer
 
 from .fixtures import apply_core_fixtures, apply_fixtures, create_core_fixtures
 from mapboard.core.settings import connection_string, core_db
+from mapboard.core.database import project_params, setup_database
 
 db_app = Typer(name="db", no_args_is_help=True)
 
@@ -75,29 +76,6 @@ def run_procedure(project: str, name: Optional[str] = Argument(None)):
 
     db = setup_database(project)
     db.run_fixtures(proc)
-
-
-def project_params(project: str):
-    res = core_db.run_query(
-        "SELECT database, data_schema, topo_schema, srid, tolerance FROM projects WHERE slug = :slug",
-        dict(slug=project),
-    ).one()
-    print(res)
-    return dict(
-        database=res.database,
-        data_schema=res.data_schema,
-        topo_schema=res.topo_schema,
-        srid=res.srid,
-        tolerance=res.tolerance,
-    )
-
-
-def setup_database(project: str) -> Database:
-    params = project_params(project)
-    DATABASE_URL = connection_string(params["database"])
-    db = Database(DATABASE_URL)
-    db.set_params(env={}, **params)
-    return db
 
 
 @db_app.command()
