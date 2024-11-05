@@ -129,4 +129,4 @@ def load_spatialite(dbapi_conn, _):
 def chunked_iterator(iterable, chunksize):
     """Yield successive n-sized chunks from l."""
     for i in range(0, len(iterable), chunksize):
-        yield iterable[i: i + chunksize]
+        yield iterable[i : i + chunksize]
