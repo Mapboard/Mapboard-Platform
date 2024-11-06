@@ -10,10 +10,10 @@ export const data = async (pageContext: PageContextServer) => {
   const config = useConfig();
 
   const response = await postgrest
-    .from("projects")
+    .from("project")
     .select()
     .eq("slug", pageContext.routeParams.slug);
-  let project: definitions["projects"] = response.data?.[0];
+  let project: definitions["project"] = response.data?.[0];
 
   config({
     // Set <title>

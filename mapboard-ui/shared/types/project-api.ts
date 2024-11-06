@@ -12,21 +12,29 @@ export interface paths {
       };
     };
   };
-  "/projects": {
+  "/context": {
     get: {
       parameters: {
         query: {
-          id?: parameters["rowFilter.projects.id"];
-          description?: parameters["rowFilter.projects.description"];
-          created_at?: parameters["rowFilter.projects.created_at"];
-          database?: parameters["rowFilter.projects.database"];
-          owner_id?: parameters["rowFilter.projects.owner_id"];
-          srid?: parameters["rowFilter.projects.srid"];
-          slug?: parameters["rowFilter.projects.slug"];
-          title?: parameters["rowFilter.projects.title"];
-          uuid?: parameters["rowFilter.projects.uuid"];
-          data_schema?: parameters["rowFilter.projects.data_schema"];
-          topo_schema?: parameters["rowFilter.projects.topo_schema"];
+          id?: parameters["rowFilter.context.id"];
+          project_id?: parameters["rowFilter.context.project_id"];
+          name?: parameters["rowFilter.context.name"];
+          slug?: parameters["rowFilter.context.slug"];
+          uuid?: parameters["rowFilter.context.uuid"];
+          type?: parameters["rowFilter.context.type"];
+          created_at?: parameters["rowFilter.context.created_at"];
+          database?: parameters["rowFilter.context.database"];
+          data_schema?: parameters["rowFilter.context.data_schema"];
+          topo_schema?: parameters["rowFilter.context.topo_schema"];
+          srid?: parameters["rowFilter.context.srid"];
+          tolerance?: parameters["rowFilter.context.tolerance"];
+          bounds?: parameters["rowFilter.context.bounds"];
+          parent?: parameters["rowFilter.context.parent"];
+          parent_geom?: parameters["rowFilter.context.parent_geom"];
+          offset_x?: parameters["rowFilter.context.offset_x"];
+          offset_y?: parameters["rowFilter.context.offset_y"];
+          is_main_context?: parameters["rowFilter.context.is_main_context"];
+          project_slug?: parameters["rowFilter.context.project_slug"];
           /** Filtering Columns */
           select?: parameters["select"];
           /** Ordering */
@@ -48,84 +56,53 @@ export interface paths {
       responses: {
         /** OK */
         200: {
-          schema: definitions["projects"][];
+          schema: definitions["context"][];
         };
         /** Partial Content */
         206: unknown;
       };
     };
-    post: {
+  };
+  "/project": {
+    get: {
       parameters: {
-        body: {
-          /** projects */
-          projects?: definitions["projects"];
-        };
         query: {
+          id?: parameters["rowFilter.project.id"];
+          slug?: parameters["rowFilter.project.slug"];
+          uuid?: parameters["rowFilter.project.uuid"];
+          title?: parameters["rowFilter.project.title"];
+          description?: parameters["rowFilter.project.description"];
+          created_at?: parameters["rowFilter.project.created_at"];
+          owner_id?: parameters["rowFilter.project.owner_id"];
+          srid?: parameters["rowFilter.project.srid"];
+          main_context?: parameters["rowFilter.project.main_context"];
+          main_context_slug?: parameters["rowFilter.project.main_context_slug"];
+          n_contexts?: parameters["rowFilter.project.n_contexts"];
           /** Filtering Columns */
           select?: parameters["select"];
+          /** Ordering */
+          order?: parameters["order"];
+          /** Limiting and Pagination */
+          offset?: parameters["offset"];
+          /** Limiting and Pagination */
+          limit?: parameters["limit"];
         };
         header: {
+          /** Limiting and Pagination */
+          Range?: parameters["range"];
+          /** Limiting and Pagination */
+          "Range-Unit"?: parameters["rangeUnit"];
           /** Preference */
-          Prefer?: parameters["preferPost"];
+          Prefer?: parameters["preferCount"];
         };
       };
       responses: {
-        /** Created */
-        201: unknown;
-      };
-    };
-    delete: {
-      parameters: {
-        query: {
-          id?: parameters["rowFilter.projects.id"];
-          description?: parameters["rowFilter.projects.description"];
-          created_at?: parameters["rowFilter.projects.created_at"];
-          database?: parameters["rowFilter.projects.database"];
-          owner_id?: parameters["rowFilter.projects.owner_id"];
-          srid?: parameters["rowFilter.projects.srid"];
-          slug?: parameters["rowFilter.projects.slug"];
-          title?: parameters["rowFilter.projects.title"];
-          uuid?: parameters["rowFilter.projects.uuid"];
-          data_schema?: parameters["rowFilter.projects.data_schema"];
-          topo_schema?: parameters["rowFilter.projects.topo_schema"];
+        /** OK */
+        200: {
+          schema: definitions["project"][];
         };
-        header: {
-          /** Preference */
-          Prefer?: parameters["preferReturn"];
-        };
-      };
-      responses: {
-        /** No Content */
-        204: never;
-      };
-    };
-    patch: {
-      parameters: {
-        query: {
-          id?: parameters["rowFilter.projects.id"];
-          description?: parameters["rowFilter.projects.description"];
-          created_at?: parameters["rowFilter.projects.created_at"];
-          database?: parameters["rowFilter.projects.database"];
-          owner_id?: parameters["rowFilter.projects.owner_id"];
-          srid?: parameters["rowFilter.projects.srid"];
-          slug?: parameters["rowFilter.projects.slug"];
-          title?: parameters["rowFilter.projects.title"];
-          uuid?: parameters["rowFilter.projects.uuid"];
-          data_schema?: parameters["rowFilter.projects.data_schema"];
-          topo_schema?: parameters["rowFilter.projects.topo_schema"];
-        };
-        body: {
-          /** projects */
-          projects?: definitions["projects"];
-        };
-        header: {
-          /** Preference */
-          Prefer?: parameters["preferReturn"];
-        };
-      };
-      responses: {
-        /** No Content */
-        204: never;
+        /** Partial Content */
+        206: unknown;
       };
     };
   };
@@ -225,7 +202,62 @@ export interface paths {
 }
 
 export interface definitions {
-  projects: {
+  context: {
+    /**
+     * Format: integer
+     * @description Note:
+     * This is a Primary Key.<pk/>
+     */
+    id?: number;
+    /**
+     * Format: integer
+     * @description Note:
+     * This is a Foreign Key to `project.id`.<fk table='project' column='id'/>
+     */
+    project_id?: number;
+    /** Format: text */
+    name?: string;
+    /** Format: text */
+    slug?: string;
+    /** Format: uuid */
+    uuid?: string;
+    /**
+     * Format: mapboard.context_type
+     * @enum {string}
+     */
+    type?: "map" | "cross-section";
+    /** Format: timestamp without time zone */
+    created_at?: string;
+    /** Format: text */
+    database?: string;
+    /** Format: text */
+    data_schema?: string;
+    /** Format: text */
+    topo_schema?: string;
+    /** Format: integer */
+    srid?: number;
+    /** Format: numeric */
+    tolerance?: number;
+    /** Format: public.geometry(MultiPolygon) */
+    bounds?: string;
+    /**
+     * Format: integer
+     * @description Note:
+     * This is a Foreign Key to `context.id`.<fk table='context' column='id'/>
+     */
+    parent?: number;
+    /** Format: public.geometry */
+    parent_geom?: string;
+    /** Format: numeric */
+    offset_x?: number;
+    /** Format: numeric */
+    offset_y?: number;
+    /** Format: boolean */
+    is_main_context?: boolean;
+    /** Format: text */
+    project_slug?: string;
+  };
+  project: {
     /**
      * Format: integer
      * @description Note:
@@ -233,11 +265,15 @@ export interface definitions {
      */
     id?: number;
     /** Format: text */
+    slug?: string;
+    /** Format: uuid */
+    uuid?: string;
+    /** Format: text */
+    title?: string;
+    /** Format: text */
     description?: string;
     /** Format: timestamp without time zone */
     created_at?: string;
-    /** Format: text */
-    database?: string;
     /**
      * Format: integer
      * @description Note:
@@ -246,16 +282,16 @@ export interface definitions {
     owner_id?: number;
     /** Format: integer */
     srid?: number;
+    /**
+     * Format: integer
+     * @description Note:
+     * This is a Foreign Key to `context.id`.<fk table='context' column='id'/>
+     */
+    main_context?: number;
     /** Format: text */
-    slug?: string;
-    /** Format: text */
-    title?: string;
-    /** Format: uuid */
-    uuid?: string;
-    /** Format: text */
-    data_schema?: string;
-    /** Format: text */
-    topo_schema?: string;
+    main_context_slug?: string;
+    /** Format: bigint */
+    n_contexts?: number;
   };
   users: {
     /**
@@ -314,19 +350,40 @@ export interface parameters {
   offset: string;
   /** @description Limiting and Pagination */
   limit: string;
-  /** @description projects */
-  "body.projects": definitions["projects"];
-  "rowFilter.projects.id": string;
-  "rowFilter.projects.description": string;
-  "rowFilter.projects.created_at": string;
-  "rowFilter.projects.database": string;
-  "rowFilter.projects.owner_id": string;
-  "rowFilter.projects.srid": string;
-  "rowFilter.projects.slug": string;
-  "rowFilter.projects.title": string;
-  "rowFilter.projects.uuid": string;
-  "rowFilter.projects.data_schema": string;
-  "rowFilter.projects.topo_schema": string;
+  /** @description context */
+  "body.context": definitions["context"];
+  "rowFilter.context.id": string;
+  "rowFilter.context.project_id": string;
+  "rowFilter.context.name": string;
+  "rowFilter.context.slug": string;
+  "rowFilter.context.uuid": string;
+  "rowFilter.context.type": string;
+  "rowFilter.context.created_at": string;
+  "rowFilter.context.database": string;
+  "rowFilter.context.data_schema": string;
+  "rowFilter.context.topo_schema": string;
+  "rowFilter.context.srid": string;
+  "rowFilter.context.tolerance": string;
+  "rowFilter.context.bounds": string;
+  "rowFilter.context.parent": string;
+  "rowFilter.context.parent_geom": string;
+  "rowFilter.context.offset_x": string;
+  "rowFilter.context.offset_y": string;
+  "rowFilter.context.is_main_context": string;
+  "rowFilter.context.project_slug": string;
+  /** @description project */
+  "body.project": definitions["project"];
+  "rowFilter.project.id": string;
+  "rowFilter.project.slug": string;
+  "rowFilter.project.uuid": string;
+  "rowFilter.project.title": string;
+  "rowFilter.project.description": string;
+  "rowFilter.project.created_at": string;
+  "rowFilter.project.owner_id": string;
+  "rowFilter.project.srid": string;
+  "rowFilter.project.main_context": string;
+  "rowFilter.project.main_context_slug": string;
+  "rowFilter.project.n_contexts": string;
   /** @description users */
   "body.users": definitions["users"];
   "rowFilter.users.id": string;
