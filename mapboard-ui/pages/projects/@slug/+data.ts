@@ -20,7 +20,7 @@ export const data = async (pageContext: PageContextServer) => {
 
   const ctxRequest = postgrest
     .from("context")
-    .select("id,slug,name,type,is_main_context")
+    .select("id,slug,name,type,is_main_context,project_slug")
     .eq("project_slug", pageContext.routeParams.slug);
 
   const [projects, contexts] = await Promise.all([projRequest, ctxRequest]);

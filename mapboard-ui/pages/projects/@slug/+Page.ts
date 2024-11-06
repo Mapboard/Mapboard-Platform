@@ -48,6 +48,8 @@ function ContextList({ name, contexts }: { name: string; contexts: any[] }) {
 }
 
 function ContextListItem({ ctx }) {
-  const { name, slug } = ctx;
-  return h("li.context-item", [h("a", { href: `./${slug}` }, name)]);
+  const { name, slug, project_slug } = ctx;
+  return h("li.context-item", [
+    h("a", { href: `./${project_slug}/${slug}` }, name),
+  ]);
 }

@@ -19,25 +19,25 @@ export function Page() {
 
 function PageInner() {
   const inDarkMode = useInDarkMode();
-  const project = useData<Data>();
+  const ctx = useData<Data>();
 
   const style = inDarkMode
     ? "mapbox://styles/jczaplewski/cl5uoqzzq003614o6url9ou9z"
     : "mapbox://styles/jczaplewski/clatdbkw4002q14lov8zx0bm0";
 
-  const baseURL = `${apiDomain}/api/project/${project.slug}`;
+  const baseURL = `${apiDomain}/api/project/${ctx.project_slug}`;
 
   const activeLayer = useMapState((state) => state.activeLayer);
 
   const overlayStyle = useMemo(
     () => buildMap3DStyle(baseURL, activeLayer),
-    [project.slug, activeLayer],
+    [ctx.project_slug, activeLayer],
   );
 
   return h(
     DevMapPage,
-    { mapboxToken, style, title: project.title, overlayStyle },
-    h(LayerControlPanel, { slug: project.slug }),
+    { mapboxToken, style, title: ctx.title, overlayStyle },
+    h(LayerControlPanel, { slug: ctx.project_slug }),
   );
 }
 
