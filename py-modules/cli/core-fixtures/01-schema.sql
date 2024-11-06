@@ -37,7 +37,9 @@ CREATE TABLE IF NOT EXISTS mapboard.context (
   tolerance   numeric NOT NULL DEFAULT 0.00001,
   bounds      geometry(MultiPolygon),
   parent      integer REFERENCES mapboard.context (id),
-  parent_geom geometry(Geometry)
+  parent_geom geometry(Geometry),
+  offset_x    numeric DEFAULT 0,
+  offset_y    numeric DEFAULT 0
 );
 
 

@@ -63,3 +63,16 @@ SELECT
   tolerance
 FROM
   projects;
+
+
+-- Set the 'main context' for each project
+
+UPDATE
+  mapboard.project p
+SET
+  main_context = c.id
+FROM
+  mapboard.context c
+WHERE
+    c.project_id = p.id
+AND c.slug = 'main';
