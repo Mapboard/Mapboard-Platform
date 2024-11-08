@@ -1,4 +1,4 @@
-.projects-list
+.picker-list
   list-style: none
   line-height: 2
   padding-left: 0
@@ -7,6 +7,7 @@
 
   li
     border-bottom: var(--panel-border)
+    overflow: hidden
 
     &:last-child
       border-bottom: none
@@ -15,10 +16,9 @@
       padding: 0.2em 1em
       display: block
 
-      &:hover
-        background: var(--background-highlight)
+    &:hover
+      background: var(--background-highlight)
 
-      &.active
-        background: var(--background-active)
+    &.active
+      background: var(--background-active)
   border-radius: 6px
-

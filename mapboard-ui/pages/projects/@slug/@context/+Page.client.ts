@@ -1,23 +1,18 @@
 import hyper from "@macrostrat/hyper";
 import styles from "./map.module.sass";
 import { apiDomain, mapboxToken } from "~/settings";
-import { FlexBox, FlexCol, useAPIResult } from "@macrostrat/ui-components";
+import { FlexBox, useAPIResult } from "@macrostrat/ui-components";
 import type { Data } from "../+data";
 import { useData } from "vike-react/useData";
-import { Breadcrumbs, Spinner } from "@blueprintjs/core";
+import { AnchorButton, Breadcrumbs, Icon, Spinner } from "@blueprintjs/core";
 import { buildMap3DStyle } from "./style";
 import { useMemo } from "react";
 import { MapStateProvider, useMapState } from "./state";
 import classNames from "classnames";
 import { bbox } from "@turf/bbox";
-import { Card } from "@blueprintjs/core";
-import {
-  FloatingNavbar,
-  MapAreaContainer,
-  MapLoadingButton,
-  MapView,
-} from "@macrostrat/map-interface";
+import { MapLoadingButton, MapView } from "@macrostrat/map-interface";
 import { MapArea } from "./map";
+import { PickerList } from "~/components/list";
 
 const h = hyper.styled(styles);
 
@@ -39,23 +34,51 @@ function PageInner() {
     [ctx.project_slug, activeLayer],
   );
 
-  console.log(ctx);
-
-  const headerElement = h(ProjectBreadcrumbs, ctx);
   return h(
-    MapArea,
-    { mapboxToken, title: ctx.name, overlayStyle, bounds, headerElement },
-    [h(LayerControlPanel, { slug: ctx.project_slug })],
+    "div.map-viewer",
+    h(
+      MapArea,
+      {
+        mapboxToken,
+        title: ctx.name,
+        overlayStyle,
+        bounds,
+        headerElement: h(ContextHeader, ctx),
+      },
+      [h(LayerControlPanel, { slug: ctx.project_slug })],
+    ),
   );
 }
 
-function ProjectBreadcrumbs({ project_name, project_slug, name }) {
-  const items = [
-    { href: `/projects/${project_slug}`, text: project_name },
-    { text: name },
-  ];
+function ContextHeader({ project_name, project_slug, name }) {
+  const isOpen = useMapState((state) => state.layerPanelIsOpen);
+  const setOpen = useMapState((state) => state.actions.toggleLayerPanel);
 
-  return h(Breadcrumbs, { items });
+  return h(FlexBox, { className: "nav-header" }, [
+    h(
+      BackButton,
+      { href: `/projects/${project_slug}`, className: "back-to-project" },
+      project_name,
+    ),
+    h("div.title-row", [
+      h(MapLoadingButton, {
+        large: false,
+        icon: "layers",
+        active: isOpen,
+        className: "layer-toggle",
+        onClick: () => setOpen(!isOpen),
+      }),
+      h("h2", name),
+    ]),
+  ]);
+}
+
+function BackButton({ href, children, className }) {
+  return h(
+    AnchorButton,
+    { minimal: true, href, icon: "arrow-left", small: true, className },
+    children,
+  );
 }
 
 function LayerControlPanel({ slug }) {
@@ -79,7 +102,8 @@ function LayerList({ slug }) {
   });
 
   return h(
-    "ul.layer-list",
+    PickerList,
+    { className: "layer-list" },
     sortedLayers.map((layer) => h(LayerControl, { layer })),
   );
 }

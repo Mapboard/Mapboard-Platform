@@ -1,74 +1,49 @@
-.active
-  font-weight: 600
+.layer-control-panel
+  > :first-child
+    margin-top: 0
 
 .layer-list
   list-style: none
   padding-left: 0
   line-height: 2
+  margin-bottom: 0
+
+  li
+    padding: 0 0.5em
+
+  .active
+    font-weight: 800
+    background: var(--background-active)
 
 .feature-panel
   position: relative
   margin: 0 -1em
 
-.key-value
-  display: inline-block
-  margin-right: 1em
+.back-to-project
+  text-overflow: ellipsis
+  text-wrap: nowrap
 
-  .key
-    font-weight: bold
-    font-size: 0.9em
+.map-viewer
+  --map-context-stack-width: fit-content
 
-    &:after
-      content: ': '
 
-  .value
-    font-size: 0.9em
-
-.feature-properties
-  position: relative
-
-  &:before
-    content: "–"
-    position: absolute
-    top: 4px
-    left: 0
-
-.feature-header h3
-  margin-bottom: 0
-  margin-top: 0.5em
-
-.feature-group
-  border-bottom: 1px solid var(--panel-rule-inner)
-  margin-bottom: 0.5em
-
-  &:last-child
-    border-bottom: none
-
-.tile-info
+.nav-header
+  gap: 0.25em
   display: flex
-  flex-direction: row
-  align-items: baseline
+  flex-direction: column
 
-  h3
-    margin-right: 0.5em
+  .title-row
+    display: flex
+    gap: 0.5em
+    align-items: baseline
 
-.opacity-slider
-  margin: 0 1em 0.5em
+    > :global(.bp5-button)
+      width: 2em
 
-  :global
-    .bp5-slider-handle .bp5-slider-label
-      background-color: var(--secondary-color)
-      color: var(--text-color)
+  .layer-toggle
+    width: 1.6em
 
-.unit-number
-  .unit
-    font-size: 0.9em
-    margin-left: 0.2em
-    font-weight: bold
 
-.page
-  margin: 2em auto
-  max-width: 50em
-
-.dev-index-page
-  overflow-y: scroll
+:global
+  .bp5-card
+    border-radius: 6px

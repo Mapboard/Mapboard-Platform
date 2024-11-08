@@ -7,6 +7,7 @@ interface MapState {
   actions: {
     setActiveLayer: (layer: string) => void;
   };
+  layerPanelIsOpen: boolean;
 }
 
 const MapStateContext = createContext<StoreApi<MapState> | null>(null);
@@ -24,6 +25,10 @@ function createMapStore() {
           }
           return { activeLayer };
         }),
+      toggleLayerPanel: () =>
+        set((state) => {
+          return { layerPanelIsOpen: !state.layerPanelIsOpen };
+        }),
     },
   }));
 }
@@ -40,4 +45,12 @@ export function useMapState(selector: (state: MapState) => any) {
     throw new Error("No map state found");
   }
   return useStore(store, selector);
+}
+
+export function useMapActions() {
+  const store = useContext(MapStateContext);
+  if (store == null) {
+    throw new Error("No map state found");
+  }
+  return store.getState().actions;
 }

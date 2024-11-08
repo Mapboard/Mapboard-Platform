@@ -91,7 +91,9 @@ UPDATE
   mapboard.context
 SET
   -- location for namibia
-  bounds = st_setsrid(st_makeenvelope(15.5, -24.5, 17, -23.7), 4326)
+  bounds = st_setsrid(st_makeenvelope(15.5, -24.5, 17, -23.7), 4326),
+  name = 'Main map',
+  slug = 'map'
 WHERE
     project_id = mapboard.project_id('naukluft')
 AND type = 'map';
