@@ -1,15 +1,23 @@
-import { DevMapPage } from "@macrostrat/map-interface";
 import hyper from "@macrostrat/hyper";
 import styles from "./map.module.sass";
 import { apiDomain, mapboxToken } from "~/settings";
-import { useAPIResult, useInDarkMode } from "@macrostrat/ui-components";
+import { FlexBox, FlexCol, useAPIResult } from "@macrostrat/ui-components";
 import type { Data } from "../+data";
 import { useData } from "vike-react/useData";
-import { Spinner } from "@blueprintjs/core";
+import { Breadcrumbs, Spinner } from "@blueprintjs/core";
 import { buildMap3DStyle } from "./style";
 import { useMemo } from "react";
 import { MapStateProvider, useMapState } from "./state";
 import classNames from "classnames";
+import { bbox } from "@turf/bbox";
+import { Card } from "@blueprintjs/core";
+import {
+  FloatingNavbar,
+  MapAreaContainer,
+  MapLoadingButton,
+  MapView,
+} from "@macrostrat/map-interface";
+import { MapArea } from "./map";
 
 const h = hyper.styled(styles);
 
@@ -18,12 +26,9 @@ export function Page() {
 }
 
 function PageInner() {
-  const inDarkMode = useInDarkMode();
   const ctx = useData<Data>();
 
-  const style = inDarkMode
-    ? "mapbox://styles/jczaplewski/cl5uoqzzq003614o6url9ou9z"
-    : "mapbox://styles/jczaplewski/clatdbkw4002q14lov8zx0bm0";
+  const bounds = bbox(ctx.bounds);
 
   const baseURL = `${apiDomain}/api/project/${ctx.project_slug}`;
 
@@ -34,11 +39,23 @@ function PageInner() {
     [ctx.project_slug, activeLayer],
   );
 
+  console.log(ctx);
+
+  const headerElement = h(ProjectBreadcrumbs, ctx);
   return h(
-    DevMapPage,
-    { mapboxToken, style, title: ctx.title, overlayStyle },
-    h(LayerControlPanel, { slug: ctx.project_slug }),
+    MapArea,
+    { mapboxToken, title: ctx.name, overlayStyle, bounds, headerElement },
+    [h(LayerControlPanel, { slug: ctx.project_slug })],
   );
+}
+
+function ProjectBreadcrumbs({ project_name, project_slug, name }) {
+  const items = [
+    { href: `/projects/${project_slug}`, text: project_name },
+    { text: name },
+  ];
+
+  return h(Breadcrumbs, { items });
 }
 
 function LayerControlPanel({ slug }) {

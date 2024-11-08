@@ -860,9 +860,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@macrostrat/map-interface@npm:^1.0.9":
-  version: 1.0.9
-  resolution: "@macrostrat/map-interface@npm:1.0.9"
+"@macrostrat/map-interface@portal:///Users/Daven/Projects/Macrostrat/Software/web-components/packages/map-interface::locator=root-workspace-0b6124%40workspace%3A.":
+  version: 0.0.0-use.local
+  resolution: "@macrostrat/map-interface@portal:///Users/Daven/Projects/Macrostrat/Software/web-components/packages/map-interface::locator=root-workspace-0b6124%40workspace%3A."
   dependencies:
     "@macrostrat/color-utils": "npm:^1.0.0"
     "@macrostrat/hyper": "npm:^3.0.0"
@@ -882,9 +882,8 @@ __metadata:
     "@blueprintjs/core": ^5.0.0
     react: ^16.8.6||^17.0.0||^18.0.0
     react-dom: ^16.8.6||^17.0.0||^18.0.0
-  checksum: 10c0/43b21ae974b7cb1d6a909345dc7bdfb493d29e8ae3e9c969f6a11c2bd9725b59679c739fd647ef5e8ff1450ca559785b36feca7aa43aa305cb7092063675cd35
   languageName: node
-  linkType: hard
+  linkType: soft
 
 "@macrostrat/mapbox-react@npm:^2.2.3":
   version: 2.2.3
@@ -904,6 +903,27 @@ __metadata:
     react: ^16||^17||^18
     react-dom: ^16||^17||^18
   checksum: 10c0/3ff2d0c15b92e3f75894c744a5e3e47b4feaab88497b70f04ae290d2608af8f540c4e2f5c093ac612e98e547a3bc41aa3285302d0a7df0639e9509e7c9c88f91
+  languageName: node
+  linkType: hard
+
+"@macrostrat/mapbox-react@npm:^2.3.0":
+  version: 2.3.0
+  resolution: "@macrostrat/mapbox-react@npm:2.3.0"
+  dependencies:
+    "@macrostrat/hyper": "npm:^3.0.0"
+    "@macrostrat/mapbox-utils": "npm:^1.3.2"
+    "@turf/bbox": "npm:^7.1.0"
+    "@turf/centroid": "npm:^7.1.0"
+    "@types/mapbox-gl": "npm:^2.7.5"
+    classnames: "npm:^2.3.1"
+    immutability-helper: "npm:^3.1.1"
+    mapbox-gl: "npm:^2.15.0"
+    mapbox-gl-controls: "npm:^2.3.5"
+  peerDependencies:
+    "@blueprintjs/core": ^3||^4||^5.10.2
+    react: ^16||^17||^18
+    react-dom: ^16||^17||^18
+  checksum: 10c0/873039518317fda5956f3a24c8cf4ff385801b91ffc79cab721cd019ecf90e66a26b1577d47f68bcb0cd82cbc8f07236cc27135014ba2973d5b8a42b6f673d89
   languageName: node
   linkType: hard
 
@@ -959,9 +979,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@macrostrat/ui-components@npm:^4.0.7":
-  version: 4.0.7
-  resolution: "@macrostrat/ui-components@npm:4.0.7"
+"@macrostrat/ui-components@portal:///Users/Daven/Projects/Macrostrat/Software/web-components/packages/ui-components::locator=root-workspace-0b6124%40workspace%3A.":
+  version: 0.0.0-use.local
+  resolution: "@macrostrat/ui-components@portal:///Users/Daven/Projects/Macrostrat/Software/web-components/packages/ui-components::locator=root-workspace-0b6124%40workspace%3A."
   dependencies:
     "@blueprintjs/core": "npm:^5.10.2"
     "@blueprintjs/datetime2": "npm:^2.3.11"
@@ -986,9 +1006,8 @@ __metadata:
   peerDependencies:
     react: ^16.8.6 || ^17 || ^18
     react-dom: ^16.8.6 || ^17 || ^18
-  checksum: 10c0/deb674eb66e7e84692ed3df400290b22f54527f8384efe006edfc741c8134329c339830954c662ba5c1b5829d789f6bef34a2658157c2fc6ccd536c45b52bc15
   languageName: node
-  linkType: hard
+  linkType: soft
 
 "@macrostrat/vite-plugin-hyperstyles@npm:^1.0.0":
   version: 1.0.0
@@ -4847,11 +4866,13 @@ __metadata:
   dependencies:
     "@blueprintjs/core": "npm:^5.13.1"
     "@macrostrat/hyper": "npm:^3.0.0"
-    "@macrostrat/map-interface": "npm:^1.0.9"
+    "@macrostrat/map-interface": "portal:///Users/Daven/Projects/Macrostrat/Software/web-components/packages/map-interface"
+    "@macrostrat/mapbox-react": "npm:^2.3.0"
     "@macrostrat/style-system": "npm:^0.1.0"
-    "@macrostrat/ui-components": "npm:^4.0.7"
+    "@macrostrat/ui-components": "portal:///Users/Daven/Projects/Macrostrat/Software/web-components/packages/ui-components"
     "@macrostrat/vite-plugin-hyperstyles": "npm:^1.0.0"
     "@supabase/postgrest-js": "npm:^1.16.3"
+    "@turf/bbox": "npm:^7.1.0"
     "@types/node": "npm:^22.7.9"
     "@types/react": "npm:^18.3.11"
     "@types/react-dom": "npm:^18.3.1"

@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS mapboard.context (
   id          integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   project_id  integer NOT NULL REFERENCES mapboard.project (id),
   name        text,
+  description text,
   slug        text,
   uuid        uuid NOT NULL DEFAULT gen_random_uuid(),
   type        mapboard.context_type NOT NULL,

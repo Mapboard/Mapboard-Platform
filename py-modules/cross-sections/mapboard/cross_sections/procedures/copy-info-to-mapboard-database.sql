@@ -84,3 +84,14 @@ SET
 WHERE
     type = 'cross-section'
 AND project_id = (SELECT id FROM mapboard.project WHERE slug = 'naukluft');
+
+
+/** Update project boundaries for Naukluft project */
+UPDATE
+  mapboard.context
+SET
+  -- location for namibia
+  bounds = st_setsrid(st_makeenvelope(15.5, -24.5, 17, -23.7), 4326)
+WHERE
+    project_id = mapboard.project_id('naukluft')
+AND type = 'map';

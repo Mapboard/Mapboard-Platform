@@ -17,6 +17,8 @@ export const data = async (pageContext: PageContextServer) => {
 
   let ctx: definitions["context"] = res.data?.[0];
 
+  console.log(ctx);
+
   config({
     // Set <title>
     title: ctx.name,

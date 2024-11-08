@@ -76,3 +76,15 @@ FROM
 WHERE
     c.project_id = p.id
 AND c.slug = 'main';
+
+/* Create bounds for main context */
+
+UPDATE mapboard.context c
+SET
+  bounds = (SELECT
+              st_envelope(st_union(st_envelope(geometry)))
+            FROM
+              naukluft_map_data.linework)
+WHERE
+    c.slug = 'main'
+AND c.project_id = mapboard.project_id('naukluft');
