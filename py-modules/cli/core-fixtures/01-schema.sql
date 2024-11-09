@@ -3,6 +3,9 @@
 CREATE EXTENSION IF NOT EXISTS postgis;
 CREATE SCHEMA IF NOT EXISTS mapboard;
 
+DROP VIEW IF EXISTS mapboard_api.context;
+DROP VIEW IF EXISTS mapboard_api.project;
+
 CREATE TABLE IF NOT EXISTS users (
   id         serial PRIMARY KEY,
   username   text NOT NULL UNIQUE,
@@ -25,10 +28,10 @@ CREATE TYPE mapboard.context_type AS enum ('map', 'cross-section');
 CREATE TABLE IF NOT EXISTS mapboard.context (
   id          integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   project_id  integer NOT NULL REFERENCES mapboard.project (id),
-  name        text,
+  name        text NOT NULL,
   description text,
-  slug        text,
-  uuid        uuid NOT NULL DEFAULT gen_random_uuid(),
+  slug        text NOT NULL,
+  uuid        uuid NOT NULL DEFAULT gen_random_uuid() UNIQUE,
   type        mapboard.context_type NOT NULL,
   created_at  timestamp DEFAULT current_timestamp,
   database    text NOT NULL,
@@ -40,7 +43,8 @@ CREATE TABLE IF NOT EXISTS mapboard.context (
   parent      integer REFERENCES mapboard.context (id),
   parent_geom geometry(Geometry),
   offset_x    numeric DEFAULT 0,
-  offset_y    numeric DEFAULT 0
+  offset_y    numeric DEFAULT 0,
+  UNIQUE (project_id, slug)
 );
 
 

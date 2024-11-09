@@ -4,9 +4,10 @@ from pathlib import Path
 from subprocess import run
 from sys import stdin
 from typing import Optional
+from rich.console import Console
 
 from macrostrat.app_frame.compose import console
-from macrostrat.database import run_sql
+from macrostrat.database import run_sql, run_query
 from macrostrat.database.transfer.utils import raw_database_url
 from macrostrat.dinosaur import create_migration
 from macrostrat.utils.shell import run
@@ -84,6 +85,7 @@ def migrate(
     apply: bool = False,
     allow_unsafe: bool = False,
 ):
+    console = Console(file=sys.stderr)
     """Migrate a Mapboard project database to the latest version"""
     if project is None:
         project = "mapboard"
@@ -124,6 +126,26 @@ def migrate(
         if not allow_unsafe and "drop" in stmt.lower():
             continue
         if apply:
-            run_sql(db.session, stmt)
+            run_sql(db.engine, stmt)
         else:
             print(stmt, file=sys.stdout)
+
+
+@db_app.command()
+def disconnect(project: Optional[str] = None):
+    """Disconnect from a project database"""
+    if project is None:
+        db = core_db
+    else:
+        params = project_params(project)
+        database = params.pop("database")
+        db = Database(connection_string(database))
+    db.run_sql(
+        """
+        SELECT *, pg_terminate_backend(pid)
+        FROM pg_stat_activity
+        WHERE pid <> pg_backend_pid()
+        AND datname = current_database()
+
+        """
+    )
