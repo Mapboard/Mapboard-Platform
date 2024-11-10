@@ -43,7 +43,8 @@ SELECT
   c.offset_y,
   p.main_context = c.id        AS is_main,
   p.slug                       AS project_slug,
-  p.title                      AS project_name
+  p.title                      AS project_name,
+  p.uuid                       AS project_uuid
 FROM
   mapboard.context c
   JOIN mapboard.project p
