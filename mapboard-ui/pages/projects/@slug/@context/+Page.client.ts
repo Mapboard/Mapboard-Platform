@@ -25,7 +25,7 @@ function PageInner() {
 
   const bounds = bbox(ctx.bounds);
 
-  const baseURL = `${apiDomain}/api/project/${ctx.project_slug}`;
+  const baseURL = `${apiDomain}/api/project/${ctx.project_slug}/context/${ctx.slug}`;
 
   const activeLayer = useMapState((state) => state.activeLayer);
 
@@ -45,7 +45,7 @@ function PageInner() {
         bounds,
         headerElement: h(ContextHeader, ctx),
       },
-      [h(LayerControlPanel, { slug: ctx.project_slug })],
+      [h(LayerControlPanel, { baseURL })],
     ),
   );
 }
@@ -81,17 +81,15 @@ function BackButton({ href, children, className }) {
   );
 }
 
-function LayerControlPanel({ slug }) {
+function LayerControlPanel({ baseURL }) {
   return h("div.layer-control-panel", [
     h("h2", "Layers"),
-    h(LayerList, { slug }),
+    h(LayerList, { baseURL }),
   ]);
 }
 
-function LayerList({ slug }) {
-  const layers: any[] = useAPIResult(
-    apiDomain + `/api/project/${slug}/map-layers`,
-  );
+function LayerList({ baseURL }) {
+  const layers: any[] = useAPIResult(baseURL + "/map-layers");
 
   if (layers == null) {
     return h(Spinner);
