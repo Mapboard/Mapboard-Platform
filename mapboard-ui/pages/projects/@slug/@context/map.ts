@@ -56,6 +56,7 @@ export function MapArea({
       style,
       mapPosition: null,
       projection: { name: "globe" },
+      boxZoom: false,
       mapboxToken,
       bounds,
     }),

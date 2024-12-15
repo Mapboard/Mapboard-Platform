@@ -1,19 +1,18 @@
 import hyper from "@macrostrat/hyper";
-import styles from "./map.module.sass";
+import styles from "../map.module.sass";
 import { apiDomain, mapboxToken } from "~/settings";
-import { useAPIResult } from "@macrostrat/ui-components";
-import type { Data } from "../+data";
+import { FlexBox, useAPIResult } from "@macrostrat/ui-components";
+import type { Data } from "../../+data";
 import { useData } from "vike-react/useData";
 import { AnchorButton, Breadcrumbs, Icon, Spinner } from "@blueprintjs/core";
-import { buildMap3DStyle } from "./style";
+import { buildMap3DStyle } from "../style";
 import { useMemo } from "react";
-import { MapStateProvider, useMapState } from "./state";
+import { MapStateProvider, useMapState } from "../state";
 import classNames from "classnames";
 import { bbox } from "@turf/bbox";
-import { MapLoadingButton, MapView } from "@macrostrat/map-interface";
-import { MapArea } from "./map";
+import { MapLoadingButton, DevMapPage } from "@macrostrat/map-interface";
+import { MapArea } from "../map";
 import { PickerList } from "~/components/list";
-import { BoxSelectionManager } from "./_tools";
 
 const h = hyper.styled(styles);
 
@@ -23,8 +22,6 @@ export function Page() {
 
 function PageInner() {
   const ctx = useData<Data>();
-
-  console.log(ctx);
 
   const bounds = bbox(ctx.bounds);
 
@@ -38,6 +35,19 @@ function PageInner() {
   );
 
   return h(
+    DevMapPage,
+    {
+      mapboxToken,
+      title: ctx.name,
+      overlayStyle,
+      bounds,
+      //headerElement: h(ContextHeader, ctx),
+      baseURL,
+    },
+    [h(LayerControlPanel, { baseURL })],
+  );
+
+  return h(
     "div.map-viewer",
     h(
       MapArea,
@@ -46,22 +56,26 @@ function PageInner() {
         title: ctx.name,
         overlayStyle,
         bounds,
-        headerElement: h(ContextHeader, ctx),
+        headerElement: h(ContextHeader, {
+          backLink: `/projects/${ctx.project_slug}/${ctx.slug}`,
+          backLinkText: ctx.name,
+          name: "Topology",
+        }),
       },
-      [h(LayerControlPanel, { baseURL }), h(BoxSelectionManager)],
+      [h(LayerControlPanel, { baseURL })],
     ),
   );
 }
 
-function ContextHeader({ project_name, project_slug, name }) {
+function ContextHeader({ backLink, backLinkText, name }) {
   const isOpen = useMapState((state) => state.layerPanelIsOpen);
   const setOpen = useMapState((state) => state.actions.toggleLayerPanel);
 
-  return h("div.nav-header", [
+  return h(FlexBox, { className: "nav-header" }, [
     h(
       BackButton,
-      { href: `/projects/${project_slug}`, className: "back-to-project" },
-      project_name,
+      { href: backLink, className: "back-to-project" },
+      backLinkText,
     ),
     h("div.title-row", [
       h(MapLoadingButton, {
