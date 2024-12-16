@@ -24,9 +24,11 @@ export function Page() {
 function PageInner() {
   const ctx = useData<Data>();
 
-  console.log(ctx);
-
-  const bounds = bbox(ctx.bounds);
+  let bounds = null;
+  // We might not have any bounds yet, though this should probably be required...
+  if (ctx.bounds) {
+    bounds = bbox(ctx.bounds);
+  }
 
   const baseURL = `${apiDomain}/api/project/${ctx.project_slug}/context/${ctx.slug}`;
 

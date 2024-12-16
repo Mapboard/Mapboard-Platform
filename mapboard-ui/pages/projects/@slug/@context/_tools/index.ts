@@ -5,6 +5,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useMapRef } from "@macrostrat/mapbox-react";
+import styles from "./index.module.sass";
 import mapboxgl from "mapbox-gl";
 
 export function BoxSelectionManager() {
@@ -119,7 +120,7 @@ export function BoxSelectionManager() {
         // Append the box element if it doesnt exist
         if (!box) {
           box = document.createElement("div");
-          box.classList.add("boxdraw");
+          box.classList.add(styles["box-draw"]);
           canvas.appendChild(box);
         }
 
