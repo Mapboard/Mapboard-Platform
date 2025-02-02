@@ -58,8 +58,14 @@ export function buildMap3DStyle(baseURL, selectedLayer = null) {
         source: "mapboard_line",
         "source-layer": "lines",
         paint: {
-          "line-color": "#000000",
+          "line-color": [
+            "case",
+            ["==", ["get", "color"], "none"],
+            "#000000",
+            ["get", "color"],
+          ],
           "line-width": 1.5,
+          "line-opacity": 0.2,
         },
         //filter,
       },
@@ -69,10 +75,15 @@ export function buildMap3DStyle(baseURL, selectedLayer = null) {
         source: "mapboard_line",
         "source-layer": "endpoints",
         paint: {
-          "circle-color": "#000000",
+          "circle-color": [
+            "case",
+            ["==", ["get", "color"], "none"],
+            "#000000",
+            ["get", "color"],
+          ],
           "circle-radius": 2,
         },
-        //filter,
+        filter,
       },
     ],
   };
