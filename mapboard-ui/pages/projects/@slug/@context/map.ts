@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import {
   MapView,
   FloatingNavbar,
-  MapLoadingButton,
   buildInspectorStyle,
   MapAreaContainer,
   PanelCard,

@@ -65,7 +65,7 @@ export function buildMap3DStyle(baseURL, selectedLayer = null) {
         "source-layer": "endpoints",
         paint: {
           "circle-color": "#000000",
-          "circle-radius": 1,
+          "circle-radius": 2,
         },
         filter,
       },

@@ -3,16 +3,18 @@
  * https://docs.mapbox.com/mapbox-gl-js/example/using-box-queryrenderedfeatures/
  *  */
 
-import { useEffect, useRef, useState } from "react";
-import { useMapRef } from "@macrostrat/mapbox-react";
+import { useMapRef, useMapStyleOperator } from "@macrostrat/mapbox-react";
 import styles from "./index.module.sass";
 import mapboxgl from "mapbox-gl";
 
-export function BoxSelectionManager() {
+type BoxSelectionProps = {
+  layer: string;
+};
+
+export function BoxSelectionManager(props: BoxSelectionProps) {
   const ref = useMapRef();
 
-  useEffect(() => {
-    const map = ref.current;
+  useMapStyleOperator((map) => {
     if (map == null) return;
 
     // Disable default box zooming.
@@ -37,51 +39,33 @@ export function BoxSelectionManager() {
       // Variable for the draw box element.
       let box;
 
-      // Add a custom vector tileset source. The tileset used in
-      // this example contains a feature for every county in the U.S.
-      // Each county contains four properties. For example:
-      // {
-      //     COUNTY: "Uintah County",
-      //     FIPS: 49047,
-      //     median-income: 62363,
-      //     population: 34576
-      // }
-      map.addSource("counties", {
-        type: "vector",
-        url: "mapbox://mapbox.82pkq93d",
+      // Highlight the selected lines as a red color
+      const color = "#ff0000";
+
+      map.addLayer({
+        id: "lines-highlighted",
+        type: "line",
+        source: "mapboard_line",
+        "source-layer": "lines",
+        paint: {
+          "line-color": color,
+          "line-width": 3,
+          "line-opacity": 0.75,
+        },
+        filter: ["in", "id", ""],
       });
 
-      map.addLayer(
-        {
-          id: "counties",
-          type: "fill",
-          source: "counties",
-          "source-layer": "original",
-          paint: {
-            "fill-outline-color": "rgba(0,0,0,0.1)",
-            "fill-color": "rgba(0,0,0,0.1)",
-          },
+      map.addLayer({
+        id: "lines-endpoints-highlighted",
+        type: "circle",
+        source: "mapboard_line",
+        "source-layer": "endpoints",
+        paint: {
+          "circle-color": color,
+          "circle-radius": 3,
         },
-        // Place polygons under labels, roads and buildings.
-        "building",
-      );
-
-      map.addLayer(
-        {
-          id: "counties-highlighted",
-          type: "fill",
-          source: "counties",
-          "source-layer": "original",
-          paint: {
-            "fill-outline-color": "#484896",
-            "fill-color": "#6e599f",
-            "fill-opacity": 0.75,
-          },
-          filter: ["in", "FIPS", ""],
-        },
-        // Place polygons under labels, roads and buildings.
-        "building",
-      );
+        filter: ["in", "id", ""],
+      });
 
       // Set `true` to dispatch the event before other functions
       // call it. This is necessary for disabling the default map
@@ -160,18 +144,21 @@ export function BoxSelectionManager() {
         // If bbox exists. use this value as the argument for `queryRenderedFeatures`
         if (bbox) {
           const features = map.queryRenderedFeatures(bbox, {
-            layers: ["counties"],
+            layers: ["lines"],
           });
 
           if (features.length >= 1000) {
             return window.alert("Select a smaller number of features");
           }
 
+          console.log(features);
+
           // Run through the selected features and set a filter
           // to match features with unique FIPS codes to activate
           // the `counties-highlighted` layer.
-          const fips = features.map((feature) => feature.properties.FIPS);
-          map.setFilter("counties-highlighted", ["in", "FIPS", ...fips]);
+          const fips = features.map((feature) => feature.properties.id);
+          map.setFilter("lines-highlighted", ["in", "id", ...fips]);
+          map.setFilter("lines-endpoints-highlighted", ["in", "id", ...fips]);
         }
 
         map.dragPan.enable();
@@ -179,7 +166,7 @@ export function BoxSelectionManager() {
 
       map.on("mousemove", (e) => {
         const features = map.queryRenderedFeatures(e.point, {
-          layers: ["counties-highlighted"],
+          layers: ["lines-highlighted"],
         });
 
         // Change the cursor style as a UI indicator.
