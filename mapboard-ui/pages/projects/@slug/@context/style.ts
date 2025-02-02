@@ -6,8 +6,14 @@ export function buildMap3DStyle(baseURL, selectedLayer = null) {
   }
 
   let layerSuffix = "";
+  let selectedLayerOpacity = (a, b) => {
+    return a;
+  };
   if (selectedLayer != null) {
     layerSuffix = "?map_layer=" + selectedLayer;
+    selectedLayerOpacity = (a, b) => {
+      return ["case", ["==", ["get", "map_layer"], selectedLayer], a, b];
+    };
   }
 
   return {
@@ -37,7 +43,7 @@ export function buildMap3DStyle(baseURL, selectedLayer = null) {
         "source-layer": "faces",
         paint: {
           "fill-color": ["get", "color"],
-          "fill-opacity": 0.3,
+          "fill-opacity": selectedLayerOpacity(0.5, 0.3),
         },
         //filter,
       },
@@ -48,7 +54,7 @@ export function buildMap3DStyle(baseURL, selectedLayer = null) {
         "source-layer": "polygons",
         paint: {
           "fill-color": ["get", "color"],
-          "fill-opacity": 0.8,
+          "fill-opacity": selectedLayerOpacity(0.8, 0.4),
         },
         //filter,
       },
@@ -65,7 +71,7 @@ export function buildMap3DStyle(baseURL, selectedLayer = null) {
             ["get", "color"],
           ],
           "line-width": 1.5,
-          "line-opacity": 0.2,
+          "line-opacity": selectedLayerOpacity(1, 0.5),
         },
         //filter,
       },
