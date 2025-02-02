@@ -5,22 +5,27 @@ export function buildMap3DStyle(baseURL, selectedLayer = null) {
     filter = ["==", "map_layer", selectedLayer];
   }
 
+  let layerSuffix = "";
+  if (selectedLayer != null) {
+    layerSuffix = "?map_layer=" + selectedLayer;
+  }
+
   return {
     version: 8,
     sources: {
       mapboard_polygon: {
         type: "vector",
-        tiles: [baseURL + "/polygon/tile/{z}/{x}/{y}"],
+        tiles: [baseURL + "/polygon/tile/{z}/{x}/{y}" + layerSuffix],
         volatile: true,
       },
       mapboard_line: {
         type: "vector",
-        tiles: [baseURL + "/line/tile/{z}/{x}/{y}"],
+        tiles: [baseURL + "/line/tile/{z}/{x}/{y}" + layerSuffix],
         volatile: true,
       },
       mapboard_topology: {
         type: "vector",
-        tiles: [baseURL + "/topology/tile/{z}/{x}/{y}"],
+        tiles: [baseURL + "/topology/tile/{z}/{x}/{y}" + layerSuffix],
         volatile: true,
       },
     },
@@ -32,9 +37,9 @@ export function buildMap3DStyle(baseURL, selectedLayer = null) {
         "source-layer": "faces",
         paint: {
           "fill-color": ["get", "color"],
-          "fill-opacity": 0.2,
+          "fill-opacity": 0.3,
         },
-        filter,
+        //filter,
       },
       {
         id: "polygons",
@@ -43,9 +48,9 @@ export function buildMap3DStyle(baseURL, selectedLayer = null) {
         "source-layer": "polygons",
         paint: {
           "fill-color": ["get", "color"],
-          "fill-opacity": 0.5,
+          "fill-opacity": 0.8,
         },
-        filter,
+        //filter,
       },
       {
         id: "lines",
@@ -56,7 +61,7 @@ export function buildMap3DStyle(baseURL, selectedLayer = null) {
           "line-color": "#000000",
           "line-width": 1.5,
         },
-        filter,
+        //filter,
       },
       {
         id: "points",
@@ -67,7 +72,7 @@ export function buildMap3DStyle(baseURL, selectedLayer = null) {
           "circle-color": "#000000",
           "circle-radius": 2,
         },
-        filter,
+        //filter,
       },
     ],
   };

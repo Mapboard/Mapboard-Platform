@@ -96,6 +96,8 @@ function LayerControlPanel({ baseURL }) {
 function LayerList({ baseURL }) {
   const layers: any[] = useAPIResult(baseURL + "/map-layers");
 
+  console.log(layers);
+
   if (layers == null) {
     return h(Spinner);
   }

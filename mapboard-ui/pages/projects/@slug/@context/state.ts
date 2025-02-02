@@ -15,6 +15,7 @@ const MapStateContext = createContext<StoreApi<MapState> | null>(null);
 function createMapStore() {
   return createStore<MapState>((set, get) => ({
     activeLayer: null,
+    layerPanelIsOpen: false,
     actions: {
       setActiveLayer: (layer) =>
         set((state) => {
