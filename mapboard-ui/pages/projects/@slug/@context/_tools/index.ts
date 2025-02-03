@@ -48,6 +48,7 @@ export function BoxSelectionManager(props: BoxSelectionProps) {
   const activeLayer = useMapState((state) => state.activeLayer);
   const selectFeatures = useMapActions((actions) => actions.selectFeatures);
   const selectedFeatures = useMapState((state) => state.selection);
+  const mapLayerIDMap = useMapState((state) => state.mapLayerIDMap);
 
   useMapStyleOperator(
     (map) => {
@@ -200,10 +201,12 @@ export function BoxSelectionManager(props: BoxSelectionProps) {
 
         const f: any = features[0].properties;
 
+        const mapLayer = mapLayerIDMap.get(f.map_layer);
+
         // render html with react
         const _html = h("div.map-popover", [
           h("h3", f.id),
-          h(DataField, { label: "Map layer", value: f.map_layer }),
+          h(DataField, { label: "Layer", value: mapLayer?.name }),
           h(DataField, { label: "Type", value: f.type }),
         ]);
         const html = renderToString(_html);

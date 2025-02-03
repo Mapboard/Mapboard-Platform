@@ -14,9 +14,12 @@ interface MapState extends RecoverableMapState {
     setBaseMap: (baseMap: BasemapType) => void;
     selectFeatures: (selection: FeatureSelection) => void;
     toggleLayerPanel: () => void;
+    setMapLayers: (layers: any[]) => void;
   };
   layerPanelIsOpen: boolean;
   selection: FeatureSelection | null;
+  mapLayers: any[] | null;
+  mapLayerIDMap: Map<number, any>;
 }
 
 const MapStateContext = createContext<StoreApi<MapState> | null>(null);
@@ -43,6 +46,8 @@ function createMapStore() {
         baseMap,
         layerPanelIsOpen: false,
         selection: null,
+        mapLayers: null,
+        mapLayerIDMap: new Map(),
         actions: {
           setBaseMap: (baseMap: BasemapType) => set({ baseMap }),
           setActiveLayer: (layer) =>
@@ -59,14 +64,20 @@ function createMapStore() {
             set((state) => {
               return { layerPanelIsOpen: !state.layerPanelIsOpen };
             }),
+          setMapLayers: (layers) =>
+            set({
+              mapLayers: layers,
+              mapLayerIDMap: new Map(layers.map((l) => [l.id, l])),
+            }),
         },
       };
     }),
   );
 }
 
-export function MapStateProvider({ children }) {
+export function MapStateProvider({ children, baseURL }) {
   const [value] = useState(createMapStore);
+
   useEffect(() => {
     const unsubscribe = value.subscribe(
       (state) => [state.activeLayer, state.baseMap],
@@ -76,7 +87,17 @@ export function MapStateProvider({ children }) {
     );
     return unsubscribe;
   }, []);
+
+  const setMapLayers = value((state) => state.actions.setMapLayers);
+  useEffect(() => {
+    fetchMapLayers(baseURL).then(setMapLayers);
+  }, []);
+
   return h(MapStateContext.Provider, { value }, [children]);
+}
+
+function fetchMapLayers(baseURL: string): Promise<any[]> {
+  return fetch(`${baseURL}/map-layers`).then((response) => response.json());
 }
 
 export function useMapState(selector: (state: MapState) => any) {

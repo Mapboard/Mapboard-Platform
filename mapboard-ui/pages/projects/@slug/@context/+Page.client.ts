@@ -15,12 +15,18 @@ import { PickerList } from "~/components/list";
 const h = hyper.styled(styles);
 
 export function Page() {
-  return h(MapStateProvider, h(PageInner));
-}
-
-function PageInner() {
   const ctx = useData<Data>();
 
+  const baseURL = `${apiDomain}/api/project/${ctx.project_slug}/context/${ctx.slug}`;
+
+  return h(
+    MapStateProvider,
+    { baseURL },
+    h(PageInner, { baseURL, context: ctx }),
+  );
+}
+
+function PageInner({ baseURL, context: ctx }) {
   const isMapContext = ctx.type === "map";
 
   let bounds = null;
@@ -28,8 +34,6 @@ function PageInner() {
   if (ctx.bounds) {
     bounds = bbox(ctx.bounds);
   }
-
-  const baseURL = `${apiDomain}/api/project/${ctx.project_slug}/context/${ctx.slug}`;
 
   return h(
     "div.map-viewer",
@@ -43,7 +47,7 @@ function PageInner() {
         headerElement: h(ContextHeader, ctx),
         isMapView: isMapContext,
       },
-      [h(LayerControlPanel, { baseURL })],
+      [h(LayerControlPanel)],
     ),
   );
 }
@@ -79,10 +83,10 @@ function BackButton({ href, children, className }) {
   );
 }
 
-function LayerControlPanel({ baseURL }) {
+function LayerControlPanel() {
   return h("div.layer-control-panel", [
     h("h2", "Layers"),
-    h(LayerList, { baseURL }),
+    h(LayerList),
     h(BasemapList),
   ]);
 }
@@ -110,10 +114,8 @@ function BasemapButton({ basemap, name }: { basemap: BasemapType }) {
   );
 }
 
-function LayerList({ baseURL }) {
-  const layers: any[] = useAPIResult(baseURL + "/map-layers");
-
-  console.log(layers);
+function LayerList() {
+  const layers = useMapState((state) => state.mapLayers);
 
   if (layers == null) {
     return h(Spinner);
