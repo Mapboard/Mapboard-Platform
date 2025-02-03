@@ -43,11 +43,9 @@ export function MapArea({
   const style = useMapStyle(overlayStyle, isMapView, { mapboxToken });
   const isOpen = useMapState((state) => state.layerPanelIsOpen);
 
-  let maxBounds = null;
   let projection = { name: "globe" };
   if (!isMapView) {
     projection = { name: "mercator" };
-    maxBounds = expandBounds(bounds);
   }
 
   if (style == null) {
@@ -73,7 +71,7 @@ export function MapArea({
       boxZoom: false,
       mapboxToken,
       bounds,
-      fitBounds: true,
+      fitBounds: !isMapView,
     }),
   );
 }
@@ -111,8 +109,6 @@ function expandBounds(bounds: BBox, aspectRatio = 1, margin = 0.1) {
   let dx = maxX - minX;
   let dy = maxY - minY;
 
-  console.log(dx, dy, aspectRatio);
-
   const m = (Math.max(dx, dy) * margin) / 2;
 
   dx += m;
@@ -124,8 +120,6 @@ function expandBounds(bounds: BBox, aspectRatio = 1, margin = 0.1) {
   } else {
     dx = dy * aspectRatio;
   }
-
-  console.log(dx, dy, aspectRatio);
 
   bbox2 = [
     center[0] - dx / 2,
