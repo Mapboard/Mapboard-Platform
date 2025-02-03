@@ -1,5 +1,4 @@
-export function buildMap3DStyle(baseURL, selectedLayer = null) {
-  console.log("Selected Layer: ", selectedLayer);
+export function buildMapOverlayStyle(baseURL, selectedLayer = null) {
   let filter: any = ["!=", "map_layer", ""];
   if (selectedLayer != null) {
     filter = ["==", "map_layer", selectedLayer];

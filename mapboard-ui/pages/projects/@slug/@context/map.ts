@@ -9,11 +9,14 @@ import {
   PanelCard,
 } from "@macrostrat/map-interface";
 import styles from "./map.module.sass";
-import { useInDarkMode } from "@macrostrat/ui-components";
+import { useAsyncEffect, useInDarkMode } from "@macrostrat/ui-components";
 import { BasemapType, useMapState } from "./state";
 import mapboxgl, { Style } from "mapbox-gl";
 import { SphericalMercator } from "@mapbox/sphericalmercator";
 import { useMapPosition, useMapRef } from "@macrostrat/mapbox-react";
+import { mergeStyles } from "@macrostrat/mapbox-utils";
+import { buildMapOverlayStyle } from "./style";
+import { BoxSelectionManager, buildSelectionLayers } from "./_tools";
 
 const mercator = new SphericalMercator({
   size: 256,
@@ -24,7 +27,7 @@ export const h = hyper.styled(styles);
 
 export function MapArea({
   mapboxToken = null,
-  overlayStyle = null,
+  baseURL = null,
   children,
   bounds = null,
   headerElement = null,
@@ -32,15 +35,14 @@ export function MapArea({
 }: {
   headerElement?: React.ReactElement;
   transformRequest?: mapboxgl.TransformRequestFunction;
-  style?: mapboxgl.Style | string;
   children?: React.ReactNode;
   mapboxToken?: string;
-  overlayStyle?: mapboxgl.Style | string;
+  baseURL: string;
   focusedSource?: string;
   focusedSourceTitle?: string;
   isMapView: boolean;
 }) {
-  const style = useMapStyle(overlayStyle, isMapView, { mapboxToken });
+  const style = useMapStyle(baseURL, isMapView, { mapboxToken });
   const isOpen = useMapState((state) => state.layerPanelIsOpen);
 
   let projection = { name: "globe" };
@@ -64,15 +66,18 @@ export function MapArea({
       contextPanelOpen: isOpen,
       fitViewport: true,
     },
-    h(MapInner, {
-      style,
-      mapPosition: null,
-      projection,
-      boxZoom: false,
-      mapboxToken,
-      bounds,
-      fitBounds: !isMapView,
-    }),
+    [
+      h(MapInner, {
+        style,
+        mapPosition: null,
+        projection,
+        boxZoom: false,
+        mapboxToken,
+        bounds,
+        fitBounds: !isMapView,
+      }),
+      h(BoxSelectionManager),
+    ],
   );
 }
 
@@ -130,7 +135,7 @@ function expandBounds(bounds: BBox, aspectRatio = 1, margin = 0.1) {
   return mercator.convert(bbox2, "WGS84");
 }
 
-function useBaseMapStyle(basemapType: BasemapType) {
+function getBaseMapStyle(basemapType: BasemapType) {
   const isEnabled = useInDarkMode();
   let baseStyle = isEnabled
     ? "mapbox://styles/mapbox/dark-v10"
@@ -145,24 +150,33 @@ function useBaseMapStyle(basemapType: BasemapType) {
   return baseStyle;
 }
 
-function useMapStyle(overlayStyle: Style, isMapView: boolean, { mapboxToken }) {
+function useMapStyle(baseURL: string, isMapView: boolean, { mapboxToken }) {
+  const activeLayer = useMapState((state) => state.activeLayer);
   const basemapType = useMapState((state) => state.baseMap);
-  let baseStyle = useBaseMapStyle(basemapType);
   const isEnabled = useInDarkMode();
+
+  let baseStyle = getBaseMapStyle(basemapType);
 
   const [style, setStyle] = useState(null);
 
-  useEffect(() => {
-    buildInspectorStyle(baseStyle, overlayStyle, {
+  useAsyncEffect(async () => {
+    let overlayStyle = buildMapOverlayStyle(baseURL, activeLayer);
+
+    overlayStyle = mergeStyles(overlayStyle, {
+      layers: buildSelectionLayers(),
+    });
+
+    if (!isMapView) {
+      setStyle(overlayStyle);
+      return;
+    }
+    const style = await buildInspectorStyle(baseStyle, overlayStyle, {
       mapboxToken,
       inDarkMode: isEnabled,
       xRay: false,
-    }).then(setStyle);
-  }, [baseStyle, mapboxToken, isEnabled, overlayStyle]);
-
-  if (!isMapView) {
-    return overlayStyle;
-  }
+    });
+    setStyle(style);
+  }, [basemapType, mapboxToken, isEnabled, baseURL, activeLayer, isMapView]);
 
   return style;
 }

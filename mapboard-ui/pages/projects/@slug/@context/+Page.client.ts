@@ -5,15 +5,12 @@ import { useAPIResult } from "@macrostrat/ui-components";
 import type { Data } from "../+data";
 import { useData } from "vike-react/useData";
 import { AnchorButton, Spinner } from "@blueprintjs/core";
-import { buildMap3DStyle } from "./style";
-import { useMemo } from "react";
 import { BasemapType, MapStateProvider, useMapState } from "./state";
 import classNames from "classnames";
 import { bbox } from "@turf/bbox";
 import { MapLoadingButton, MapView } from "@macrostrat/map-interface";
 import { MapArea } from "./map";
 import { PickerList } from "~/components/list";
-import { BoxSelectionManager } from "./_tools";
 
 const h = hyper.styled(styles);
 
@@ -34,13 +31,6 @@ function PageInner() {
 
   const baseURL = `${apiDomain}/api/project/${ctx.project_slug}/context/${ctx.slug}`;
 
-  const activeLayer = useMapState((state) => state.activeLayer);
-
-  const overlayStyle = useMemo(
-    () => buildMap3DStyle(baseURL, activeLayer, isMapContext),
-    [ctx.project_slug, activeLayer],
-  );
-
   return h(
     "div.map-viewer",
     h(
@@ -48,12 +38,12 @@ function PageInner() {
       {
         mapboxToken,
         title: ctx.name,
-        overlayStyle,
+        baseURL,
         bounds,
         headerElement: h(ContextHeader, ctx),
         isMapView: isMapContext,
       },
-      [h(LayerControlPanel, { baseURL }), h(BoxSelectionManager)],
+      [h(LayerControlPanel, { baseURL })],
     ),
   );
 }

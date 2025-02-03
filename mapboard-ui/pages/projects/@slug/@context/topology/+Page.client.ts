@@ -5,7 +5,7 @@ import { FlexBox, useAPIResult } from "@macrostrat/ui-components";
 import type { Data } from "../../+data";
 import { useData } from "vike-react/useData";
 import { AnchorButton, Breadcrumbs, Icon, Spinner } from "@blueprintjs/core";
-import { buildMap3DStyle } from "../style";
+import { buildMapOverlayStyle } from "../style";
 import { useMemo } from "react";
 import { MapStateProvider, useMapState } from "../state";
 import classNames from "classnames";
@@ -30,7 +30,7 @@ function PageInner() {
   const activeLayer = useMapState((state) => state.activeLayer);
 
   const overlayStyle = useMemo(
-    () => buildMap3DStyle(baseURL, activeLayer),
+    () => buildMapOverlayStyle(baseURL, activeLayer),
     [ctx.project_slug, activeLayer],
   );
 
