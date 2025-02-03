@@ -8,7 +8,7 @@ import styles from "./index.module.sass";
 import mapboxgl from "mapbox-gl";
 import hyper from "@macrostrat/hyper";
 import { renderToString } from "react-dom/server";
-import { useMapState } from "../state";
+import { useMapActions, useMapState } from "../state";
 
 const h = hyper.styled(styles);
 
@@ -46,6 +46,18 @@ export function buildSelectionLayers(color: string = "#ff0000") {
 
 export function BoxSelectionManager(props: BoxSelectionProps) {
   const activeLayer = useMapState((state) => state.activeLayer);
+  const selectFeatures = useMapActions((actions) => actions.selectFeatures);
+  const selectedFeatures = useMapState((state) => state.selection);
+
+  useMapStyleOperator(
+    (map) => {
+      if (map == null) return;
+      const fips = selectedFeatures?.lines ?? [];
+      map.setFilter("lines-highlighted", ["in", "id", ...fips]);
+      map.setFilter("lines-endpoints-highlighted", ["in", "id", ...fips]);
+    },
+    [selectedFeatures],
+  );
 
   useMapStyleOperator(
     (map) => {
@@ -166,8 +178,8 @@ export function BoxSelectionManager(props: BoxSelectionProps) {
           // to match features with unique FIPS codes to activate
           // the `counties-highlighted` layer.
           const fips = features.map((feature) => feature.properties.id);
-          map.setFilter("lines-highlighted", ["in", "id", ...fips]);
-          map.setFilter("lines-endpoints-highlighted", ["in", "id", ...fips]);
+
+          selectFeatures({ lines: fips });
         }
 
         map.dragPan.enable();
