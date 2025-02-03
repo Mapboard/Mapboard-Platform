@@ -11,6 +11,14 @@ import {
 import styles from "./map.module.sass";
 import { useInDarkMode } from "@macrostrat/ui-components";
 import { BasemapType, useMapState } from "./state";
+import mapboxgl, { Style } from "mapbox-gl";
+import { SphericalMercator } from "@mapbox/sphericalmercator";
+import { useMapPosition, useMapRef } from "@macrostrat/mapbox-react";
+
+const mercator = new SphericalMercator({
+  size: 256,
+  antimeridian: true,
+});
 
 export const h = hyper.styled(styles);
 
@@ -20,6 +28,7 @@ export function MapArea({
   children,
   bounds = null,
   headerElement = null,
+  isMapView = true,
 }: {
   headerElement?: React.ReactElement;
   transformRequest?: mapboxgl.TransformRequestFunction;
@@ -29,10 +38,17 @@ export function MapArea({
   overlayStyle?: mapboxgl.Style | string;
   focusedSource?: string;
   focusedSourceTitle?: string;
-  projection?: string;
+  isMapView: boolean;
 }) {
-  const style = useMapStyle(overlayStyle, { mapboxToken });
+  const style = useMapStyle(overlayStyle, isMapView, { mapboxToken });
   const isOpen = useMapState((state) => state.layerPanelIsOpen);
+
+  let maxBounds = null;
+  let projection = { name: "globe" };
+  if (!isMapView) {
+    projection = { name: "mercator" };
+    maxBounds = expandBounds(bounds);
+  }
 
   if (style == null) {
     return null;
@@ -50,15 +66,74 @@ export function MapArea({
       contextPanelOpen: isOpen,
       fitViewport: true,
     },
-    h(MapView, {
+    h(MapInner, {
       style,
       mapPosition: null,
-      projection: { name: "globe" },
+      projection,
       boxZoom: false,
       mapboxToken,
       bounds,
+      fitBounds: true,
     }),
   );
+}
+
+function MapInner({ fitBounds, bounds, ...rest }) {
+  let maxBounds: BBox | null = null;
+
+  const mapRef = useMapRef();
+
+  let aspectRatio = 1;
+  const rect = mapRef?.current?.getContainer().getBoundingClientRect();
+  if (rect != null) {
+    const { width, height } = rect;
+    aspectRatio = width / height;
+  }
+
+  if (fitBounds) {
+    maxBounds = expandBounds(bounds, aspectRatio);
+  }
+
+  return h(MapView, { maxBounds, bounds, ...rest });
+}
+
+type BBox = [number, number, number, number];
+
+function expandBounds(bounds: BBox, aspectRatio = 1, margin = 0.1) {
+  // Make bounds square and expand to ensure that the entire cross-section can be viewed
+  if (bounds == null) {
+    return null;
+  }
+  const webMercatorBBox = mercator.convert(bounds, "900913");
+  const [minX, minY, maxX, maxY] = webMercatorBBox;
+
+  const center = [(minX + maxX) / 2, (minY + maxY) / 2];
+  let dx = maxX - minX;
+  let dy = maxY - minY;
+
+  console.log(dx, dy, aspectRatio);
+
+  const m = (Math.max(dx, dy) * margin) / 2;
+
+  dx += m;
+  dy += m;
+
+  let bbox2: BBox;
+  if (dx > dy) {
+    dy = dx / aspectRatio;
+  } else {
+    dx = dy * aspectRatio;
+  }
+
+  console.log(dx, dy, aspectRatio);
+
+  bbox2 = [
+    center[0] - dx / 2,
+    center[1] - dy / 2,
+    center[0] + dx / 2,
+    center[1] + dy / 2,
+  ];
+  return mercator.convert(bbox2, "WGS84");
 }
 
 function useBaseMapStyle(basemapType: BasemapType) {
@@ -76,9 +151,9 @@ function useBaseMapStyle(basemapType: BasemapType) {
   return baseStyle;
 }
 
-function useMapStyle(overlayStyle, { mapboxToken }) {
+function useMapStyle(overlayStyle: Style, isMapView: boolean, { mapboxToken }) {
   const basemapType = useMapState((state) => state.baseMap);
-  const baseStyle = useBaseMapStyle(basemapType);
+  let baseStyle = useBaseMapStyle(basemapType);
   const isEnabled = useInDarkMode();
 
   const [style, setStyle] = useState(null);
@@ -90,6 +165,10 @@ function useMapStyle(overlayStyle, { mapboxToken }) {
       xRay: false,
     }).then(setStyle);
   }, [baseStyle, mapboxToken, isEnabled, overlayStyle]);
+
+  if (!isMapView) {
+    return overlayStyle;
+  }
 
   return style;
 }

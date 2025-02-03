@@ -24,6 +24,8 @@ export function Page() {
 function PageInner() {
   const ctx = useData<Data>();
 
+  const isMapContext = ctx.type === "map";
+
   let bounds = null;
   // We might not have any bounds yet, though this should probably be required...
   if (ctx.bounds) {
@@ -35,7 +37,7 @@ function PageInner() {
   const activeLayer = useMapState((state) => state.activeLayer);
 
   const overlayStyle = useMemo(
-    () => buildMap3DStyle(baseURL, activeLayer),
+    () => buildMap3DStyle(baseURL, activeLayer, isMapContext),
     [ctx.project_slug, activeLayer],
   );
 
@@ -49,6 +51,7 @@ function PageInner() {
         overlayStyle,
         bounds,
         headerElement: h(ContextHeader, ctx),
+        isMapView: isMapContext,
       },
       [h(LayerControlPanel, { baseURL }), h(BoxSelectionManager)],
     ),
