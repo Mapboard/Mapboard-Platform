@@ -4,10 +4,10 @@ import { apiDomain, mapboxToken } from "~/settings";
 import { useAPIResult } from "@macrostrat/ui-components";
 import type { Data } from "../+data";
 import { useData } from "vike-react/useData";
-import { AnchorButton, Breadcrumbs, Icon, Spinner } from "@blueprintjs/core";
+import { AnchorButton, Spinner } from "@blueprintjs/core";
 import { buildMap3DStyle } from "./style";
 import { useMemo } from "react";
-import { MapStateProvider, useMapState } from "./state";
+import { BasemapType, MapStateProvider, useMapState } from "./state";
 import classNames from "classnames";
 import { bbox } from "@turf/bbox";
 import { MapLoadingButton, MapView } from "@macrostrat/map-interface";
@@ -90,7 +90,31 @@ function LayerControlPanel({ baseURL }) {
   return h("div.layer-control-panel", [
     h("h2", "Layers"),
     h(LayerList, { baseURL }),
+    h(BasemapList),
   ]);
+}
+
+function BasemapList() {
+  return h(PickerList, { className: "layer-list basemap-list" }, [
+    h(BasemapButton, { basemap: BasemapType.Basic, name: "Standard" }),
+    h(BasemapButton, { basemap: BasemapType.Satellite, name: "Satellite" }),
+    h(BasemapButton, { basemap: BasemapType.Terrain, name: "Terrain" }),
+  ]);
+}
+
+function BasemapButton({ basemap, name }: { basemap: BasemapType }) {
+  const active = useMapState((state) => state.baseMap);
+  const setBasemap = useMapState((state) => state.actions.setBaseMap);
+  return h(
+    "li.layer",
+    {
+      onClick() {
+        setBasemap(basemap);
+      },
+      className: classNames({ active: active === basemap }),
+    },
+    [h("span.name", name)],
+  );
 }
 
 function LayerList({ baseURL }) {

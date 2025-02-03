@@ -6,17 +6,27 @@ interface MapState {
   activeLayer: string | null;
   actions: {
     setActiveLayer: (layer: string) => void;
+    setBaseMap: (baseMap: BasemapType) => void;
   };
   layerPanelIsOpen: boolean;
+  baseMap: BasemapType;
 }
 
 const MapStateContext = createContext<StoreApi<MapState> | null>(null);
+
+export enum BasemapType {
+  Satellite = "satellite",
+  Basic = "basic",
+  Terrain = "terrain",
+}
 
 function createMapStore() {
   return createStore<MapState>((set, get) => ({
     activeLayer: null,
     layerPanelIsOpen: false,
+    baseMap: BasemapType.Basic,
     actions: {
+      setBaseMap: (baseMap: BasemapType) => set({ baseMap }),
       setActiveLayer: (layer) =>
         set((state) => {
           // Toggle the active layer if it's already active

@@ -10,7 +10,7 @@ import {
 } from "@macrostrat/map-interface";
 import styles from "./map.module.sass";
 import { useInDarkMode } from "@macrostrat/ui-components";
-import { useMapState } from "./state";
+import { BasemapType, useMapState } from "./state";
 
 export const h = hyper.styled(styles);
 
@@ -20,7 +20,6 @@ export function MapArea({
   children,
   bounds = null,
   headerElement = null,
-  contextPanelOpen,
 }: {
   headerElement?: React.ReactElement;
   transformRequest?: mapboxgl.TransformRequestFunction;
@@ -62,11 +61,25 @@ export function MapArea({
   );
 }
 
-function useMapStyle(overlayStyle, { mapboxToken }) {
+function useBaseMapStyle(basemapType: BasemapType) {
   const isEnabled = useInDarkMode();
-  const baseStyle = isEnabled
+  let baseStyle = isEnabled
     ? "mapbox://styles/mapbox/dark-v10"
     : "mapbox://styles/mapbox/light-v10";
+  if (basemapType == "satellite") {
+    baseStyle = "mapbox://styles/mapbox/satellite-v9";
+  } else if (basemapType == "terrain") {
+    baseStyle = isEnabled
+      ? "mapbox://styles/jczaplewski/ckfxmukdy0ej619p7vqy19kow"
+      : "mapbox://styles/jczaplewski/ckxcu9zmu4aln14mfg4monlv3";
+  }
+  return baseStyle;
+}
+
+function useMapStyle(overlayStyle, { mapboxToken }) {
+  const basemapType = useMapState((state) => state.baseMap);
+  const baseStyle = useBaseMapStyle(basemapType);
+  const isEnabled = useInDarkMode();
 
   const [style, setStyle] = useState(null);
 
