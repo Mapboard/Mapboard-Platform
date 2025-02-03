@@ -6,6 +6,8 @@
 import { useMapRef, useMapStyleOperator } from "@macrostrat/mapbox-react";
 import styles from "./index.module.sass";
 import mapboxgl, { MapboxGeoJSONFeature } from "mapbox-gl";
+import h from "@macrostrat/hyper";
+import { renderToString } from "react-dom/server";
 
 type BoxSelectionProps = {
   layer: string;
@@ -94,9 +96,6 @@ export function BoxSelectionManager(props: BoxSelectionProps) {
 
     // Variable for the draw box element.
     let box;
-
-    // Highlight the selected lines as a red color
-    const color = "#ff0000";
 
     // Set `true` to dispatch the event before other functions
     // call it. This is necessary for disabling the default map
@@ -194,14 +193,9 @@ export function BoxSelectionManager(props: BoxSelectionProps) {
     }
 
     const listener = (e) => {
-      let features: MapboxGeoJSONFeature[] = [];
-      try {
-        features = map.queryRenderedFeatures(e.point, {
-          layers: ["lines-highlighted"],
-        });
-      } catch (e) {
-        console.error(e);
-      }
+      const features = map.queryRenderedFeatures(e.point, {
+        layers: ["lines-highlighted"],
+      });
 
       // Change the cursor style as a UI indicator.
       map.getCanvas().style.cursor = features.length ? "pointer" : "";
@@ -211,10 +205,16 @@ export function BoxSelectionManager(props: BoxSelectionProps) {
         return;
       }
 
-      popup
-        .setLngLat(e.lngLat)
-        .setText(features[0].properties.COUNTY)
-        .addTo(map);
+      const f: any = features[0].properties;
+
+      // render html with react
+      const _html = h("div.map-popover", [
+        h("h3", f.id),
+        h(DataField, { label: "Map layer", value: f.map_layer }),
+        h(DataField, { label: "Type", value: f.type }),
+      ]);
+      const html = renderToString(_html);
+      popup.setLngLat(e.lngLat).setHTML(html).addTo(map);
     };
 
     map.on("mousemove", listener);
@@ -225,4 +225,8 @@ export function BoxSelectionManager(props: BoxSelectionProps) {
   }, []);
 
   return null;
+}
+
+function DataField({ label, value }) {
+  return h("div.data-field", [h("span.label", label), h("span.value", value)]);
 }

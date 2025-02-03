@@ -13,7 +13,7 @@ import { useAsyncEffect, useInDarkMode } from "@macrostrat/ui-components";
 import { BasemapType, useMapState } from "./state";
 import mapboxgl, { Style } from "mapbox-gl";
 import { SphericalMercator } from "@mapbox/sphericalmercator";
-import { useMapPosition, useMapRef } from "@macrostrat/mapbox-react";
+import { useMapRef } from "@macrostrat/mapbox-react";
 import { mergeStyles } from "@macrostrat/mapbox-utils";
 import { buildMapOverlayStyle } from "./style";
 import { BoxSelectionManager, buildSelectionLayers } from "./_tools";
