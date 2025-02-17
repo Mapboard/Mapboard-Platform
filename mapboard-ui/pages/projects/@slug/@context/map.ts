@@ -7,6 +7,7 @@ import {
   buildInspectorStyle,
   MapAreaContainer,
   PanelCard,
+  BaseInfoDrawer,
 } from "@macrostrat/map-interface";
 import styles from "./map.module.sass";
 import { useAsyncEffect, useInDarkMode } from "@macrostrat/ui-components";
@@ -65,6 +66,7 @@ export function MapArea({
       contextPanel: h(PanelCard, [children]),
       contextPanelOpen: isOpen,
       fitViewport: true,
+      detailPanel: h(BaseInfoDrawer, [h("div", "This is a test")]),
     },
     [
       h(MapInner, {

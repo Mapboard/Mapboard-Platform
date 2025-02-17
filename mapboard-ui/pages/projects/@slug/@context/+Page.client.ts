@@ -1,7 +1,6 @@
 import hyper from "@macrostrat/hyper";
 import styles from "./map.module.sass";
 import { apiDomain, mapboxToken } from "~/settings";
-import { useAPIResult } from "@macrostrat/ui-components";
 import type { Data } from "../+data";
 import { useData } from "vike-react/useData";
 import { AnchorButton, Spinner } from "@blueprintjs/core";
