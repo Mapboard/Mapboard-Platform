@@ -3,9 +3,10 @@ import { defineConfig } from "vite";
 import vike from "vike/plugin";
 import path from "node:path";
 import hyperStyles from "@macrostrat/vite-plugin-hyperstyles";
+import mdx from "@mdx-js/rollup";
 
 export default defineConfig({
-  plugins: [vike({}), react({}), hyperStyles()],
+  plugins: [vike({}), react({}), hyperStyles(), mdx()],
   resolve: {
     conditions: ["source"],
     dedupe: [
