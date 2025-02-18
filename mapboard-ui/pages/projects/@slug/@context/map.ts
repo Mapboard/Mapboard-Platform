@@ -11,7 +11,7 @@ import {
 } from "@macrostrat/map-interface";
 import styles from "./map.module.sass";
 import { useAsyncEffect, useInDarkMode } from "@macrostrat/ui-components";
-import { BasemapType, useMapState } from "./state";
+import { BasemapType, useMapActions, useMapState } from "./state";
 import mapboxgl, { Style } from "mapbox-gl";
 import { SphericalMercator } from "@mapbox/sphericalmercator";
 import { useMapRef } from "@macrostrat/mapbox-react";
@@ -37,7 +37,7 @@ export function MapArea({
   headerElement?: React.ReactElement;
   transformRequest?: mapboxgl.TransformRequestFunction;
   children?: React.ReactNode;
-  mapboxToken?: string;
+  mapboxToken?: string | null;
   baseURL: string;
   focusedSource?: string;
   focusedSourceTitle?: string;
@@ -66,7 +66,7 @@ export function MapArea({
       contextPanel: h(PanelCard, [children]),
       contextPanelOpen: isOpen,
       fitViewport: true,
-      detailPanel: h(BaseInfoDrawer, [h("div", "This is a test")]),
+      detailPanel: h(InfoDrawer),
     },
     [
       h(MapInner, {
@@ -80,6 +80,35 @@ export function MapArea({
       }),
       h(BoxSelectionManager),
     ],
+  );
+}
+
+const featureTypes = ["lines", "points", "polygons"];
+
+function InfoDrawer() {
+  const selection = useMapState((state) => state.selection);
+  const selectFeatures = useMapActions((a) => a.selectFeatures);
+  if (selection == null) {
+    return null;
+  }
+
+  console.log(selection);
+
+  return h(
+    BaseInfoDrawer,
+    {
+      title: "Selection",
+      onClose() {
+        selectFeatures(null);
+      },
+    },
+    featureTypes.map((type) => {
+      const count = selection[type]?.length;
+      if (count == null) {
+        return null;
+      }
+      return h("p", `${count} ${type} selected`);
+    }),
   );
 }
 
