@@ -2,11 +2,7 @@ import SwaggerUI from "swagger-ui-react";
 import h from "@macrostrat/hyper";
 import "swagger-ui-react/swagger-ui.css";
 import { useEffect, useState } from "react";
-import {
-  apiBaseURL,
-  apiDomain,
-  apiBasePath as basePath,
-} from "../../shared/settings";
+import { apiBaseURL, apiDomain, apiBasePath as basePath } from "~/settings";
 
 export function Page() {
   const spec: any | null = useAPISpec(`${apiBaseURL}/`);
