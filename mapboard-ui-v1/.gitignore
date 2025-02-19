@@ -7,6 +7,8 @@ yarn-error.log*
 lerna-debug.log*
 .pnpm-debug.log*
 
+.vite
+
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
@@ -140,7 +142,3 @@ dist
 # aws-cdk
 .cdk.staging
 cdk.out
-
-## Panda
-styled-system
-styled-system-studio
