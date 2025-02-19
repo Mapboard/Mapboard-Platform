@@ -1,14 +1,15 @@
 import hyper from "@macrostrat/hyper";
 import { useState } from "react";
 import { Button } from "@blueprintjs/core";
+import styles from "./+Page.module.css";
 
-const h = hyper;
+const h = hyper.styled(styles);
 
-export default function Page() {
+export function Page() {
   const [count, setCount] = useState(0);
 
   return h("div.hmr-test", [
-    h("p", `Count: ${count}`),
+    h("p.test-style", `Count: ${count}`),
     h(
       Button,
       {
@@ -18,6 +19,6 @@ export default function Page() {
       },
       "Increment counter",
     ),
-    h("p", "This is a test page for HMR"),
+    h("p", "This is a test page for HMR 2"),
   ]);
 }
