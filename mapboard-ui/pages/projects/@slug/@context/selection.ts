@@ -1,6 +1,6 @@
 import hyper from "@macrostrat/hyper";
 import styles from "./selection.module.sass";
-import { IconName, NonIdealState } from "@blueprintjs/core";
+import { Button, IconName, Intent, NonIdealState } from "@blueprintjs/core";
 import { PickerList, PickerListItem } from "~/components/list";
 import { useMapActions, useMapState } from "./state";
 
@@ -37,6 +37,8 @@ type ActionCfg = {
   name: string;
   icon: IconName;
   id: SelectionActionType;
+  description?: string;
+  intent?: Intent;
 };
 
 export enum SelectionActionType {
@@ -51,8 +53,25 @@ export enum SelectionActionType {
 }
 
 const actions: ActionCfg[] = [
-  { id: SelectionActionType.Delete, name: "Delete", icon: "trash" },
-  { id: SelectionActionType.Heal, name: "Heal", icon: "changes" },
+  {
+    id: SelectionActionType.Delete,
+    name: "Delete",
+    icon: "trash",
+    description: "Delete selected features",
+    intent: "danger",
+  },
+  {
+    id: SelectionActionType.Heal,
+    name: "Heal",
+    icon: "changes",
+    description: "Heal selected features",
+  },
+  {
+    id: SelectionActionType.RecalculateTopology,
+    name: "Recalculate topology",
+    icon: "polygon-filter",
+    description: "Recalculate the topology of selected features",
+  },
   { id: SelectionActionType.ChangeType, name: "Change type", icon: "edit" },
   { id: SelectionActionType.ChangeLayer, name: "Change layer", icon: "layers" },
   {
@@ -69,11 +88,6 @@ const actions: ActionCfg[] = [
     id: SelectionActionType.ReverseLines,
     name: "Reverse lines",
     icon: "swap-horizontal",
-  },
-  {
-    id: SelectionActionType.RecalculateTopology,
-    name: "Recalculate topology",
-    icon: "polygon-filter",
   },
 ];
 
@@ -105,20 +119,27 @@ export function SelectionActionsPanel() {
 }
 
 function ActionDetailsPanel({ action }) {
+  const actionCfg = actions.find((d) => d.id == action);
+  const title = actionCfg?.name ?? "No action selected";
+
+  return h("div.action-details", [
+    h("h2", title),
+    h(ActionDetailsContent, { action }),
+  ]);
+}
+
+function ActionDetailsContent({ action }: { action: ActionCfg }) {
   if (action == null) {
     return h(NonIdealState, {
-      title: "No action selected",
       icon: "flows",
     });
   }
-  const actionCfg = actions.find((d) => d.id == action);
 
-  if (actionCfg == null) {
-    return h(NonIdealState, {
-      title: "Unknown action",
-      icon: "warning-sign",
-    });
-  }
+  const { description, intent = "primary" } = action;
 
-  return h("div.action-details", [h("h2", actionCfg.name), h("p", "Details")]);
+  return h("div.action-details-content", [
+    h.if(description != null)("p", description),
+    h("div.spacer"),
+    h(Button, { intent, icon: "play" }, "Run"),
+  ]);
 }

@@ -4,7 +4,6 @@ import vike from "vike/plugin";
 import path from "node:path";
 import hyperStyles from "@macrostrat/vite-plugin-hyperstyles";
 import mdx from "@mdx-js/rollup";
-import { patchCssModules } from "vite-css-modules";
 
 /** Since we are running on a self-signed certificate in development,
  * we need to disable TLS checks.
@@ -12,7 +11,7 @@ import { patchCssModules } from "vite-css-modules";
 process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = "0";
 
 export default defineConfig({
-  plugins: [vike({}), react({}), hyperStyles(), mdx(), patchCssModules()],
+  plugins: [vike({}), react({}), hyperStyles(), mdx()],
   resolve: {
     //conditions: ["source"],
     dedupe: [
