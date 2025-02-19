@@ -2,24 +2,40 @@ import { createStore, useStore, StoreApi, create } from "zustand";
 import { createContext, useContext, useEffect, useState } from "react";
 import h from "@macrostrat/hyper";
 import { subscribeWithSelector } from "zustand/middleware";
+import { SelectionActionType } from "./selection";
 
 interface RecoverableMapState {
   activeLayer: number | null;
   baseMap: BasemapType;
 }
 
+interface MapActions {
+  setActiveLayer: (layer: number) => void;
+  setBaseMap: (baseMap: BasemapType) => void;
+  selectFeatures: (selection: FeatureSelection) => void;
+  toggleLayerPanel: () => void;
+  setMapLayers: (layers: any[]) => void;
+  setSelectionAction: (action: SelectionActionType | null) => void;
+  setSelectionActionState: (state: any) => void;
+}
+
+export interface SelectionActionState<T extends object> {
+  type: SelectionActionType;
+  state: T | null;
+}
+
+export interface MapLayer {
+  id: number;
+  name: string;
+}
+
 interface MapState extends RecoverableMapState {
-  actions: {
-    setActiveLayer: (layer: number) => void;
-    setBaseMap: (baseMap: BasemapType) => void;
-    selectFeatures: (selection: FeatureSelection) => void;
-    toggleLayerPanel: () => void;
-    setMapLayers: (layers: any[]) => void;
-  };
+  actions: MapActions;
   layerPanelIsOpen: boolean;
   selection: FeatureSelection | null;
-  mapLayers: any[] | null;
-  mapLayerIDMap: Map<number, any>;
+  selectionAction: SelectionActionState<any> | null;
+  mapLayers: MapLayer[] | null;
+  mapLayerIDMap: Map<number, MapLayer>;
 }
 
 const MapStateContext = createContext<StoreApi<MapState> | null>(null);
@@ -35,7 +51,7 @@ export type FeatureSelection = {
   polygons: number[];
 };
 
-const _subscribeWithSelector = subscribeWithSelector as any;
+const _subscribeWithSelector = subscribeWithSelector as <T>(fn: T) => T;
 
 function createMapStore() {
   return create<MapState>(
@@ -46,6 +62,7 @@ function createMapStore() {
         baseMap,
         layerPanelIsOpen: false,
         selection: null,
+        selectionAction: null,
         mapLayers: null,
         mapLayerIDMap: new Map(),
         actions: {
@@ -53,7 +70,7 @@ function createMapStore() {
           setActiveLayer: (layer) =>
             set((state) => {
               // Toggle the active layer if it's already active
-              let activeLayer: string | null = layer;
+              let activeLayer: number | null = layer;
               if (state.activeLayer === layer) {
                 activeLayer = null;
               }
@@ -69,6 +86,24 @@ function createMapStore() {
               mapLayers: layers,
               mapLayerIDMap: new Map(layers.map((l) => [l.id, l])),
             }),
+          setSelectionAction: (type) =>
+            set((state) => {
+              if (type == null || state.selectionAction?.type == type) {
+                return { selectionAction: null };
+              }
+              return { selectionAction: { type, state: null } };
+            }),
+          setSelectionActionState: (state: any) => {
+            return set((s) => {
+              const { selectionAction } = s;
+              if (selectionAction == null) {
+                return s;
+              }
+              return {
+                selectionAction: { ...selectionAction, state },
+              };
+            });
+          },
         },
       };
     }),
@@ -100,7 +135,7 @@ function fetchMapLayers(baseURL: string): Promise<any[]> {
   return fetch(`${baseURL}/map-layers`).then((response) => response.json());
 }
 
-export function useMapState(selector: (state: MapState) => any) {
+export function useMapState<T>(selector: (state: MapState) => T): T {
   const store = useContext(MapStateContext);
   if (store == null) {
     throw new Error("No map state found");
@@ -108,8 +143,10 @@ export function useMapState(selector: (state: MapState) => any) {
   return useStore(store, selector);
 }
 
-export function useMapActions(selector: (state: MapState["actions"]) => any) {
-  return useMapState((state) => selector(state.actions));
+export function useMapActions<T>(
+  selector: (state: MapState["actions"]) => T,
+): T {
+  return useMapState<T>((state) => selector(state.actions));
 }
 
 function parseQueryParameters(): RecoverableMapState {

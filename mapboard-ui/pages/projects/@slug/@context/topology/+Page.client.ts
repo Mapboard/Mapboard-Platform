@@ -1,5 +1,5 @@
 import hyper from "@macrostrat/hyper";
-import styles from "../map.module.sass";
+import styles from "../map.module.css";
 import { apiDomain, mapboxToken } from "~/settings";
 import { FlexBox, useAPIResult } from "@macrostrat/ui-components";
 import type { Data } from "../../+data";
