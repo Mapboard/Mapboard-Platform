@@ -9,7 +9,7 @@ import {
   PanelCard,
   BaseInfoDrawer,
 } from "@macrostrat/map-interface";
-import styles from "./map.module.sass";
+import styles from "./map.module.css";
 import { useAsyncEffect, useInDarkMode } from "@macrostrat/ui-components";
 import { BasemapType, useMapActions, useMapState } from "./state";
 import mapboxgl, { Style } from "mapbox-gl";

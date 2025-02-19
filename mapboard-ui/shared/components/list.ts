@@ -1,5 +1,5 @@
 import hyper from "@macrostrat/hyper";
-import styles from "./list.module.sass";
+import styles from "./list.module.css";
 import { Icon, IconName } from "@blueprintjs/core";
 import classNames from "classnames";
 
