@@ -42,6 +42,7 @@ export default defineConfig({
     ],
   },
   server: {
+    hmr: true,
     port: 3002,
     allowedHosts: [
       "localhost",

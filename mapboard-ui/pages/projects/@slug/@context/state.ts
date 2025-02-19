@@ -2,22 +2,27 @@ import { createStore, useStore, StoreApi, create } from "zustand";
 import { createContext, useContext, useEffect, useState } from "react";
 import h from "@macrostrat/hyper";
 import { subscribeWithSelector } from "zustand/middleware";
+import { SelectionActionType } from "./selection";
 
 interface RecoverableMapState {
   activeLayer: number | null;
   baseMap: BasemapType;
 }
 
+interface MapActions {
+  setActiveLayer: (layer: number) => void;
+  setBaseMap: (baseMap: BasemapType) => void;
+  selectFeatures: (selection: FeatureSelection) => void;
+  toggleLayerPanel: () => void;
+  setMapLayers: (layers: any[]) => void;
+  setSelectionAction: (action: SelectionActionType | null) => void;
+}
+
 interface MapState extends RecoverableMapState {
-  actions: {
-    setActiveLayer: (layer: number) => void;
-    setBaseMap: (baseMap: BasemapType) => void;
-    selectFeatures: (selection: FeatureSelection) => void;
-    toggleLayerPanel: () => void;
-    setMapLayers: (layers: any[]) => void;
-  };
+  actions: MapActions;
   layerPanelIsOpen: boolean;
   selection: FeatureSelection | null;
+  selectionAction: SelectionActionType | null;
   mapLayers: any[] | null;
   mapLayerIDMap: Map<number, any>;
 }
@@ -46,6 +51,7 @@ function createMapStore() {
         baseMap,
         layerPanelIsOpen: false,
         selection: null,
+        selectionAction: null,
         mapLayers: null,
         mapLayerIDMap: new Map(),
         actions: {
@@ -68,6 +74,13 @@ function createMapStore() {
             set({
               mapLayers: layers,
               mapLayerIDMap: new Map(layers.map((l) => [l.id, l])),
+            }),
+          setSelectionAction: (selectionAction) =>
+            set((state) => {
+              if (state.selectionAction == selectionAction) {
+                return { selectionAction: null };
+              }
+              return { selectionAction };
             }),
         },
       };

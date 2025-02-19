@@ -18,6 +18,7 @@ import { useMapRef } from "@macrostrat/mapbox-react";
 import { mergeStyles } from "@macrostrat/mapbox-utils";
 import { buildMapOverlayStyle } from "./style";
 import { BoxSelectionManager, buildSelectionLayers } from "./_tools";
+import { SelectionActionsPanel } from "./selection";
 
 const mercator = new SphericalMercator({
   size: 256,
@@ -92,8 +93,6 @@ function InfoDrawer() {
     return null;
   }
 
-  console.log(selection);
-
   return h(
     BaseInfoDrawer,
     {
@@ -102,13 +101,18 @@ function InfoDrawer() {
         selectFeatures(null);
       },
     },
-    featureTypes.map((type) => {
-      const count = selection[type]?.length;
-      if (count == null) {
-        return null;
-      }
-      return h("p", `${count} ${type} selected`);
-    }),
+    [
+      h("div.selection-counts", [
+        featureTypes.map((type) => {
+          const count = selection[type]?.length;
+          if (count == null) {
+            return null;
+          }
+          return h("p", `${count} ${type} selected`);
+        }),
+      ]),
+      h(SelectionActionsPanel),
+    ],
   );
 }
 
