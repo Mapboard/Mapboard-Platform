@@ -7,6 +7,7 @@
   },
   "dependencies": {
     "@blueprintjs/core": "^5.13.1",
+    "@blueprintjs/select": "^5.3.11",
     "@macrostrat/hyper": "^3.0.6",
     "@macrostrat/map-interface": "^1.2.2",
     "@macrostrat/mapbox-react": "^2.5.0",

@@ -3,6 +3,7 @@ import styles from "./selection.module.sass";
 import { Button, IconName, Intent, NonIdealState } from "@blueprintjs/core";
 import { PickerList, PickerListItem } from "~/components/list";
 import { useMapActions, useMapState } from "./state";
+import { Select, Select2 } from "@blueprintjs/select";
 
 const h = hyper.styled(styles);
 
@@ -39,6 +40,7 @@ type ActionCfg = {
   id: SelectionActionType;
   description?: string;
   intent?: Intent;
+  detailsForm?: React.ComponentType;
 };
 
 export enum SelectionActionType {
@@ -73,7 +75,12 @@ const actions: ActionCfg[] = [
     description: "Recalculate the topology of selected features",
   },
   { id: SelectionActionType.ChangeType, name: "Change type", icon: "edit" },
-  { id: SelectionActionType.ChangeLayer, name: "Change layer", icon: "layers" },
+  {
+    id: SelectionActionType.ChangeLayer,
+    name: "Change layer",
+    icon: "layers",
+    detailsForm: ChangeLayerForm,
+  },
   {
     id: SelectionActionType.AdjustWidth,
     name: "Adjust width",
@@ -124,22 +131,49 @@ function ActionDetailsPanel({ action }) {
 
   return h("div.action-details", [
     h("h2", title),
-    h(ActionDetailsContent, { action }),
+    h(ActionDetailsContent, { action: actionCfg }),
   ]);
 }
 
-function ActionDetailsContent({ action }: { action: ActionCfg }) {
+function ActionDetailsContent({
+  action,
+}: {
+  action: ActionCfg | undefined | null;
+}) {
   if (action == null) {
     return h(NonIdealState, {
       icon: "flows",
     });
   }
 
-  const { description, intent = "primary" } = action;
+  const { description, intent = "primary", detailsForm } = action;
 
   return h("div.action-details-content", [
     h.if(description != null)("p", description),
+    h.if(detailsForm != null)(detailsForm),
     h("div.spacer"),
     h(Button, { intent, icon: "play" }, "Run"),
   ]);
+}
+
+function ChangeLayerForm() {
+  const layers = useMapState((state) => state.mapLayers);
+  const currentLayer = useMapState((state) => state.activeLayer);
+  const possibleLayers = layers.filter((d) => d.id != currentLayer);
+
+  return h(
+    Select,
+    {
+      items: possibleLayers,
+      itemRenderer: (layer, { handleClick }) => {
+        return h("div", { onClick: handleClick }, layer.name);
+      },
+      onItemSelect: (layer) => {
+        console.log("Selected layer", layer);
+      },
+      popoverProps: { minimal: true },
+      fill: true,
+    },
+    h(Button, { className: "select-placeholder", text: "Change layer" }),
+  );
 }
