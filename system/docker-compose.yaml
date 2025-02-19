@@ -9,6 +9,8 @@ services:
       - MAPBOARD_API_ADDRESS
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
+    labels:
+      - dev.orbstack.domains=mapboard.local
   database:
     image: ${POSTGRES_IMAGE:-postgis/postgis:15-3.4}
     restart: unless-stopped

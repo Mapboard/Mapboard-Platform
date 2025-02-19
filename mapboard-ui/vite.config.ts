@@ -5,6 +5,11 @@ import path from "node:path";
 import hyperStyles from "@macrostrat/vite-plugin-hyperstyles";
 import mdx from "@mdx-js/rollup";
 
+/** Since we are running on a self-signed certificate in development,
+ * we need to disable TLS checks.
+ */
+process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = "0";
+
 export default defineConfig({
   plugins: [vike({}), react({}), hyperStyles(), mdx()],
   resolve: {
@@ -38,5 +43,14 @@ export default defineConfig({
   },
   server: {
     port: 3002,
+    allowedHosts: [
+      "localhost",
+      // For local development
+      "mapboard.local",
+    ],
+    watch: {
+      // We reload .env files using Nodemon when in development
+      ignored: [".env"],
+    },
   },
 });

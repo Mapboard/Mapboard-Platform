@@ -1,8 +1,9 @@
 import { PostgrestClient } from "@supabase/postgrest-js";
-import { apiBaseURL } from "../settings";
+import { apiBaseURL } from "~/settings";
 import { useEffect, useState } from "react";
+import crossFetch from "cross-fetch";
 
-export const postgrest = new PostgrestClient(apiBaseURL);
+export const postgrest = new PostgrestClient(apiBaseURL, { fetch: crossFetch });
 
 type APIResultBuilder<T> = () => Promise<T>;
 type PostgrestQueryFunction<T> = (pg: PostgrestClient) => Promise<T>;

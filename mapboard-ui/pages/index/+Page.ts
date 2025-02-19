@@ -2,12 +2,12 @@ import hyper from "@macrostrat/hyper";
 import { Link } from "~/components";
 import styles from "./main.module.sass";
 import { useData } from "vike-react/useData";
-import type { Data } from "./+data";
+import type { DataClient } from "./+data";
 import { PickerList } from "~/components/list";
 
 const h = hyper.styled(styles);
 
-export default function Page() {
+export default function PageClient() {
   return h([
     h("h1", "Mapboard platform"),
     h(
@@ -19,7 +19,7 @@ export default function Page() {
 }
 
 function ProjectList() {
-  const projects = useData<Data>();
+  const projects = useData<DataClient>();
 
   return h(
     PickerList,
