@@ -1,5 +1,5 @@
 import hyper from "@macrostrat/hyper";
-import styles from "./selection.module.sass";
+import styles from "./selection.module.css";
 import {
   Button,
   IconName,

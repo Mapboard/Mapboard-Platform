@@ -1,6 +1,6 @@
 import hyper from "@macrostrat/hyper";
 import { Link } from "~/components";
-import styles from "./main.module.sass";
+import styles from "./main.module.css";
 import { useData } from "vike-react/useData";
 import type { DataClient } from "./+data";
 import { PickerList } from "~/components/list";

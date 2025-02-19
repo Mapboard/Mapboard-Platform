@@ -1,6 +1,6 @@
 import "./style.css";
 import "@blueprintjs/core/lib/css/blueprint.css";
-import styles from "./layouts.module.sass";
+import styles from "./layouts.module.css";
 import hyper from "@macrostrat/hyper";
 
 const h = hyper.styled(styles);
