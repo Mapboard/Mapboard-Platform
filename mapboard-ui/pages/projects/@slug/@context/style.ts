@@ -1,26 +1,37 @@
-export function buildMap3DStyle(baseURL, selectedLayer = null) {
-  console.log("Selected Layer: ", selectedLayer);
+export function buildMapOverlayStyle(baseURL, selectedLayer = null) {
   let filter: any = ["!=", "map_layer", ""];
   if (selectedLayer != null) {
     filter = ["==", "map_layer", selectedLayer];
   }
 
+  let layerSuffix = "";
+  let selectedLayerOpacity = (a, b) => {
+    return a;
+  };
+  if (selectedLayer != null) {
+    layerSuffix = "?map_layer=" + selectedLayer;
+    selectedLayerOpacity = (a, b) => {
+      return ["case", ["==", ["get", "map_layer"], selectedLayer], a, b];
+    };
+  }
+
   return {
     version: 8,
+
     sources: {
       mapboard_polygon: {
         type: "vector",
-        tiles: [baseURL + "/polygon/tile/{z}/{x}/{y}"],
+        tiles: [baseURL + "/polygon/tile/{z}/{x}/{y}" + layerSuffix],
         volatile: true,
       },
       mapboard_line: {
         type: "vector",
-        tiles: [baseURL + "/line/tile/{z}/{x}/{y}"],
+        tiles: [baseURL + "/line/tile/{z}/{x}/{y}" + layerSuffix],
         volatile: true,
       },
       mapboard_topology: {
         type: "vector",
-        tiles: [baseURL + "/topology/tile/{z}/{x}/{y}"],
+        tiles: [baseURL + "/topology/tile/{z}/{x}/{y}" + layerSuffix],
         volatile: true,
       },
     },
@@ -32,9 +43,9 @@ export function buildMap3DStyle(baseURL, selectedLayer = null) {
         "source-layer": "faces",
         paint: {
           "fill-color": ["get", "color"],
-          "fill-opacity": 0.2,
+          "fill-opacity": selectedLayerOpacity(0.5, 0.3),
         },
-        filter,
+        //filter,
       },
       {
         id: "polygons",
@@ -43,9 +54,9 @@ export function buildMap3DStyle(baseURL, selectedLayer = null) {
         "source-layer": "polygons",
         paint: {
           "fill-color": ["get", "color"],
-          "fill-opacity": 0.5,
+          "fill-opacity": selectedLayerOpacity(0.8, 0.4),
         },
-        filter,
+        //filter,
       },
       {
         id: "lines",
@@ -53,10 +64,16 @@ export function buildMap3DStyle(baseURL, selectedLayer = null) {
         source: "mapboard_line",
         "source-layer": "lines",
         paint: {
-          "line-color": "#000000",
+          "line-color": [
+            "case",
+            ["==", ["get", "color"], "none"],
+            "#000000",
+            ["get", "color"],
+          ],
           "line-width": 1.5,
+          "line-opacity": selectedLayerOpacity(1, 0.5),
         },
-        filter,
+        //filter,
       },
       {
         id: "points",
@@ -64,8 +81,13 @@ export function buildMap3DStyle(baseURL, selectedLayer = null) {
         source: "mapboard_line",
         "source-layer": "endpoints",
         paint: {
-          "circle-color": "#000000",
-          "circle-radius": 1,
+          "circle-color": [
+            "case",
+            ["==", ["get", "color"], "none"],
+            "#000000",
+            ["get", "color"],
+          ],
+          "circle-radius": 2,
         },
         filter,
       },

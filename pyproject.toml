@@ -12,6 +12,7 @@ python = "^3.11"
 "mapboard.topology-manager" = { path = "./py-modules/topology-manager", develop = true }
 "mapboard.tasks" = { path = "./py-modules/tasks", develop = true }
 "mapboard.core" = { path = "./py-modules/core", develop = true }
+"mapboard.cross-sections" = { path = "./py-modules/cross-sections", develop = true }
 "mapboard.api" = { path = "./py-modules/api", develop = true }
 
 

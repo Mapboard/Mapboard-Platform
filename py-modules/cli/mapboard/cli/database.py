@@ -4,9 +4,10 @@ from pathlib import Path
 from subprocess import run
 from sys import stdin
 from typing import Optional
+from rich.console import Console
 
 from macrostrat.app_frame.compose import console
-from macrostrat.database import run_sql
+from macrostrat.database import run_sql, run_query
 from macrostrat.database.transfer.utils import raw_database_url
 from macrostrat.dinosaur import create_migration
 from macrostrat.utils.shell import run
@@ -16,6 +17,7 @@ from typer import Argument, Context, Option, Typer
 
 from .fixtures import apply_core_fixtures, apply_fixtures, create_core_fixtures
 from mapboard.core.settings import connection_string, core_db
+from mapboard.core.database import project_params, setup_database
 
 db_app = Typer(name="db", no_args_is_help=True)
 
@@ -77,35 +79,13 @@ def run_procedure(project: str, name: Optional[str] = Argument(None)):
     db.run_fixtures(proc)
 
 
-def project_params(project: str):
-    res = core_db.run_query(
-        "SELECT database, data_schema, topo_schema, srid, tolerance FROM projects WHERE slug = :slug",
-        dict(slug=project),
-    ).one()
-    print(res)
-    return dict(
-        database=res.database,
-        data_schema=res.data_schema,
-        topo_schema=res.topo_schema,
-        srid=res.srid,
-        tolerance=res.tolerance,
-    )
-
-
-def setup_database(project: str) -> Database:
-    params = project_params(project)
-    DATABASE_URL = connection_string(params["database"])
-    db = Database(DATABASE_URL)
-    db.set_params(env={}, **params)
-    return db
-
-
 @db_app.command()
 def migrate(
     project: Optional[str] = Argument(None),
     apply: bool = False,
     allow_unsafe: bool = False,
 ):
+    console = Console(file=sys.stderr)
     """Migrate a Mapboard project database to the latest version"""
     if project is None:
         project = "mapboard"
@@ -146,6 +126,26 @@ def migrate(
         if not allow_unsafe and "drop" in stmt.lower():
             continue
         if apply:
-            run_sql(db.session, stmt)
+            run_sql(db.engine, stmt)
         else:
             print(stmt, file=sys.stdout)
+
+
+@db_app.command()
+def disconnect(project: Optional[str] = None):
+    """Disconnect from a project database"""
+    if project is None:
+        db = core_db
+    else:
+        params = project_params(project)
+        database = params.pop("database")
+        db = Database(connection_string(database))
+    db.run_sql(
+        """
+        SELECT *, pg_terminate_backend(pid)
+        FROM pg_stat_activity
+        WHERE pid <> pg_backend_pid()
+        AND datname = current_database()
+
+        """
+    )

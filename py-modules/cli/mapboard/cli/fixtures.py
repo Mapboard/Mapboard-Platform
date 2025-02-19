@@ -17,7 +17,7 @@ def create_core_fixtures():
         create_database(core_db.engine.url)
     apply_core_fixtures(core_db)
     # Reload Postgrest
-    core_db.run_query("SELECT pg_notify('pgrst', 'reload schema')")
+    core_db.run_sql("SELECT pg_notify('pgrst', 'reload schema')")
 
 
 def apply_core_fixtures(db: BaseDatabase):

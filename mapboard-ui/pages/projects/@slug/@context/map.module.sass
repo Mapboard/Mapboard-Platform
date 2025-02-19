@@ -1,0 +1,55 @@
+.layer-control-panel
+  > :first-child
+    margin-top: 0
+
+.layer-list
+  list-style: none
+  padding-left: 0
+  line-height: 2
+  margin-bottom: 0
+
+  li
+    padding: 0 0.5em
+
+  .active
+    font-weight: 800
+    background: var(--background-active)
+
+.feature-panel
+  position: relative
+  margin: 0 -1em
+
+.back-to-project
+  text-overflow: ellipsis
+  text-wrap: nowrap
+  justify-content: start
+
+.map-viewer
+  --map-context-stack-width: fit-content
+
+
+.nav-header
+  gap: 0.25em
+  display: flex
+  flex-direction: column
+
+  .title-row
+    display: flex
+    gap: 0.5em
+    align-items: baseline
+
+    > :global(.bp5-button)
+      width: 2em
+
+  .layer-toggle
+    width: 1.6em
+
+
+:global
+  .bp5-card
+    border-radius: 6px
+
+.nav-header
+  display: flex
+  flex-direction: column
+

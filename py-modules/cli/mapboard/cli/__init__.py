@@ -1,10 +1,6 @@
-import json
 import logging
 import sys
-from base64 import b64encode
-from binascii import hexlify
 from os import environ
-from subprocess import run
 
 import click
 import pytest
@@ -63,6 +59,10 @@ app.command(name="send-event")(send_event)
 from .ingest import ingest_map
 
 app.command(name="ingest")(ingest_map)
+
+from mapboard.cross_sections import app as xs_app
+
+app.add_typer(xs_app, help="Cross sections (Naukluft)", rich_help_panel="Subsystems")
 
 from .criticalmaas import app as cdr_app
 

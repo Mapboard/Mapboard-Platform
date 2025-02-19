@@ -1,0 +1,17 @@
+[tool.poetry]
+authors = ["Daven Quinn <dev@davenquinn.com>"]
+description = "Tools to aid the construction of cross sections"
+name = "mapboard.cross-sections"
+packages = [{ include = "mapboard" }]
+readme = "README.md"
+version = "0.1.0"
+
+[tool.poetry.dependencies]
+typer = "^0.9"
+"macrostrat.database" = "^3.4.0"
+"mapboard.core" = { path = "../core", develop = true }
+python = "^3.11"
+
+[build-system]
+build-backend = "poetry.core.masonry.api"
+requires = ["poetry-core"]

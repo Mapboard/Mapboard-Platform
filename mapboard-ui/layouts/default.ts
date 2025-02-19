@@ -33,7 +33,7 @@ function DefaultLayout({ children }: { children: React.ReactNode }) {
       h(Sidebar, [
         h(Logo),
         h(Link, { href: "/" }, "Welcome"),
-        h(Link, { href: "/docs" }, "API Docs"),
+        h(Link, { href: "/docs" }, "Documentation"),
       ]),
       h(Content, children),
     ],
