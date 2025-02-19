@@ -81,6 +81,7 @@ export function SelectionActionsPanel() {
   const action = useMapState((state) => state.selectionAction);
   const selectAction = useMapActions((state) => state.setSelectionAction);
 
+  // test vvv
   return h("div.selection-actions", [
     h(
       PickerList,

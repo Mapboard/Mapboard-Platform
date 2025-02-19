@@ -1,7 +1,8 @@
 import "./style.css";
 import "@blueprintjs/core/lib/css/blueprint.css";
+import "@macrostrat/style-system/dist/style-system.css";
+
 import h from "@macrostrat/hyper";
-import "@macrostrat/style-system";
 import { usePageContext } from "vike-react/usePageContext";
 
 import React from "react";

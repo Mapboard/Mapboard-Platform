@@ -4,6 +4,7 @@ import vike from "vike/plugin";
 import path from "node:path";
 import hyperStyles from "@macrostrat/vite-plugin-hyperstyles";
 import mdx from "@mdx-js/rollup";
+import { patchCssModules } from "vite-css-modules";
 
 /** Since we are running on a self-signed certificate in development,
  * we need to disable TLS checks.
@@ -11,9 +12,9 @@ import mdx from "@mdx-js/rollup";
 process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = "0";
 
 export default defineConfig({
-  plugins: [vike({}), react({}), hyperStyles(), mdx()],
+  plugins: [vike({}), react({}), hyperStyles(), mdx(), patchCssModules()],
   resolve: {
-    conditions: ["source"],
+    //conditions: ["source"],
     dedupe: [
       "react",
       "react-dom",
@@ -42,7 +43,6 @@ export default defineConfig({
     ],
   },
   server: {
-    hmr: true,
     port: 3002,
     allowedHosts: [
       "localhost",
@@ -52,6 +52,13 @@ export default defineConfig({
     watch: {
       // We reload .env files using Nodemon when in development
       ignored: [".env"],
+    },
+  },
+  css: {
+    preprocessorOptions: {
+      scss: {
+        api: "modern-compiler", // or "modern"
+      },
     },
   },
 });
