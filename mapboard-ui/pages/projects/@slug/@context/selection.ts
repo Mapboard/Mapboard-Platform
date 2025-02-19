@@ -1,9 +1,23 @@
 import hyper from "@macrostrat/hyper";
 import styles from "./selection.module.sass";
-import { Button, IconName, Intent, NonIdealState } from "@blueprintjs/core";
+import {
+  Button,
+  IconName,
+  Intent,
+  Menu,
+  MenuItem,
+  NonIdealState,
+  Spinner,
+} from "@blueprintjs/core";
 import { PickerList, PickerListItem } from "~/components/list";
-import { useMapActions, useMapState } from "./state";
-import { Select, Select2 } from "@blueprintjs/select";
+import {
+  MapLayer,
+  SelectionActionState,
+  useMapActions,
+  useMapState,
+} from "./state";
+import { Select } from "@blueprintjs/select";
+import { MouseEventHandler } from "react";
 
 const h = hyper.styled(styles);
 
@@ -40,7 +54,9 @@ type ActionCfg = {
   id: SelectionActionType;
   description?: string;
   intent?: Intent;
-  detailsForm?: React.ComponentType;
+  detailsForm?: React.ComponentType<{ state: any; updateState: any }>;
+  disabled?: boolean;
+  ready?: (state: any) => boolean;
 };
 
 export enum SelectionActionType {
@@ -85,16 +101,19 @@ const actions: ActionCfg[] = [
     id: SelectionActionType.AdjustWidth,
     name: "Adjust width",
     icon: "horizontal-distribution",
+    disabled: true,
   },
   {
     id: SelectionActionType.AdjustCertainty,
     name: "Adjust certainty",
     icon: "confirm",
+    disabled: true,
   },
   {
     id: SelectionActionType.ReverseLines,
     name: "Reverse lines",
     icon: "swap-horizontal",
+    disabled: true,
   },
 ];
 
@@ -112,7 +131,7 @@ export function SelectionActionsPanel() {
           PickerListItem,
           {
             icon: d.icon,
-            active: action == d.id,
+            active: action?.type == d.id,
             onClick() {
               selectAction(d.id);
             },
@@ -125,55 +144,122 @@ export function SelectionActionsPanel() {
   ]);
 }
 
-function ActionDetailsPanel({ action }) {
-  const actionCfg = actions.find((d) => d.id == action);
-  const title = actionCfg?.name ?? "No action selected";
+function ActionDetailsPanel({
+  action,
+}: {
+  action: SelectionActionState<any> | null;
+}) {
+  let title = "No action selected";
+  const actionCfg = actions.find((d) => d.id == action?.type);
+  if (action != null) {
+    title = actionCfg?.name ?? "Unknown action";
+  }
 
-  return h("div.action-details", [
-    h("h2", title),
-    h(ActionDetailsContent, { action: actionCfg }),
-  ]);
+  let content: any = h(NonIdealState, {
+    icon: "flows",
+  });
+  title = actionCfg?.name ?? "No action selected";
+
+  if (action != null && actionCfg != null) {
+    content = h(ActionDetailsContent, {
+      action: actionCfg,
+      state: action?.state,
+    });
+  }
+
+  return h("div.action-details", [h("h2", title), content]);
 }
 
 function ActionDetailsContent({
   action,
+  state,
 }: {
-  action: ActionCfg | undefined | null;
+  action: ActionCfg;
+  state: any | null;
 }) {
-  if (action == null) {
-    return h(NonIdealState, {
-      icon: "flows",
-    });
-  }
-
   const { description, intent = "primary", detailsForm } = action;
+
+  const updateState = useMapActions((state) => state.setSelectionActionState);
+
+  let disabled = false;
+  if (action.ready != null) {
+    disabled = !action.ready(state);
+  }
 
   return h("div.action-details-content", [
     h.if(description != null)("p", description),
-    h.if(detailsForm != null)(detailsForm),
+    h.if(detailsForm != null)(detailsForm, { state, updateState }),
     h("div.spacer"),
-    h(Button, { intent, icon: "play" }, "Run"),
+    h(Button, { intent, icon: "play", disabled }, "Run"),
   ]);
 }
 
-function ChangeLayerForm() {
+interface ChangeLayerState {
+  selectedLayerID: number;
+}
+
+function ChangeLayerForm({
+  state,
+  updateState,
+}: {
+  state: ChangeLayerState | null;
+  updateState(state: ChangeLayerState): void;
+}) {
   const layers = useMapState((state) => state.mapLayers);
   const currentLayer = useMapState((state) => state.activeLayer);
+
+  if (layers == null) {
+    return h(Spinner);
+  }
+
   const possibleLayers = layers.filter((d) => d.id != currentLayer);
+  const selectedLayerID = state?.selectedLayerID ?? currentLayer;
+
+  const currentLayerItem = layers.find((d) => d.id == selectedLayerID);
 
   return h(
-    Select,
+    Select<MapLayer>,
     {
       items: possibleLayers,
       itemRenderer: (layer, { handleClick }) => {
-        return h("div", { onClick: handleClick }, layer.name);
+        return h(LayerItem, { layer, onClick: handleClick });
       },
       onItemSelect: (layer) => {
-        console.log("Selected layer", layer);
+        updateState({ selectedLayerID: layer.id });
       },
       popoverProps: { minimal: true },
       fill: true,
     },
-    h(Button, { className: "select-placeholder", text: "Change layer" }),
+    h(
+      Menu,
+      h(LayerItem, {
+        className: "select-placeholder",
+        layer: currentLayerItem,
+        disabled: selectedLayerID == currentLayer,
+      }),
+    ),
   );
+}
+
+function LayerItem({
+  selected,
+  layer,
+  className,
+  onClick,
+  disabled,
+}: {
+  selected?: boolean;
+  layer: any;
+  className?: string;
+  onClick?: MouseEventHandler<HTMLElement>;
+  disabled?: boolean;
+}) {
+  return h(MenuItem, {
+    icon: "layers",
+    text: layer?.name ?? "No layer selected",
+    active: selected,
+    className,
+    onClick,
+    disabled,
+  });
 }
