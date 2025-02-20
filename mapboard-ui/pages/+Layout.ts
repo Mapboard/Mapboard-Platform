@@ -1,10 +1,10 @@
 import "./style.css";
 
 import React from "react";
-import { Link } from "~/components/link";
+import { Link } from "../shared/components/link";
 import h from "@macrostrat/hyper";
 
-export default function LayoutDefault({ children }: { children: React.ReactNode }) {
+export function Layout({ children }: { children: React.ReactNode }) {
   return h(
     "div",
     { style: { display: "flex", maxWidth: 900, margin: "auto" } },
