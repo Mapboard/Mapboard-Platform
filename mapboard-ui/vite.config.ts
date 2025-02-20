@@ -20,5 +20,17 @@ export default defineConfig({
        */
       "@macrostrat/ui-components"
     ]
+  },
+  server: {
+    port: 3002,
+    allowedHosts: [
+      "localhost",
+      // For local development
+      "mapboard.local"
+    ],
+    watch: {
+      // We reload .env files using Nodemon when in development
+      ignored: [".env"]
+    }
   }
 });

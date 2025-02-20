@@ -9,7 +9,10 @@
     "@macrostrat/hyper": "^3.0.6",
     "@macrostrat/style-system": "^0.2.0",
     "@macrostrat/ui-components": "^4.1.2",
+    "@supabase/postgrest-js": "^1.18.1",
     "@vitejs/plugin-react": "^4.3.4",
+    "classnames": "^2.5.1",
+    "cross-fetch": "^4.1.0",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
     "vike-react": "^0.5.13"

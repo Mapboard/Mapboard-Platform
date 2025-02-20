@@ -1,5 +1,5 @@
 import hyper from "@macrostrat/hyper";
-import { Link } from "~/components";
+import { Link } from "~/components/link";
 import styles from "./main.module.css";
 import { useData } from "vike-react/useData";
 import type { DataClient } from "./+data";
@@ -12,9 +12,9 @@ export default function PageClient() {
     h("h1", "Mapboard platform"),
     h(
       "p",
-      "A platform for building geologic maps, from the creators of Macrostrat",
+      "A platform for building geologic maps, from the creators of Macrostrat"
     ),
-    h(ProjectList),
+    h(ProjectList)
   ]);
 }
 
@@ -25,7 +25,7 @@ function ProjectList() {
     PickerList,
     { className: "project-list" },
     projects.map((d) =>
-      h("li", h(Link, { href: "/projects/" + d.slug }, d.title)),
-    ),
+      h("li", h(Link, { href: "/projects/" + d.slug }, d.title))
+    )
   );
 }
