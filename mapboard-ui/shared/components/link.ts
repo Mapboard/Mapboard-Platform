@@ -9,6 +9,8 @@ export function Link({ href, children }: { href: string; children: string }) {
   return h(
     "a",
     { href, className: isActive ? "is-active" : undefined },
-    children,
+    children
   );
 }
+
+/* Test 1 */

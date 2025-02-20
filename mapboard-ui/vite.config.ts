@@ -3,6 +3,11 @@ import { defineConfig } from "vite";
 import vike from "vike/plugin";
 import path from "node:path";
 
+/** Since we are running on a self-signed certificate in development,
+ * we need to disable TLS checks.
+ */
+process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = "0";
+
 export default defineConfig({
   plugins: [vike({}), react({})],
   build: {

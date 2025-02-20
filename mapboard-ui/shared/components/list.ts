@@ -18,21 +18,23 @@ interface PickerListItemProps {
 }
 
 export function PickerListItem({
-  children,
-  className,
-  active,
-  icon,
-  onClick,
-}: PickerListItemProps) {
+                                 children,
+                                 className,
+                                 active,
+                                 icon,
+                                 onClick
+                               }: PickerListItemProps) {
+  // test1
   return h(
     "li.picker-list-item",
     {
       className: classNames("picker-list-item", { active }, className),
-      onClick,
+      onClick
     },
     [
       h.if(icon != null)("span.icon", h(Icon, { icon })),
-      h("span.label", children),
-    ],
+      h("span.label", children)
+    ]
   );
+  // Test
 }
