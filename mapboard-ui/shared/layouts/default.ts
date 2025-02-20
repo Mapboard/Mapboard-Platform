@@ -1,17 +1,16 @@
 import "./style.css";
 import "@blueprintjs/core/lib/css/blueprint.css";
 import "@macrostrat/style-system/dist/style-system.css";
-
-import h from "@macrostrat/hyper";
+import { DarkModeProvider } from "@macrostrat/ui-components";
+import styles from "./layouts.module.css";
+import React from "react";
+import { Link } from "~/components";
+import hyper from "@macrostrat/hyper";
 import { usePageContext } from "vike-react/usePageContext";
 
-import React from "react";
-import { Link } from "~/components/link";
-import FullscreenLayout from "./fullscreen";
-import { DarkModeProvider } from "@macrostrat/ui-components";
+const h = hyper.styled(styles);
 
-export default function Layout({ children }: { children: React.ReactNode }) {
-  // Get layout config value
+export function Layout({ children }: { children: React.ReactNode }) {
   const ctx = usePageContext();
 
   const layout = ctx.config.layout ?? "default";
@@ -22,8 +21,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   } else {
     main = h(DefaultLayout, children);
   }
-
   return h(DarkModeProvider, main);
+}
+
+export function FullscreenLayout({ children }: { children: React.ReactNode }) {
+  return h("div.page-container.fullscreen", children);
 }
 
 function DefaultLayout({ children }: { children: React.ReactNode }) {

@@ -1,13 +1,13 @@
 import hyper from "@macrostrat/hyper";
-import { Link } from "~/components";
+import { Link, PickerList } from "~/components";
+
 import styles from "./main.module.css";
 import { useData } from "vike-react/useData";
 import type { DataClient } from "./+data";
-import { PickerList } from "~/components/list";
 
 const h = hyper.styled(styles);
 
-export default function PageClient() {
+export function Page() {
   return h([
     h("h1", "Mapboard platform"),
     h(

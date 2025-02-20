@@ -1,7 +1,14 @@
 import { usePageContext } from "vike-react/usePageContext";
 import h from "@macrostrat/hyper";
+import { ReactNode } from "react";
 
-export function Link({ href, children }: { href: string; children: string }) {
+export function Link({
+  href,
+  children,
+}: {
+  href: string;
+  children?: ReactNode;
+}) {
   const pageContext = usePageContext();
   const { urlPathname } = pageContext;
   const isActive =

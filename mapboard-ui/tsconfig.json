@@ -1,8 +1,7 @@
 {
   "compilerOptions": {
+    "baseUrl": ".",
     "strict": true,
-    "allowJs": true,
-    "checkJs": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
@@ -11,7 +10,7 @@
     "module": "ESNext",
     "noEmit": true,
     "moduleResolution": "Bundler",
-    "target": "ES2019",
+    "target": "ES2022",
     "lib": [
       "DOM",
       "DOM.Iterable",
@@ -30,11 +29,6 @@
       ]
     }
   },
-  "include": [
-    "**/*.ts",
-    "**/*.d.ts",
-    "**/*.tsx"
-  ],
   "exclude": [
     "dist"
   ]

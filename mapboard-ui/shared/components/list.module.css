@@ -7,20 +7,25 @@
   cursor: pointer;
   border-radius: 6px;
 }
+
 .picker-list li {
   border-bottom: var(--panel-border);
   overflow: hidden;
 }
+
 .picker-list li:last-child {
   border-bottom: none;
 }
+
 .picker-list li a {
   padding: 0.2em 1em;
   display: block;
 }
+
 .picker-list li:hover {
   background: var(--background-highlight);
 }
+
 .picker-list li.active {
   background: var(--background-active);
 }
@@ -30,5 +35,3 @@
   display: flex;
   gap: 0.5em;
 }
-
-/*# sourceMappingURL=list.module.css.map */

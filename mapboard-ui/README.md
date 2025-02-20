@@ -1,14 +1,8 @@
-<!--bati:start section="document"-->
-
-<!--bati:start section="intro"-->
-
-Generated with [Bati](https://batijs.dev) ([version 299](https://www.npmjs.com/package/create-bati/v/0.0.299)) using this command:
+Generated with [vike.dev/new](hhttps://vike.dev/new) ([version 402](https://www.npmjs.com/package/create-vike/v/0.0.402)) using this command:
 
 ```sh
-yarn dlx @batijs/cli --react
+yarn create vike@latest --react
 ```
-
-<!--bati:start section="TOC"-->
 
 ## Contents
 
@@ -20,14 +14,6 @@ yarn dlx @batijs/cli --react
   * [`/pages/+onPageTransitionStart.ts` and `/pages/+onPageTransitionEnd.ts`](#pagesonpagetransitionstartts-and-pagesonpagetransitionendts)
   * [SSR](#ssr)
   * [HTML Streaming](#html-streaming)
-
-<!--bati:end section="TOC"-->
-
-<!--bati:end section="intro"-->
-
-<!--bati:start section="features"-->
-
-<!--bati:start category="UI Framework" flag="react"-->
 
 ## React
 
@@ -65,8 +51,3 @@ SSR is enabled by default. You can [disable it](https://vike.dev/ssr) for all yo
 
 You can enable/disable [HTML streaming](https://vike.dev/stream) for all your pages, or only for some pages while still using it for others.
 
-<!--bati:end category="UI Framework" flag="react"-->
-
-<!--bati:end section="features"-->
-
-<!--bati:end section="document"-->

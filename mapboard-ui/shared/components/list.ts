@@ -24,6 +24,7 @@ export function PickerListItem({
   icon,
   onClick,
 }: PickerListItemProps) {
+  // test2
   return h(
     "li.picker-list-item",
     {
@@ -35,4 +36,5 @@ export function PickerListItem({
       h("span.label", children),
     ],
   );
+  // Test
 }
