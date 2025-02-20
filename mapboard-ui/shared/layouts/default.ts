@@ -1,10 +1,19 @@
 import "./style.css";
+import "@blueprintjs/core/lib/css/blueprint.css";
+import "@macrostrat/style-system/dist/style-system.css";
+import { DarkModeProvider } from "@macrostrat/ui-components";
+
 
 import React from "react";
 import { Link } from "../components/link";
 import h from "@macrostrat/hyper";
 
 export function Layout({ children }: { children: React.ReactNode }) {
+  const main = h(DefaultLayout, children);
+  return h(DarkModeProvider, main);
+}
+
+function DefaultLayout({ children }: { children: React.ReactNode }) {
   return h(
     "div",
     { style: { display: "flex", maxWidth: 900, margin: "auto" } },
