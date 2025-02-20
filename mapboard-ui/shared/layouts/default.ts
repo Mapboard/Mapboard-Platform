@@ -2,15 +2,30 @@ import "./style.css";
 import "@blueprintjs/core/lib/css/blueprint.css";
 import "@macrostrat/style-system/dist/style-system.css";
 import { DarkModeProvider } from "@macrostrat/ui-components";
-
-
+import styles from "./layouts.module.css";
 import React from "react";
-import { Link } from "../components/link";
-import h from "@macrostrat/hyper";
+import { Link } from "~/components";
+import hyper from "@macrostrat/hyper";
+import { usePageContext } from "vike-react/usePageContext";
+
+const h = hyper.styled(styles);
 
 export function Layout({ children }: { children: React.ReactNode }) {
-  const main = h(DefaultLayout, children);
+  const ctx = usePageContext();
+
+  const layout = ctx.config.layout ?? "default";
+
+  let main: React.ReactNode;
+  if (layout === "fullscreen") {
+    main = h(FullscreenLayout, children);
+  } else {
+    main = h(DefaultLayout, children);
+  }
   return h(DarkModeProvider, main);
+}
+
+export function FullscreenLayout({ children }: { children: React.ReactNode }) {
+  return h("div.page-container.fullscreen", children);
 }
 
 function DefaultLayout({ children }: { children: React.ReactNode }) {
@@ -21,10 +36,10 @@ function DefaultLayout({ children }: { children: React.ReactNode }) {
       h(Sidebar, [
         h(Logo),
         h(Link, { href: "/" }, "Welcome"),
-        h(Link, { href: "/docs" }, "Documentation")
+        h(Link, { href: "/docs" }, "Documentation"),
       ]),
-      h(Content, children)
-    ]
+      h(Content, children),
+    ],
   );
 }
 
@@ -37,10 +52,10 @@ function Sidebar({ children }: { children: React.ReactNode }) {
         flexShrink: 0,
         display: "flex",
         flexDirection: "column",
-        lineHeight: "1.8em"
-      }
+        lineHeight: "1.8em",
+      },
     },
-    children
+    children,
   );
 }
 
@@ -49,8 +64,8 @@ function Content({ children }: { children: React.ReactNode }) {
     h(
       "div#page-content",
       { style: { padding: 20, paddingBottom: 50, minHeight: "100vh" } },
-      [children]
-    )
+      [children],
+    ),
   ]);
 }
 
@@ -61,8 +76,8 @@ function Logo() {
         src: "https://mapboard-gis.app/img/mapboard-icon.png",
         height: 100,
         width: 100,
-        alt: "logo"
-      })
-    ])
+        alt: "logo",
+      }),
+    ]),
   ]);
 }

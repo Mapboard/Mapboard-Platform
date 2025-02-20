@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "baseUrl": ".",
     "strict": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
@@ -17,10 +18,16 @@
     ],
     "types": [
       "vite/client",
-      "vike-react"
+      "vike-react",
+      "./global.d.ts"
     ],
     "jsx": "preserve",
-    "jsxImportSource": "react"
+    "jsxImportSource": "react",
+    "paths": {
+      "~/*": [
+        "./shared/*"
+      ]
+    }
   },
   "exclude": [
     "dist"
