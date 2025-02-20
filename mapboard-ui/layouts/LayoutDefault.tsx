@@ -2,7 +2,7 @@ import "./style.css";
 
 import React from "react";
 import logoUrl from "../assets/logo.svg";
-import { Link } from "../components/link.js";
+import { Link } from "~/components/link";
 
 export default function LayoutDefault({ children }: { children: React.ReactNode }) {
   return (
