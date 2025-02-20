@@ -9,7 +9,7 @@ a {
 }
 
 #sidebar a.is-active {
-  background-color: #eee;
+  background-color: var(--background-active)
 }
 
 /* Reset */
@@ -30,4 +30,8 @@ body {
 
 body.page-is-transitioning #page-content {
   opacity: 0;
+}
+
+#sidebar {
+  border-right: var(--panel-border)
 }
