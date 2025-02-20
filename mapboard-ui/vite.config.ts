@@ -1,7 +1,7 @@
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 import vike from "vike/plugin";
-import { resolve } from "node:path";
+import path from "node:path";
 
 export default defineConfig({
   plugins: [vike({}), react({})],
@@ -10,7 +10,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      "~": resolve("./shared")
+      "~": path.resolve("./shared")
     }
   }
 });
