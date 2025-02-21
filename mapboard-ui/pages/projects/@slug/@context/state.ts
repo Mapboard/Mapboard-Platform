@@ -36,13 +36,14 @@ export interface DataType {
   color: string;
 }
 
-interface MapState extends RecoverableMapState {
+export interface MapState extends RecoverableMapState {
   actions: MapActions;
   layerPanelIsOpen: boolean;
   selection: FeatureSelection | null;
   selectionAction: SelectionActionState<any> | null;
   mapLayers: MapLayer[] | null;
   mapLayerIDMap: Map<number, MapLayer>;
+  apiBaseURL: string;
   dataTypes: {
     line: DataType[] | null;
     polygon: DataType[] | null;
@@ -64,11 +65,12 @@ export type FeatureSelection = {
 
 const _subscribeWithSelector = subscribeWithSelector as <T>(fn: T) => T;
 
-function createMapStore() {
+function createMapStore(baseURL: string) {
   return create<MapState>(
     _subscribeWithSelector((set, get): MapState => {
       const { activeLayer, baseMap } = parseQueryParameters();
       return {
+        apiBaseURL: baseURL,
         activeLayer,
         baseMap,
         layerPanelIsOpen: false,
@@ -135,7 +137,7 @@ function createMapStore() {
 }
 
 export function MapStateProvider({ children, baseURL }) {
-  const [value] = useState(createMapStore);
+  const [value] = useState(() => createMapStore(baseURL));
 
   useEffect(() => {
     const unsubscribe = value.subscribe(
@@ -174,11 +176,16 @@ async function fetchDataTypes(baseURL: string, mode: "line" | "polygon") {
   return res.json();
 }
 
-export function useMapState<T>(selector: (state: MapState) => T): T {
-  const store = useContext(MapStateContext);
-  if (store == null) {
+export function useMapStateAPI(): StoreApi<MapState> {
+  const storeAPI = useContext(MapStateContext);
+  if (storeAPI == null) {
     throw new Error("No map state found");
   }
+  return storeAPI;
+}
+
+export function useMapState<T>(selector: (state: MapState) => T): T {
+  const store = useMapStateAPI();
   return useStore(store, selector);
 }
 

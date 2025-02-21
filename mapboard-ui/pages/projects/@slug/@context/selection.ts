@@ -1,15 +1,14 @@
 import hyper from "@macrostrat/hyper";
 import styles from "./selection.module.css";
 import { FormGroup, MenuItem, NumericInput } from "@blueprintjs/core";
-import { MapLayer, useMapState } from "./state";
+import { MapLayer, MapState, useMapState, useMapStateAPI } from "./state";
 import {
   ActionDef,
   ActionsPreflightPanel,
   ItemSelect,
 } from "@macrostrat/form-components";
 import { Box, NullableSlider } from "@macrostrat/ui-components";
-import { Simulate } from "react-dom/test-utils";
-import select = Simulate.select;
+import { apiBaseURL } from "~/settings";
 
 const h = hyper.styled(styles);
 
@@ -53,7 +52,7 @@ export enum SelectionActionType {
 
 type MapboardActionDef =
   | ActionDef<SelectionActionType.Delete>
-  | ActionDef<SelectionActionType.Heal>
+  | ActionDef<SelectionActionType.Heal, string>
   | ActionDef<SelectionActionType.RecalculateTopology>
   | ActionDef<SelectionActionType.ChangeType, string>
   | ActionDef<SelectionActionType.ChangeLayer, number>
@@ -74,6 +73,10 @@ const actions: MapboardActionDef[] = [
     name: "Heal",
     icon: "changes",
     description: "Heal selected features",
+    detailsForm: ChangeDataTypeForm,
+    isReady(state) {
+      return state != null;
+    },
   },
   {
     id: SelectionActionType.RecalculateTopology,
@@ -96,7 +99,7 @@ const actions: MapboardActionDef[] = [
     icon: "layers",
     detailsForm: ChangeLayerForm,
     isReady(state) {
-      return state?.selectedLayerID != null;
+      return state != null;
     },
   },
   {
@@ -126,12 +129,65 @@ const actions: MapboardActionDef[] = [
 ];
 
 export function SelectionActionsPanel() {
+  const store = useMapStateAPI();
   return h(ActionsPreflightPanel, {
     onRunAction(action: MapboardActionDef, state: any) {
-      console.log("Running action", action, state);
+      const mapState = store.getState();
+      console.log("Running action", action, state, mapState);
+      runAction(action, state, mapState).then((resp) => {
+        console.log("Response", resp);
+      });
     },
     actions,
   });
+}
+
+function synthesizeAction(
+  action: MapboardActionDef,
+  state: any,
+  mapState: MapState,
+) {
+  let actionData = {
+    features: mapState.selection?.lines,
+  };
+
+  if (action.id == SelectionActionType.Heal) {
+    actionData.type = state;
+  }
+
+  const baseAction = {
+    [action.id]: actionData,
+  };
+
+  return {
+    action: baseAction,
+    layer: mapState.activeLayer,
+    mode: "line",
+  };
+}
+
+async function runAction(
+  action: MapboardActionDef,
+  state: any,
+  mapState: MapState,
+) {
+  const url = `${mapState.apiBaseURL}/changes`;
+  const lines = mapState.selection?.lines;
+  if (lines == null) {
+    throw new Error("No lines selected");
+  }
+  const actionBody = synthesizeAction(action, state, mapState);
+  console.log(actionBody);
+  const body = JSON.stringify(actionBody);
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body,
+  });
+
+  return response.json();
 }
 
 type DataType = any;
@@ -139,10 +195,14 @@ type DataType = any;
 function ChangeDataTypeForm({ state, setState }) {
   const dataTypes = useMapState((state) => state.dataTypes?.line);
 
+  const selectedItem = dataTypes?.find((d) => d.id == state) ?? null;
+
   return h(ItemSelect<DataType>, {
     items: dataTypes,
-    selectedItem: state,
-    onSelectItem: setState,
+    selectedItem,
+    onSelectItem(item) {
+      setState(item.id);
+    },
     label: "data type",
     icon: "tag",
     itemComponent: ({ item, ...rest }) => {
