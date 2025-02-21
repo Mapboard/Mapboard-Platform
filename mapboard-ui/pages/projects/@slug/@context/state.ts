@@ -17,6 +17,7 @@ interface MapActions {
   setMapLayers: (layers: any[]) => void;
   setSelectionAction: (action: SelectionActionType | null) => void;
   setSelectionActionState: (state: any) => void;
+  setDataTypes: (mode: "line" | "polygon", types: DataType[]) => void;
 }
 
 export interface SelectionActionState<T extends object> {
@@ -29,6 +30,12 @@ export interface MapLayer {
   name: string;
 }
 
+export interface DataType {
+  id: string;
+  name: string;
+  color: string;
+}
+
 interface MapState extends RecoverableMapState {
   actions: MapActions;
   layerPanelIsOpen: boolean;
@@ -36,6 +43,10 @@ interface MapState extends RecoverableMapState {
   selectionAction: SelectionActionState<any> | null;
   mapLayers: MapLayer[] | null;
   mapLayerIDMap: Map<number, MapLayer>;
+  dataTypes: {
+    line: DataType[] | null;
+    polygon: DataType[] | null;
+  };
 }
 
 const MapStateContext = createContext<StoreApi<MapState> | null>(null);
@@ -64,6 +75,10 @@ function createMapStore() {
         selection: null,
         selectionAction: null,
         mapLayers: null,
+        dataTypes: {
+          line: null,
+          polygon: null,
+        },
         mapLayerIDMap: new Map(),
         actions: {
           setBaseMap: (baseMap: BasemapType) => set({ baseMap }),
@@ -85,6 +100,15 @@ function createMapStore() {
             set({
               mapLayers: layers,
               mapLayerIDMap: new Map(layers.map((l) => [l.id, l])),
+            }),
+          setDataTypes: (mode: "line" | "polygon", types: DataType[]) =>
+            set((state) => {
+              return {
+                dataTypes: {
+                  ...state.dataTypes,
+                  [mode]: types,
+                },
+              };
             }),
           setSelectionAction: (type) =>
             set((state) => {
@@ -123,16 +147,31 @@ export function MapStateProvider({ children, baseURL }) {
     return unsubscribe;
   }, []);
 
+  const allModes = ["line", "polygon"] as ("line" | "polygon")[];
+
+  /** Setup basic data types */
   const setMapLayers = value((state) => state.actions.setMapLayers);
+  const setDataTypes = value((state) => state.actions.setDataTypes);
   useEffect(() => {
+    /** Fetch map layers and data types that are relevant for the map */
     fetchMapLayers(baseURL).then(setMapLayers);
+    for (const mode of allModes) {
+      const updateTypes = (t: DataType[]) => setDataTypes(mode, t);
+      fetchDataTypes(baseURL, mode).then(updateTypes);
+    }
   }, []);
 
   return h(MapStateContext.Provider, { value }, [children]);
 }
 
-function fetchMapLayers(baseURL: string): Promise<any[]> {
-  return fetch(`${baseURL}/map-layers`).then((response) => response.json());
+async function fetchMapLayers(baseURL: string): Promise<any[]> {
+  const res = await fetch(`${baseURL}/map-layers`);
+  return res.json();
+}
+
+async function fetchDataTypes(baseURL: string, mode: "line" | "polygon") {
+  const res = await fetch(`${baseURL}/${mode}/types`);
+  return res.json();
 }
 
 export function useMapState<T>(selector: (state: MapState) => T): T {

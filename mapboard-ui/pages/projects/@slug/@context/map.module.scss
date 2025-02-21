@@ -62,4 +62,20 @@
   flex-direction: column;
 }
 
-/*# sourceMappingURL=map.module.css.map */
+.mapboard-map {
+  display: block;
+
+  :global {
+    .mapboxgl-popup {
+      .mapboxgl-popup-content {
+        background: var(--background-secondary);
+      }
+
+      .mapboxgl-popup-tip {
+        border-bottom-color: var(--background-secondary);
+        border-top-color: var(--background-secondary);
+
+      }
+    }
+  }
+}

@@ -1,13 +1,15 @@
 import hyper from "@macrostrat/hyper";
 import styles from "./selection.module.css";
 import { FormGroup, MenuItem, NumericInput } from "@blueprintjs/core";
-import { MapLayer } from "./state";
+import { MapLayer, useMapState } from "./state";
 import {
   ActionDef,
   ActionsPreflightPanel,
   ItemSelect,
 } from "@macrostrat/form-components";
 import { Box, NullableSlider } from "@macrostrat/ui-components";
+import { Simulate } from "react-dom/test-utils";
+import select = Simulate.select;
 
 const h = hyper.styled(styles);
 
@@ -54,7 +56,7 @@ type MapboardActionDef =
   | ActionDef<SelectionActionType.Heal>
   | ActionDef<SelectionActionType.RecalculateTopology>
   | ActionDef<SelectionActionType.ChangeType, string>
-  | ActionDef<SelectionActionType.ChangeLayer, ChangeLayerState>
+  | ActionDef<SelectionActionType.ChangeLayer, number>
   | ActionDef<SelectionActionType.AdjustWidth, number>
   | ActionDef<SelectionActionType.AdjustCertainty, number | null>
   | ActionDef<SelectionActionType.ReverseLines>;
@@ -132,15 +134,13 @@ export function SelectionActionsPanel() {
   });
 }
 
-interface ChangeLayerState {
-  selectedLayerID: number;
-}
-
 type DataType = any;
 
 function ChangeDataTypeForm({ state, setState }) {
+  const dataTypes = useMapState((state) => state.dataTypes?.line);
+
   return h(ItemSelect<DataType>, {
-    items: [],
+    items: dataTypes,
     selectedItem: state,
     onSelectItem: setState,
     label: "data type",
@@ -165,21 +165,23 @@ function ChangeLayerForm({
   state,
   setState,
 }: {
-  state: ChangeLayerState | null;
-  setState(state: ChangeLayerState): void;
+  state: number | null;
+  setState(state: number): void;
 }) {
-  const layers: MapLayer[] = [];
-  const currentLayer = null;
+  const layers = useMapState((state) => state.mapLayers);
+  const currentLayerID = useMapState((state) => state.activeLayer);
 
-  const selectedLayerID = state?.selectedLayerID ?? currentLayer;
-  const possibleLayers = layers.filter((d) => d.id != selectedLayerID);
-  const currentLayerItem = layers.find((d) => d.id == selectedLayerID) ?? null;
+  const selectedLayerID = state;
+
+  const possibleLayers = layers?.filter((d) => d.id != currentLayerID) ?? null;
+  const selectedLayerItem =
+    layers?.find((d) => d.id == selectedLayerID) ?? null;
 
   return h(ItemSelect<MapLayer>, {
     items: possibleLayers,
-    selectedItem: currentLayerItem,
+    selectedItem: selectedLayerItem,
     onSelectItem: (layer) => {
-      setState({ selectedLayerID: layer.id });
+      setState(layer?.id);
     },
     label: "layer",
     icon: "layers",

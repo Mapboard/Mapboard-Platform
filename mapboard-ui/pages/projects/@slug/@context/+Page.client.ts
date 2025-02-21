@@ -1,5 +1,5 @@
 import hyper from "@macrostrat/hyper";
-import styles from "./map.module.css";
+import styles from "./map.module.scss";
 import { apiDomain, mapboxToken } from "~/settings";
 import type { Data } from "../+data";
 import { useData } from "vike-react/useData";

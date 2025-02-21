@@ -9,7 +9,7 @@ import {
   PanelCard,
   BaseInfoDrawer,
 } from "@macrostrat/map-interface";
-import styles from "./map.module.css";
+import styles from "./map.module.scss";
 import { useAsyncEffect, useInDarkMode } from "@macrostrat/ui-components";
 import { BasemapType, useMapActions, useMapState } from "./state";
 import mapboxgl, { Style } from "mapbox-gl";
@@ -68,6 +68,7 @@ export function MapArea({
       contextPanelOpen: isOpen,
       fitViewport: true,
       detailPanel: h(InfoDrawer),
+      className: "mapboard-map",
     },
     [
       h(MapInner, {

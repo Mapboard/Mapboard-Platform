@@ -3,12 +3,14 @@
  * https://docs.mapbox.com/mapbox-gl-js/example/using-box-queryrenderedfeatures/
  *  */
 
-import { useMapStyleOperator } from "@macrostrat/mapbox-react";
-import styles from "./index.module.css";
+import { useMapRef, useMapStyleOperator } from "@macrostrat/mapbox-react";
+import styles from "./index.module.sass";
 import mapboxgl from "mapbox-gl";
 import hyper from "@macrostrat/hyper";
 import { renderToString } from "react-dom/server";
 import { useMapActions, useMapState } from "../state";
+import { useEffect, useRef, useState } from "react";
+import { DataField } from "@macrostrat/data-components";
 
 const h = hyper.styled(styles);
 
@@ -50,6 +52,50 @@ export function BoxSelectionManager(props: BoxSelectionProps) {
   const selectedFeatures = useMapState((state) => state.selection);
   const mapLayerIDMap = useMapState((state) => state.mapLayerIDMap);
 
+  const [hoveredFeature, setHoveredFeature] = useState<any | null>(null);
+  const [hoverLocation, setHoverLocation] =
+    useState<mapboxgl.LngLatLike | null>(null);
+
+  const popup = useRef(new mapboxgl.Popup({ closeButton: false }));
+  const mapRef = useMapRef();
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (map == null) {
+      return;
+    }
+
+    if (hoveredFeature == null) {
+      popup.current.remove();
+      map.getCanvas().style.cursor = "";
+      return;
+    }
+
+    const f: any = hoveredFeature;
+    const mapLayer = mapLayerIDMap.get(f.map_layer);
+
+    // render html with react
+    const _html = h("div.map-popover", [
+      h("h3", f.id),
+      h(DataField, { label: "Layer", value: mapLayer?.name }),
+      h(DataField, { label: "Type", value: f.type }),
+    ]);
+
+    // Change the cursor style as a UI indicator.
+    map.getCanvas().style.cursor = "pointer";
+    const html = renderToString(_html);
+    popup.current.setHTML(html).addTo(map);
+  }, [hoveredFeature]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (map == null || hoverLocation == null) {
+      return;
+    }
+
+    popup.current.setLngLat(hoverLocation);
+  }, [hoverLocation]);
+
   useMapStyleOperator(
     (map) => {
       if (map == null) return;
@@ -64,13 +110,13 @@ export function BoxSelectionManager(props: BoxSelectionProps) {
     (map) => {
       if (map == null) return;
 
+      // If active layer is not set, don't allow selection
+      if (activeLayer == null) {
+        return;
+      }
+
       // Disable default box zooming.
       map.boxZoom.disable();
-
-      // Create a popup, but don't add it to the map yet.
-      const popup = new mapboxgl.Popup({
-        closeButton: false,
-      });
 
       const canvas = map.getCanvasContainer();
 
@@ -191,26 +237,9 @@ export function BoxSelectionManager(props: BoxSelectionProps) {
           layers: ["lines-highlighted"],
         });
 
-        // Change the cursor style as a UI indicator.
-        map.getCanvas().style.cursor = features.length ? "pointer" : "";
-
-        if (!features.length) {
-          popup.remove();
-          return;
-        }
-
-        const f: any = features[0].properties;
-
-        const mapLayer = mapLayerIDMap.get(f.map_layer);
-
-        // render html with react
-        const _html = h("div.map-popover", [
-          h("h3", f.id),
-          h(DataField, { label: "Layer", value: mapLayer?.name }),
-          h(DataField, { label: "Type", value: f.type }),
-        ]);
-        const html = renderToString(_html);
-        popup.setLngLat(e.lngLat).setHTML(html).addTo(map);
+        const f: any = features[0]?.properties;
+        setHoveredFeature(f);
+        setHoverLocation(e.lngLat);
       };
 
       map.on("mousemove", listener);
@@ -223,8 +252,4 @@ export function BoxSelectionManager(props: BoxSelectionProps) {
   );
 
   return null;
-}
-
-function DataField({ label, value }) {
-  return h("div.data-field", [h("span.label", label), h("span.value", value)]);
 }
