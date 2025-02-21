@@ -30,7 +30,7 @@ function PageInner() {
   const activeLayer = useMapState((state) => state.activeLayer);
 
   const overlayStyle = useMemo(
-    () => buildMapOverlayStyle(baseURL, activeLayer),
+    () => buildMapOverlayStyle(baseURL, { activeLayer }),
     [ctx.project_slug, activeLayer],
   );
 

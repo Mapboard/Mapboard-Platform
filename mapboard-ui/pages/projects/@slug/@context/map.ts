@@ -189,6 +189,7 @@ function getBaseMapStyle(basemapType: BasemapType) {
 function useMapStyle(baseURL: string, isMapView: boolean, { mapboxToken }) {
   const activeLayer = useMapState((state) => state.activeLayer);
   const basemapType = useMapState((state) => state.baseMap);
+  const changeTimestamps = useMapState((state) => state.lastChangeTime);
   const isEnabled = useInDarkMode();
 
   let baseStyle = getBaseMapStyle(basemapType);
@@ -196,7 +197,10 @@ function useMapStyle(baseURL: string, isMapView: boolean, { mapboxToken }) {
   const [style, setStyle] = useState(null);
 
   useAsyncEffect(async () => {
-    let overlayStyle = buildMapOverlayStyle(baseURL, activeLayer);
+    let overlayStyle = buildMapOverlayStyle(baseURL, {
+      selectedLayer: activeLayer,
+      sourceChangeTimestamps: changeTimestamps,
+    });
 
     overlayStyle = mergeStyles(overlayStyle, {
       layers: buildSelectionLayers(),
@@ -212,7 +216,15 @@ function useMapStyle(baseURL: string, isMapView: boolean, { mapboxToken }) {
       xRay: false,
     });
     setStyle(style);
-  }, [basemapType, mapboxToken, isEnabled, baseURL, activeLayer, isMapView]);
+  }, [
+    basemapType,
+    mapboxToken,
+    isEnabled,
+    baseURL,
+    activeLayer,
+    isMapView,
+    changeTimestamps,
+  ]);
 
   return style;
 }

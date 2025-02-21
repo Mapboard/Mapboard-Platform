@@ -141,6 +141,10 @@ export function SelectionActionsPanel() {
           message: resp.message ?? resp.reason ?? defaultMessage,
           intent: resp.error ? "danger" : "success",
         });
+        // If successful, notify that the layer has changed
+        if (!resp.error) {
+          mapState.actions.notifyChange("line");
+        }
       });
     },
     actions,

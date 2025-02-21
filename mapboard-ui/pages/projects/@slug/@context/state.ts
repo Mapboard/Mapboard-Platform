@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import h from "@macrostrat/hyper";
 import { subscribeWithSelector } from "zustand/middleware";
 import { SelectionActionType } from "./selection";
+import { SourceChangeTimestamps } from "./style";
 
 interface RecoverableMapState {
   activeLayer: number | null;
@@ -18,6 +19,7 @@ interface MapActions {
   setSelectionAction: (action: SelectionActionType | null) => void;
   setSelectionActionState: (state: any) => void;
   setDataTypes: (mode: "line" | "polygon", types: DataType[]) => void;
+  notifyChange: (mode: "line" | "polygon" | "topo") => void;
 }
 
 export interface SelectionActionState<T extends object> {
@@ -44,6 +46,8 @@ export interface MapState extends RecoverableMapState {
   mapLayers: MapLayer[] | null;
   mapLayerIDMap: Map<number, MapLayer>;
   apiBaseURL: string;
+  // Time that we last updated the map elements
+  lastChangeTime: SourceChangeTimestamps;
   dataTypes: {
     line: DataType[] | null;
     polygon: DataType[] | null;
@@ -77,6 +81,11 @@ function createMapStore(baseURL: string) {
         selection: null,
         selectionAction: null,
         mapLayers: null,
+        lastChangeTime: {
+          line: null,
+          polygon: null,
+          topo: null,
+        },
         dataTypes: {
           line: null,
           polygon: null,
@@ -93,6 +102,16 @@ function createMapStore(baseURL: string) {
               }
               return { activeLayer, selection: null };
             }),
+          notifyChange: (mode: "line" | "polygon" | "topo") => {
+            return set((state) => {
+              return {
+                lastChangeTime: {
+                  ...state.lastChangeTime,
+                  [mode]: Date.now(),
+                },
+              };
+            });
+          },
           selectFeatures: (selection) => set({ selection }),
           toggleLayerPanel: () =>
             set((state) => {
