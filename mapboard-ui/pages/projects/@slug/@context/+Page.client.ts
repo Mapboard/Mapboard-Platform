@@ -10,6 +10,7 @@ import { bbox } from "@turf/bbox";
 import { MapLoadingButton, MapView } from "@macrostrat/map-interface";
 import { MapArea } from "./map";
 import { PickerList } from "~/components/list";
+import { ToasterContext } from "@macrostrat/ui-components";
 
 const h = hyper.styled(styles);
 
@@ -19,9 +20,8 @@ export function Page() {
   const baseURL = `${apiDomain}/api/project/${ctx.project_slug}/context/${ctx.slug}`;
 
   return h(
-    MapStateProvider,
-    { baseURL },
-    h(PageInner, { baseURL, context: ctx }),
+    ToasterContext,
+    h(MapStateProvider, { baseURL }, h(PageInner, { baseURL, context: ctx })),
   );
 }
 

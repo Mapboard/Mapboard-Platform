@@ -7,7 +7,7 @@ import {
   ActionsPreflightPanel,
   ItemSelect,
 } from "@macrostrat/form-components";
-import { Box, NullableSlider } from "@macrostrat/ui-components";
+import { Box, NullableSlider, useToaster } from "@macrostrat/ui-components";
 import { apiBaseURL } from "~/settings";
 
 const h = hyper.styled(styles);
@@ -130,12 +130,17 @@ const actions: MapboardActionDef[] = [
 
 export function SelectionActionsPanel() {
   const store = useMapStateAPI();
+  const Toaster = useToaster();
   return h(ActionsPreflightPanel, {
     onRunAction(action: MapboardActionDef, state: any) {
       const mapState = store.getState();
       console.log("Running action", action, state, mapState);
       runAction(action, state, mapState).then((resp) => {
-        console.log("Response", resp);
+        const defaultMessage = resp.error ? "Error" : "Success";
+        Toaster?.show({
+          message: resp.message ?? resp.reason ?? defaultMessage,
+          intent: resp.error ? "danger" : "success",
+        });
       });
     },
     actions,
@@ -151,8 +156,13 @@ function synthesizeAction(
     features: mapState.selection?.lines,
   };
 
-  if (action.id == SelectionActionType.Heal) {
+  if (
+    action.id == SelectionActionType.Heal ||
+    action.id == SelectionActionType.ChangeType
+  ) {
     actionData.type = state;
+  } else if (action.id == SelectionActionType.ChangeLayer) {
+    actionData.layer = state;
   }
 
   const baseAction = {
