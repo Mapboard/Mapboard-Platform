@@ -23,12 +23,7 @@ import { mergeStyles } from "@macrostrat/mapbox-utils";
 import { buildMapOverlayStyle } from "./style";
 import { BoxSelectionManager, buildSelectionLayers } from "./_tools";
 import { SelectionActionsPanel } from "./selection";
-import {
-  FormGroup,
-  IconName,
-  OptionProps,
-  SegmentedControl,
-} from "@blueprintjs/core";
+import { FormGroup, OptionProps, SegmentedControl } from "@blueprintjs/core";
 
 const mercator = new SphericalMercator({
   size: 256,
