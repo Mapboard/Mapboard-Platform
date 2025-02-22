@@ -1,3 +1,5 @@
+import { allFeatureModes, FeatureMode } from "./state";
+
 export interface SourceChangeTimestamps {
   line: number | null;
   polygon: number | null;
@@ -7,7 +9,7 @@ export interface SourceChangeTimestamps {
 interface MapOverlayOptions {
   selectedLayer: number | null;
   sourceChangeTimestamps: SourceChangeTimestamps;
-  showTopology?: boolean;
+  enabledFeatureModes?: Set<FeatureMode>;
   showLineEndpoints?: boolean;
 }
 
@@ -16,9 +18,9 @@ export function buildMapOverlayStyle(
   options: MapOverlayOptions,
 ) {
   const {
-    showTopology = true,
     showLineEndpoints = true,
     selectedLayer,
+    enabledFeatureModes = allFeatureModes,
     sourceChangeTimestamps,
   } = options;
 
@@ -71,7 +73,7 @@ export function buildMapOverlayStyle(
 
   let layers: mapboxgl.Layer[] = [];
 
-  if (showTopology) {
+  if (enabledFeatureModes.has(FeatureMode.Topology)) {
     layers.push({
       id: "topology",
       type: "fill",
@@ -85,8 +87,8 @@ export function buildMapOverlayStyle(
     });
   }
 
-  layers = layers.concat([
-    {
+  if (enabledFeatureModes.has(FeatureMode.Polygon)) {
+    layers.push({
       id: "polygons",
       type: "fill",
       source: "mapboard_polygon",
@@ -96,8 +98,11 @@ export function buildMapOverlayStyle(
         "fill-opacity": selectedLayerOpacity(0.8, 0.4),
       },
       //filter,
-    },
-    {
+    });
+  }
+
+  if (enabledFeatureModes.has(FeatureMode.Line)) {
+    layers.push({
       id: "lines",
       type: "line",
       source: "mapboard_line",
@@ -113,8 +118,8 @@ export function buildMapOverlayStyle(
         "line-opacity": selectedLayerOpacity(1, 0.5),
       },
       //filter,
-    },
-  ]);
+    });
+  }
 
   if (showLineEndpoints) {
     layers.push({

@@ -21,6 +21,8 @@ interface MapActions {
   setSelectionActionState: (state: any) => void;
   setDataTypes: (mode: "line" | "polygon", types: DataType[]) => void;
   notifyChange: (mode: "line" | "polygon" | "topo") => void;
+  toggleLineEndpoints: () => void;
+  toggleFeatureMode: (mode: FeatureMode) => void;
 }
 
 export interface SelectionActionState<T extends object> {
@@ -45,12 +47,26 @@ export enum SelectionMode {
   Replace = "replace",
 }
 
+export enum FeatureMode {
+  Line = "line",
+  Polygon = "polygon",
+  Topology = "topology",
+}
+
+export const allFeatureModes = new Set([
+  FeatureMode.Line,
+  FeatureMode.Polygon,
+  FeatureMode.Topology,
+]);
+
 export interface MapState extends RecoverableMapState {
   actions: MapActions;
   layerPanelIsOpen: boolean;
   selection: FeatureSelection | null;
   selectionAction: SelectionActionState<any> | null;
   selectionMode: SelectionMode;
+  enabledFeatureModes: Set<FeatureMode>;
+  showLineEndpoints: boolean;
   mapLayers: MapLayer[] | null;
   mapLayerIDMap: Map<number, MapLayer>;
   apiBaseURL: string;
@@ -90,6 +106,8 @@ function createMapStore(baseURL: string) {
         selectionAction: null,
         selectionMode: SelectionMode.Replace,
         mapLayers: null,
+        enabledFeatureModes: allFeatureModes,
+        showLineEndpoints: false,
         lastChangeTime: {
           line: null,
           polygon: null,
@@ -169,6 +187,20 @@ function createMapStore(baseURL: string) {
               };
             });
           },
+          toggleLineEndpoints: () =>
+            set((state) => {
+              return { showLineEndpoints: !state.showLineEndpoints };
+            }),
+          toggleFeatureMode: (mode) =>
+            set((state) => {
+              const enabledFeatureModes = new Set(state.enabledFeatureModes);
+              if (enabledFeatureModes.has(mode)) {
+                enabledFeatureModes.delete(mode);
+              } else {
+                enabledFeatureModes.add(mode);
+              }
+              return { enabledFeatureModes };
+            }),
         },
       };
     }),

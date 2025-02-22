@@ -3,9 +3,10 @@ import styles from "./map.module.scss";
 import { apiDomain, mapboxToken } from "~/settings";
 import type { Data } from "../+data";
 import { useData } from "vike-react/useData";
-import { AnchorButton, FormGroup, Spinner } from "@blueprintjs/core";
+import { AnchorButton, FormGroup, Spinner, Switch } from "@blueprintjs/core";
 import {
   BasemapType,
+  FeatureMode,
   MapLayer,
   MapStateProvider,
   useMapActions,
@@ -90,7 +91,56 @@ function BackButton({ href, children, className }) {
 }
 
 function LayerControlPanel() {
-  return h("div.layer-control-panel", [h(LayerList), h(BasemapList)]);
+  return h("div.layer-control-panel", [
+    h(LayerList),
+    h(BasemapList),
+    h(ViewOptions),
+  ]);
+}
+
+function ViewOptions() {
+  const enabledFeatureModes = useMapState((state) => state.enabledFeatureModes);
+  const toggleFeatureMode = useMapActions(
+    (actions) => actions.toggleFeatureMode,
+  );
+
+  const showLineEndpoints = useMapState((state) => state.showLineEndpoints);
+  const toggleLineEndpoints = useMapActions(
+    (actions) => actions.toggleLineEndpoints,
+  );
+
+  const switchProps = (mode: FeatureMode) => {
+    return {
+      checked: enabledFeatureModes.has(mode),
+      onChange() {
+        toggleFeatureMode(mode);
+      },
+    };
+  };
+
+  return h(FormGroup, { label: "View options" }, [
+    h(Switch, {
+      label: "Lines",
+      ...switchProps(FeatureMode.Line),
+    }),
+    h("div.subsidiary-switches", [
+      h(Switch, {
+        label: "Endpoints",
+        checked: showLineEndpoints,
+        onChange() {
+          toggleLineEndpoints();
+        },
+      }),
+    ]),
+    h(Switch, {
+      label: "Polygons",
+      ...switchProps(FeatureMode.Polygon),
+    }),
+    h(Switch, {
+      label: "Fills",
+      ...switchProps(FeatureMode.Topology),
+    }),
+  ]);
 }
 
 function BasemapList() {
@@ -115,7 +165,7 @@ function BasemapList() {
         setBasemap(item.id);
       },
       label: "basemap",
-      icon: "layers",
+      icon: "map",
       fill: false,
     }),
   );

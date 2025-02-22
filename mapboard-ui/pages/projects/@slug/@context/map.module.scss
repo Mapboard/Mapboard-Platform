@@ -1,23 +1,22 @@
-.layer-control-panel > :first-child {
-  margin-top: 0;
+.layer-control-panel {
+  line-height: 1;
+
+  & > :first-child {
+    margin-top: 0;
+  }
+
+  & > :last-child {
+    margin-bottom: 0 !important
+  }
 }
 
 .layer-control-panel {
   :global(.bp5-form-group) {
     justify-content: space-between;
+    margin-bottom: 0.5em;
   }
 }
 
-.layer-list {
-  list-style: none;
-  padding-left: 0;
-  line-height: 2;
-  margin-bottom: 0;
-}
-
-.layer-list li {
-  padding: 0 0.5em;
-}
 
 .layer-list .active {
   font-weight: 800;
@@ -105,4 +104,10 @@
 .selection-mode-control {
   align-items: center;
   justify-content: space-between;
+}
+
+.subsidiary-switches {
+  transform: scale(0.85);
+  transform-origin: left;
+  margin-left: 35px
 }

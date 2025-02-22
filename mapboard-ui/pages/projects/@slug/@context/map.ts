@@ -1,6 +1,6 @@
 // Import other components
 import hyper from "@macrostrat/hyper";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   BaseInfoDrawer,
   buildInspectorStyle,
@@ -19,7 +19,7 @@ import {
 } from "./state";
 import { SphericalMercator } from "@mapbox/sphericalmercator";
 import { useMapRef } from "@macrostrat/mapbox-react";
-import { mergeStyles } from "@macrostrat/mapbox-utils";
+import { getMapboxStyle, mergeStyles } from "@macrostrat/mapbox-utils";
 import { buildMapOverlayStyle } from "./style";
 import { BoxSelectionManager, buildSelectionLayers } from "./_tools";
 import { SelectionActionsPanel } from "./selection";
@@ -49,7 +49,9 @@ export function MapArea({
   focusedSourceTitle?: string;
   isMapView: boolean;
 }) {
-  const style = useMapStyle(baseURL, isMapView, { mapboxToken });
+  const style = useMapStyle(baseURL, isMapView, {
+    mapboxToken,
+  });
   const isOpen = useMapState((state) => state.layerPanelIsOpen);
 
   let projection = { name: "globe" };
@@ -209,7 +211,7 @@ function expandBounds(bounds: BBox, aspectRatio = 1, margin = 0.1) {
   return mercator.convert(bbox2, "WGS84");
 }
 
-function getBaseMapStyle(basemapType: BasemapType) {
+function useBaseMapStyle(basemapType: BasemapType) {
   const isEnabled = useInDarkMode();
   let baseStyle = isEnabled
     ? "mapbox://styles/mapbox/dark-v10"
@@ -228,41 +230,41 @@ function useMapStyle(baseURL: string, isMapView: boolean, { mapboxToken }) {
   const activeLayer = useMapState((state) => state.activeLayer);
   const basemapType = useMapState((state) => state.baseMap);
   const changeTimestamps = useMapState((state) => state.lastChangeTime);
+  const showLineEndpoints = useMapState((state) => state.showLineEndpoints);
+  const enabledFeatureModes = useMapState((state) => state.enabledFeatureModes);
   const isEnabled = useInDarkMode();
 
-  let baseStyle = getBaseMapStyle(basemapType);
+  const baseStyleURL = useBaseMapStyle(basemapType);
 
-  const [style, setStyle] = useState(null);
-
-  useAsyncEffect(async () => {
-    let overlayStyle = buildMapOverlayStyle(baseURL, {
-      selectedLayer: activeLayer,
-      sourceChangeTimestamps: changeTimestamps,
-    });
-
-    overlayStyle = mergeStyles(overlayStyle, {
-      layers: buildSelectionLayers(),
-    });
-
+  const [baseStyle, setBaseStyle] = useState(null);
+  useEffect(() => {
     if (!isMapView) {
-      setStyle(overlayStyle);
+      setBaseStyle(null);
       return;
     }
-    const style = await buildInspectorStyle(baseStyle, overlayStyle, {
-      mapboxToken,
-      inDarkMode: isEnabled,
-      xRay: false,
-    });
-    setStyle(style);
-  }, [
-    basemapType,
-    mapboxToken,
-    isEnabled,
-    baseURL,
-    activeLayer,
-    isMapView,
-    changeTimestamps,
-  ]);
+    getMapboxStyle(baseStyleURL, {
+      access_token: mapboxToken,
+    }).then(setBaseStyle);
+  }, [baseStyleURL, mapboxToken, isMapView]);
 
-  return style;
+  return useMemo(() => {
+    const overlayStyle = buildMapOverlayStyle(baseURL, {
+      selectedLayer: activeLayer,
+      sourceChangeTimestamps: changeTimestamps,
+      enabledFeatureModes,
+      showLineEndpoints,
+    });
+
+    console.log(overlayStyle);
+
+    return mergeStyles(baseStyle, overlayStyle, {
+      layers: buildSelectionLayers(),
+    });
+  }, [
+    baseStyle,
+    activeLayer,
+    changeTimestamps,
+    showLineEndpoints,
+    enabledFeatureModes,
+  ]);
 }
