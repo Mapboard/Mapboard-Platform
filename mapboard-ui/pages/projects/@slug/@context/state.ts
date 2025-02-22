@@ -13,10 +13,11 @@ interface RecoverableMapState {
 interface MapActions {
   setActiveLayer: (layer: number) => void;
   setBaseMap: (baseMap: BasemapType) => void;
-  selectFeatures: (selection: FeatureSelection) => void;
+  selectFeatures: (selection: FeatureSelection | null) => void;
   toggleLayerPanel: () => void;
   setMapLayers: (layers: any[]) => void;
   setSelectionAction: (action: SelectionActionType | null) => void;
+  setSelectionMode: (mode: SelectionMode) => void;
   setSelectionActionState: (state: any) => void;
   setDataTypes: (mode: "line" | "polygon", types: DataType[]) => void;
   notifyChange: (mode: "line" | "polygon" | "topo") => void;
@@ -38,11 +39,18 @@ export interface DataType {
   color: string;
 }
 
+export enum SelectionMode {
+  Add = "add",
+  Subtract = "subtract",
+  Replace = "replace",
+}
+
 export interface MapState extends RecoverableMapState {
   actions: MapActions;
   layerPanelIsOpen: boolean;
   selection: FeatureSelection | null;
   selectionAction: SelectionActionState<any> | null;
+  selectionMode: SelectionMode;
   mapLayers: MapLayer[] | null;
   mapLayerIDMap: Map<number, MapLayer>;
   apiBaseURL: string;
@@ -80,11 +88,12 @@ function createMapStore(baseURL: string) {
         layerPanelIsOpen: false,
         selection: null,
         selectionAction: null,
+        selectionMode: SelectionMode.Replace,
         mapLayers: null,
         lastChangeTime: {
           line: null,
           polygon: null,
-          topo: null,
+          topology: null,
         },
         dataTypes: {
           line: null,
@@ -112,7 +121,18 @@ function createMapStore(baseURL: string) {
               };
             });
           },
-          selectFeatures: (selection) => set({ selection }),
+          setSelectionMode: (mode: SelectionMode) =>
+            set({ selectionMode: mode }),
+          selectFeatures: (selection) =>
+            set((state) => {
+              return {
+                selection: combineFeatureSelection(
+                  state.selection,
+                  selection,
+                  state.selectionMode,
+                ),
+              };
+            }),
           toggleLayerPanel: () =>
             set((state) => {
               return { layerPanelIsOpen: !state.layerPanelIsOpen };
@@ -153,6 +173,36 @@ function createMapStore(baseURL: string) {
       };
     }),
   );
+}
+
+function combineFeatureSelection(
+  selection: FeatureSelection | null,
+  newSelection: FeatureSelection | null,
+  mode: SelectionMode,
+): FeatureSelection | null {
+  if (selection == null) {
+    return newSelection;
+  }
+  if (newSelection == null) {
+    return null;
+  }
+
+  switch (mode) {
+    case SelectionMode.Add:
+      return {
+        lines: [...selection.lines, ...newSelection.lines],
+        polygons: [...selection.polygons, ...newSelection.polygons],
+      };
+    case SelectionMode.Subtract:
+      return {
+        lines: selection.lines.filter((l) => !newSelection.lines.includes(l)),
+        polygons: selection.polygons.filter(
+          (l) => !newSelection.polygons.includes(l),
+        ),
+      };
+    case SelectionMode.Replace:
+      return newSelection;
+  }
 }
 
 export function MapStateProvider({ children, baseURL }) {

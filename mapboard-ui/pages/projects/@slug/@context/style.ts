@@ -1,9 +1,7 @@
-import mapboxgl from "mapbox-gl";
-
 export interface SourceChangeTimestamps {
-  line: number;
-  polygon: number;
-  topology: number;
+  line: number | null;
+  polygon: number | null;
+  topology: number | null;
 }
 
 interface MapOverlayOptions {

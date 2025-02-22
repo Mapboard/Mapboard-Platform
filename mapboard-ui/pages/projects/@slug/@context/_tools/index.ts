@@ -226,7 +226,7 @@ export function BoxSelectionManager(props: BoxSelectionProps) {
           // the `counties-highlighted` layer.
           const fips = features.map((feature) => feature.properties.id);
 
-          selectFeatures({ lines: fips });
+          selectFeatures({ lines: fips, polygons: [] });
         }
 
         map.dragPan.enable();

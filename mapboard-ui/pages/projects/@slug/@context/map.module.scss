@@ -79,3 +79,20 @@
     }
   }
 }
+
+.right-elements {
+  display: flex;
+  gap: 0.5em;
+  flex-direction: column;
+}
+
+.tools-panel:global(.bp5-card) {
+  display: flex;
+  gap: 0.5em;
+  padding: 10px 15px;
+  justify-content: space-between;
+
+  h4 {
+    margin: 0;
+  }
+}
