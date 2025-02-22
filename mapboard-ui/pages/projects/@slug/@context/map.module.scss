@@ -96,3 +96,12 @@
     margin: 0;
   }
 }
+
+.selection-mode-control :global(.bp5-form-content) {
+  display: flex;
+  gap: 0.5em;
+  flex-grow: 1;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-end;
+}

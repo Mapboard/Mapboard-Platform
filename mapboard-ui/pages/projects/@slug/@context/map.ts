@@ -10,7 +10,11 @@ import {
   BaseInfoDrawer,
 } from "@macrostrat/map-interface";
 import styles from "./map.module.scss";
-import { useAsyncEffect, useInDarkMode } from "@macrostrat/ui-components";
+import {
+  Spacer,
+  useAsyncEffect,
+  useInDarkMode,
+} from "@macrostrat/ui-components";
 import {
   BasemapType,
   useMapActions,
@@ -136,25 +140,6 @@ function InfoDrawer() {
   );
 }
 
-function SelectionModeButton({
-  mode,
-  ...rest
-}: {
-  mode: SelectionMode;
-  icon: IconName;
-}) {
-  const setSelectionMode = useMapActions((a) => a.setSelectionMode);
-  const activeMode = useMapState((state) => state.selectionMode);
-
-  return h(Button, {
-    onClick() {
-      setSelectionMode(mode);
-    },
-    active: mode == activeMode,
-    ...rest,
-  });
-}
-
 interface SelectionModeConfig {
   mode: SelectionMode;
   icon: IconName;
@@ -162,33 +147,40 @@ interface SelectionModeConfig {
 }
 
 const modes: SelectionModeConfig[] = [
-  { mode: SelectionMode.Add, icon: "add", name: "Add" },
+  { mode: SelectionMode.Add, icon: "plus", name: "Add" },
   { mode: SelectionMode.Subtract, icon: "minus", name: "Subtract" },
-  { mode: SelectionMode.Replace, icon: "refresh", name: "Replace" },
+  { mode: SelectionMode.Replace, icon: "duplicate", name: "Replace" },
 ];
 
 function SelectionModePicker() {
   /** Picker to define how we are selecting features */
   const setSelectionMode = useMapActions((a) => a.setSelectionMode);
   const activeMode = useMapState((state) => state.selectionMode);
+  const activeModeCfg = modes.find((d) => d.mode == activeMode);
   return h(
     FormGroup,
-    { inline: true },
-    h(
-      ButtonGroup,
-      { minimal: true },
-      modes.map((d) => {
-        return h(Button, {
-          icon: d.icon,
-          small: true,
-          active: d.mode == activeMode,
-          onClick() {
-            setSelectionMode(d.mode);
-          },
-          children: d.name,
-        });
-      }),
-    ),
+    {
+      className: "selection-mode-control",
+      inline: true,
+      label: "Selection mode",
+    },
+    [
+      h("span.name", activeModeCfg?.name),
+      h(
+        ButtonGroup,
+        { minimal: true },
+        modes.map((d) => {
+          return h(Button, {
+            icon: d.icon,
+            small: true,
+            active: d.mode == activeMode,
+            onClick() {
+              setSelectionMode(d.mode);
+            },
+          });
+        }),
+      ),
+    ],
   );
 }
 
