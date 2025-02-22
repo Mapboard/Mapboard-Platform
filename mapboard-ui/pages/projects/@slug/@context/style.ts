@@ -40,7 +40,14 @@ export function buildMapOverlayStyle(
     };
   }
 
-  let sources: Record<string, mapboxgl.SourceSpecification> = {};
+  let sources: Record<string, mapboxgl.SourceSpecification> = {
+    "mapbox-dem": {
+      type: "raster-dem",
+      url: "mapbox://mapbox.mapbox-terrain-dem-v1",
+      tileSize: 512,
+      maxzoom: 14,
+    },
+  };
 
   for (const lyr of [
     "polygon",
