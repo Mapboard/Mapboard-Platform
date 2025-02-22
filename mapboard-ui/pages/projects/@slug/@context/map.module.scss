@@ -2,6 +2,12 @@
   margin-top: 0;
 }
 
+.layer-control-panel {
+  :global(.bp5-form-group) {
+    justify-content: space-between;
+  }
+}
+
 .layer-list {
   list-style: none;
   padding-left: 0;
@@ -34,33 +40,32 @@
 }
 
 .nav-header {
-  gap: 0.25em;
-  display: flex;
-  flex-direction: column;
-}
-
-.nav-header .title-row {
-  display: flex;
   gap: 0.5em;
-  align-items: baseline;
-}
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin: 0 -5px;
 
-.nav-header .title-row > :global(.bp5-button) {
-  width: 2em;
-}
+  .title-block {
+    margin: -5px 0;
+  }
 
-.nav-header .layer-toggle {
-  width: 1.6em;
+  h2 {
+    margin: 0;
+    padding-left: 1.5em;
+    font-size: 1.2rem;
+  }
+
+  .settings-toggle :global(.bp5-button) {
+    height: 1.5em;
+    width: 1.5em;
+  }
 }
 
 :global .bp5-card {
   border-radius: 6px;
 }
 
-.nav-header {
-  display: flex;
-  flex-direction: column;
-}
 
 .mapboard-map {
   display: block;

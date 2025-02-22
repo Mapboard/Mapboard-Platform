@@ -894,9 +894,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@macrostrat/form-components@npm:^0.2.0":
-  version: 0.2.0
-  resolution: "@macrostrat/form-components@npm:0.2.0"
+"@macrostrat/form-components@npm:^0.2.1":
+  version: 0.2.1
+  resolution: "@macrostrat/form-components@npm:0.2.1"
   dependencies:
     "@blueprintjs/core": "npm:^5.10.2"
     "@blueprintjs/icons": "npm:^5.9.0"
@@ -915,7 +915,7 @@ __metadata:
     mapbox-gl: "npm:^2.15.0"
   peerDependencies:
     react: ^17.0.2||^18
-  checksum: 10c0/efbe9e3a7f6e80f46ad5aacfa0f05b6719fff062320d194450e0f8fce948be9a4f9db22eb9591419c40bb5ef5f309f3e3a05213118999a1dc35ed1ec6e7d56cf
+  checksum: 10c0/b0ad364b8b4476522015e0f423f69bc0b5ebe5b7519542386888ebe4506b309a6f391bb9137c45b41e00885af9fac3b200768b3d66c4e26981572420c14de3a3
   languageName: node
   linkType: hard
 
@@ -6882,7 +6882,7 @@ __metadata:
     "@blueprintjs/core": "npm:^5.16.6"
     "@blueprintjs/select": "npm:^5.3.11"
     "@macrostrat/data-components": "npm:^0.0.6"
-    "@macrostrat/form-components": "npm:^0.2.0"
+    "@macrostrat/form-components": "npm:^0.2.1"
     "@macrostrat/hyper": "npm:^3.0.6"
     "@macrostrat/map-interface": "npm:^1.2.2"
     "@macrostrat/mapbox-react": "npm:^2.5.0"

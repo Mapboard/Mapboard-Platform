@@ -3,14 +3,19 @@ import styles from "./map.module.scss";
 import { apiDomain, mapboxToken } from "~/settings";
 import type { Data } from "../+data";
 import { useData } from "vike-react/useData";
-import { AnchorButton, Spinner } from "@blueprintjs/core";
-import { BasemapType, MapStateProvider, useMapState } from "./state";
-import classNames from "classnames";
+import { AnchorButton, FormGroup, Spinner } from "@blueprintjs/core";
+import {
+  BasemapType,
+  MapLayer,
+  MapStateProvider,
+  useMapActions,
+  useMapState,
+} from "./state";
 import { bbox } from "@turf/bbox";
-import { MapLoadingButton, MapView } from "@macrostrat/map-interface";
+import { MapLoadingButton } from "@macrostrat/map-interface";
 import { MapArea } from "./map";
-import { PickerList } from "~/components/list";
 import { ToasterContext } from "@macrostrat/ui-components";
+import { ItemSelect } from "@macrostrat/form-components";
 
 const h = hyper.styled(styles);
 
@@ -56,20 +61,22 @@ function ContextHeader({ project_name, project_slug, name }) {
   const setOpen = useMapState((state) => state.actions.toggleLayerPanel);
 
   return h("div.nav-header", [
-    h(
-      BackButton,
-      { href: `/projects/${project_slug}`, className: "back-to-project" },
-      project_name,
-    ),
-    h("div.title-row", [
+    h("div.title-block", [
+      h(
+        BackButton,
+        { href: `/projects/${project_slug}`, className: "back-to-project" },
+        project_name,
+      ),
+      h("h2", name),
+    ]),
+    h("div.settings-toggle", [
       h(MapLoadingButton, {
-        large: false,
-        icon: "layers",
+        large: true,
+        icon: "cog",
         active: isOpen,
         className: "layer-toggle",
         onClick: () => setOpen(!isOpen),
       }),
-      h("h2", name),
     ]),
   ]);
 }
@@ -83,38 +90,43 @@ function BackButton({ href, children, className }) {
 }
 
 function LayerControlPanel() {
-  return h("div.layer-control-panel", [
-    h("h2", "Layers"),
-    h(LayerList),
-    h(BasemapList),
-  ]);
+  return h("div.layer-control-panel", [h(LayerList), h(BasemapList)]);
 }
 
 function BasemapList() {
-  return h(PickerList, { className: "layer-list basemap-list" }, [
-    h(BasemapButton, { basemap: BasemapType.Basic, name: "Standard" }),
-    h(BasemapButton, { basemap: BasemapType.Satellite, name: "Satellite" }),
-    h(BasemapButton, { basemap: BasemapType.Terrain, name: "Terrain" }),
-  ]);
-}
+  type BasemapItem = { id: BasemapType; name: string };
+  const items: BasemapItem[] = [
+    { id: BasemapType.Basic, name: "Standard" },
+    { id: BasemapType.Satellite, name: "Satellite" },
+    { id: BasemapType.Terrain, name: "Terrain" },
+  ];
 
-function BasemapButton({ basemap, name }: { basemap: BasemapType }) {
+  const setBasemap = useMapActions((actions) => actions.setBaseMap);
   const active = useMapState((state) => state.baseMap);
-  const setBasemap = useMapState((state) => state.actions.setBaseMap);
+  const selectedItem = items.find((d) => d.id == active) ?? null;
+
   return h(
-    "li.layer",
-    {
-      onClick() {
-        setBasemap(basemap);
+    FormGroup,
+    { label: "Basemap", inline: true, fill: true },
+    h(ItemSelect<BasemapItem>, {
+      items,
+      selectedItem,
+      onSelectItem: (item) => {
+        setBasemap(item.id);
       },
-      className: classNames({ active: active === basemap }),
-    },
-    [h("span.name", name)],
+      label: "basemap",
+      icon: "layers",
+      fill: false,
+    }),
   );
 }
 
 function LayerList() {
   const layers = useMapState((state) => state.mapLayers);
+  const active = useMapState((state) => state.activeLayer);
+  const setActive = useMapState((state) => state.actions.setActiveLayer);
+
+  const selectedItem = layers?.find((d) => d.id == active) ?? null;
 
   if (layers == null) {
     return h(Spinner);
@@ -125,24 +137,17 @@ function LayerList() {
   });
 
   return h(
-    PickerList,
-    { className: "layer-list" },
-    sortedLayers.map((layer) => h(LayerControl, { layer })),
-  );
-}
-
-function LayerControl({ layer }) {
-  const active = useMapState((state) => state.activeLayer);
-  const setActive = useMapState((state) => state.actions.setActiveLayer);
-
-  return h(
-    "li.layer",
-    {
-      onClick() {
+    FormGroup,
+    { label: "Layers", inline: true, fill: true },
+    h(ItemSelect<MapLayer>, {
+      items: sortedLayers,
+      selectedItem,
+      onSelectItem: (layer) => {
         setActive(layer.id);
       },
-      className: classNames({ active: active === layer.id }),
-    },
-    [h("span.name", layer.name)],
+      label: "layer",
+      icon: "layers",
+      fill: false,
+    }),
   );
 }
