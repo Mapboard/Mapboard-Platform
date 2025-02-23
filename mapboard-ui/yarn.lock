@@ -4197,6 +4197,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"geologic-patterns@npm:2.0.0-dev1":
+  version: 2.0.0-dev1
+  resolution: "geologic-patterns@npm:2.0.0-dev1"
+  checksum: 10c0/0581dcfcf1bd1833e94b35a56a3aa8e0736a78155187dc8af2866332ab569ee853f03d5351c01d251d0c226ef79c83f3d6417f00e78a1de200e188fc79821c15
+  languageName: node
+  linkType: hard
+
 "get-intrinsic@npm:^1.2.6":
   version: 1.2.7
   resolution: "get-intrinsic@npm:1.2.7"
@@ -6869,6 +6876,7 @@ __metadata:
     "@vitejs/plugin-react": "npm:^4.3.4"
     classnames: "npm:^2.5.1"
     cross-fetch: "npm:^4.1.0"
+    geologic-patterns: "npm:2.0.0-dev1"
     mapbox-gl: "npm:^3.8.0"
     nodemon: "npm:^3.1.9"
     openapi-typescript: "npm:^5.4.2"

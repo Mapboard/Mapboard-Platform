@@ -3,7 +3,6 @@ import hyper from "@macrostrat/hyper";
 import { useEffect, useMemo, useState } from "react";
 import {
   BaseInfoDrawer,
-  buildInspectorStyle,
   FloatingNavbar,
   MapAreaContainer,
   MapView,
@@ -232,10 +231,13 @@ function useMapStyle(baseURL: string, isMapView: boolean, { mapboxToken }) {
   const changeTimestamps = useMapState((state) => state.lastChangeTime);
   const showLineEndpoints = useMapState((state) => state.showLineEndpoints);
   const enabledFeatureModes = useMapState((state) => state.enabledFeatureModes);
+  const polygonTypes = useMapState((state) => state.dataTypes.polygon);
 
   const baseStyleURL = useBaseMapStyle(basemapType);
 
   const [baseStyle, setBaseStyle] = useState(null);
+  const [overlayStyle, setOverlayStyle] = useState(null);
+
   useEffect(() => {
     if (!isMapView) {
       setBaseStyle(null);
@@ -246,22 +248,23 @@ function useMapStyle(baseURL: string, isMapView: boolean, { mapboxToken }) {
     }).then(setBaseStyle);
   }, [baseStyleURL, mapboxToken, isMapView]);
 
-  return useMemo(() => {
-    const overlayStyle = buildMapOverlayStyle(baseURL, {
+  useEffect(() => {
+    const style = buildMapOverlayStyle(baseURL, {
       selectedLayer: activeLayer,
       sourceChangeTimestamps: changeTimestamps,
       enabledFeatureModes,
       showLineEndpoints,
     });
+    setOverlayStyle(style);
+  }, [activeLayer, changeTimestamps, showLineEndpoints, enabledFeatureModes]);
+
+  return useMemo(() => {
+    if (baseStyle == null || overlayStyle == null) {
+      return null;
+    }
 
     return mergeStyles(baseStyle, overlayStyle, {
       layers: buildSelectionLayers(),
     });
-  }, [
-    baseStyle,
-    activeLayer,
-    changeTimestamps,
-    showLineEndpoints,
-    enabledFeatureModes,
-  ]);
+  }, [baseStyle, overlayStyle]);
 }

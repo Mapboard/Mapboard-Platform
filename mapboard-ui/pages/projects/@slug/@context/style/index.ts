@@ -1,4 +1,4 @@
-import { allFeatureModes, FeatureMode } from "./state";
+import { allFeatureModes, FeatureMode } from "../state";
 
 export interface SourceChangeTimestamps {
   line: number | null;

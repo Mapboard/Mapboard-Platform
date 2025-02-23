@@ -1,6 +1,8 @@
+/** Todo: integrate this with Macrostrat web components */
+
 interface PatternFillSpec {
   color: string;
-  patternURL?: string;
+  patternURL: string | null;
   patternColor?: string;
 }
 
@@ -9,7 +11,7 @@ function loadImage(url): Promise<HTMLImageElement> {
     const img = new Image();
     img.crossOrigin = "anonymous";
     img.addEventListener("load", () => resolve(img));
-    img.addEventListener("error", err => reject(err));
+    img.addEventListener("error", (err) => reject(err));
     img.src = url;
   });
 }
@@ -17,7 +19,7 @@ function loadImage(url): Promise<HTMLImageElement> {
 function recolorPatternImage(
   img: HTMLImageElement,
   backgroundColor: string,
-  color: string
+  color: string,
 ) {
   // create hidden canvas
   var canvas = document.createElement("canvas");
@@ -63,7 +65,6 @@ function createSolidColorImage(imgColor) {
 }
 
 async function createUnitFill(spec: PatternFillSpec): Promise<ImageData> {
-  console.log(spec);
   if (spec.patternURL != null) {
     const img = await loadImage(spec.patternURL);
     return recolorPatternImage(img, spec.color, spec.patternColor ?? "#000000");

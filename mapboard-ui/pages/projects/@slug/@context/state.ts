@@ -59,6 +59,13 @@ export const allFeatureModes = new Set([
   FeatureMode.Topology,
 ]);
 
+interface PolygonDataType extends DataType {
+  symbology?: {
+    name: string;
+    color?: string;
+  };
+}
+
 export interface MapState extends RecoverableMapState {
   actions: MapActions;
   layerPanelIsOpen: boolean;
@@ -74,7 +81,7 @@ export interface MapState extends RecoverableMapState {
   lastChangeTime: SourceChangeTimestamps;
   dataTypes: {
     line: DataType[] | null;
-    polygon: DataType[] | null;
+    polygon: PolygonDataType[] | null;
   };
 }
 
