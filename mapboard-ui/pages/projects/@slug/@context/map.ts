@@ -232,7 +232,6 @@ function useMapStyle(baseURL: string, isMapView: boolean, { mapboxToken }) {
   const changeTimestamps = useMapState((state) => state.lastChangeTime);
   const showLineEndpoints = useMapState((state) => state.showLineEndpoints);
   const enabledFeatureModes = useMapState((state) => state.enabledFeatureModes);
-  const isEnabled = useInDarkMode();
 
   const baseStyleURL = useBaseMapStyle(basemapType);
 
@@ -254,8 +253,6 @@ function useMapStyle(baseURL: string, isMapView: boolean, { mapboxToken }) {
       enabledFeatureModes,
       showLineEndpoints,
     });
-
-    console.log(overlayStyle);
 
     return mergeStyles(baseStyle, overlayStyle, {
       layers: buildSelectionLayers(),
