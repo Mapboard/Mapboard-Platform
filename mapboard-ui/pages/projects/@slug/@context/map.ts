@@ -1,24 +1,29 @@
 // Import other components
 import hyper from "@macrostrat/hyper";
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
-  MapView,
-  FloatingNavbar,
-  buildInspectorStyle,
-  MapAreaContainer,
-  PanelCard,
   BaseInfoDrawer,
+  buildInspectorStyle,
+  FloatingNavbar,
+  MapAreaContainer,
+  MapView,
+  PanelCard,
 } from "@macrostrat/map-interface";
-import styles from "./map.module.css";
+import styles from "./map.module.scss";
 import { useAsyncEffect, useInDarkMode } from "@macrostrat/ui-components";
-import { BasemapType, useMapActions, useMapState } from "./state";
-import mapboxgl, { Style } from "mapbox-gl";
+import {
+  BasemapType,
+  SelectionMode,
+  useMapActions,
+  useMapState,
+} from "./state";
 import { SphericalMercator } from "@mapbox/sphericalmercator";
 import { useMapRef } from "@macrostrat/mapbox-react";
-import { mergeStyles } from "@macrostrat/mapbox-utils";
+import { getMapboxStyle, mergeStyles } from "@macrostrat/mapbox-utils";
 import { buildMapOverlayStyle } from "./style";
 import { BoxSelectionManager, buildSelectionLayers } from "./_tools";
 import { SelectionActionsPanel } from "./selection";
+import { FormGroup, OptionProps, SegmentedControl } from "@blueprintjs/core";
 
 const mercator = new SphericalMercator({
   size: 256,
@@ -44,7 +49,9 @@ export function MapArea({
   focusedSourceTitle?: string;
   isMapView: boolean;
 }) {
-  const style = useMapStyle(baseURL, isMapView, { mapboxToken });
+  const style = useMapStyle(baseURL, isMapView, {
+    mapboxToken,
+  });
   const isOpen = useMapState((state) => state.layerPanelIsOpen);
 
   let projection = { name: "globe" };
@@ -55,6 +62,11 @@ export function MapArea({
   if (style == null) {
     return null;
   }
+
+  // const toolsCard = h(PanelCard, { className: "tools-panel" }, [
+  //   h("h4", "Tools"),
+  //   h(Button, { icon: "selection", small: true }, "Select"),
+  // ]);
 
   return h(
     MapAreaContainer,
@@ -67,7 +79,9 @@ export function MapArea({
       contextPanel: h(PanelCard, [children]),
       contextPanelOpen: isOpen,
       fitViewport: true,
+      //detailPanel: h("div.right-elements", [toolsCard, h(InfoDrawer)]),
       detailPanel: h(InfoDrawer),
+      className: "mapboard-map",
     },
     [
       h(MapInner, {
@@ -105,14 +119,41 @@ function InfoDrawer() {
       h("div.selection-counts", [
         featureTypes.map((type) => {
           const count = selection[type]?.length;
-          if (count == null) {
+          if (count == null || count == 0) {
             return null;
           }
           return h("p", `${count} ${type} selected`);
         }),
       ]),
+      h(SelectionModePicker),
       h(SelectionActionsPanel),
     ],
+  );
+}
+
+const modes: OptionProps<string>[] = [
+  { value: SelectionMode.Add, label: "Add" },
+  { value: SelectionMode.Subtract, label: "Subtract" },
+  { value: SelectionMode.Replace, label: "Replace" },
+];
+
+function SelectionModePicker() {
+  /** Picker to define how we are selecting features */
+  const setSelectionMode = useMapActions((a) => a.setSelectionMode);
+  const activeMode = useMapState((state) => state.selectionMode);
+  return h(
+    FormGroup,
+    {
+      className: "selection-mode-control",
+      inline: true,
+      label: "Selection mode",
+    },
+    h(SegmentedControl, {
+      options: modes,
+      value: activeMode,
+      onValueChange: setSelectionMode,
+      small: true,
+    }),
   );
 }
 
@@ -170,7 +211,7 @@ function expandBounds(bounds: BBox, aspectRatio = 1, margin = 0.1) {
   return mercator.convert(bbox2, "WGS84");
 }
 
-function getBaseMapStyle(basemapType: BasemapType) {
+function useBaseMapStyle(basemapType: BasemapType) {
   const isEnabled = useInDarkMode();
   let baseStyle = isEnabled
     ? "mapbox://styles/mapbox/dark-v10"
@@ -188,30 +229,39 @@ function getBaseMapStyle(basemapType: BasemapType) {
 function useMapStyle(baseURL: string, isMapView: boolean, { mapboxToken }) {
   const activeLayer = useMapState((state) => state.activeLayer);
   const basemapType = useMapState((state) => state.baseMap);
-  const isEnabled = useInDarkMode();
+  const changeTimestamps = useMapState((state) => state.lastChangeTime);
+  const showLineEndpoints = useMapState((state) => state.showLineEndpoints);
+  const enabledFeatureModes = useMapState((state) => state.enabledFeatureModes);
 
-  let baseStyle = getBaseMapStyle(basemapType);
+  const baseStyleURL = useBaseMapStyle(basemapType);
 
-  const [style, setStyle] = useState(null);
-
-  useAsyncEffect(async () => {
-    let overlayStyle = buildMapOverlayStyle(baseURL, activeLayer);
-
-    overlayStyle = mergeStyles(overlayStyle, {
-      layers: buildSelectionLayers(),
-    });
-
+  const [baseStyle, setBaseStyle] = useState(null);
+  useEffect(() => {
     if (!isMapView) {
-      setStyle(overlayStyle);
+      setBaseStyle(null);
       return;
     }
-    const style = await buildInspectorStyle(baseStyle, overlayStyle, {
-      mapboxToken,
-      inDarkMode: isEnabled,
-      xRay: false,
-    });
-    setStyle(style);
-  }, [basemapType, mapboxToken, isEnabled, baseURL, activeLayer, isMapView]);
+    getMapboxStyle(baseStyleURL, {
+      access_token: mapboxToken,
+    }).then(setBaseStyle);
+  }, [baseStyleURL, mapboxToken, isMapView]);
 
-  return style;
+  return useMemo(() => {
+    const overlayStyle = buildMapOverlayStyle(baseURL, {
+      selectedLayer: activeLayer,
+      sourceChangeTimestamps: changeTimestamps,
+      enabledFeatureModes,
+      showLineEndpoints,
+    });
+
+    return mergeStyles(baseStyle, overlayStyle, {
+      layers: buildSelectionLayers(),
+    });
+  }, [
+    baseStyle,
+    activeLayer,
+    changeTimestamps,
+    showLineEndpoints,
+    enabledFeatureModes,
+  ]);
 }

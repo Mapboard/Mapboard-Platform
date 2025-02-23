@@ -1,23 +1,14 @@
 import hyper from "@macrostrat/hyper";
 import styles from "./selection.module.css";
+import { FormGroup, MenuItem, NumericInput } from "@blueprintjs/core";
+import { MapLayer, MapState, useMapState, useMapStateAPI } from "./state";
 import {
-  Button,
-  IconName,
-  Intent,
-  Menu,
-  MenuItem,
-  NonIdealState,
-  Spinner,
-} from "@blueprintjs/core";
-import { PickerList, PickerListItem } from "~/components/list";
-import {
-  MapLayer,
-  SelectionActionState,
-  useMapActions,
-  useMapState,
-} from "./state";
-import { Select } from "@blueprintjs/select";
-import { MouseEventHandler } from "react";
+  ActionDef,
+  ActionsPreflightPanel,
+  ItemSelect,
+} from "@macrostrat/form-components";
+import { Box, NullableSlider, useToaster } from "@macrostrat/ui-components";
+import { apiBaseURL } from "~/settings";
 
 const h = hyper.styled(styles);
 
@@ -48,17 +39,6 @@ const h = hyper.styled(styles);
  }
  **/
 
-type ActionCfg = {
-  name: string;
-  icon: IconName;
-  id: SelectionActionType;
-  description?: string;
-  intent?: Intent;
-  detailsForm?: React.ComponentType<{ state: any; updateState: any }>;
-  disabled?: boolean;
-  ready?: (state: any) => boolean;
-};
-
 export enum SelectionActionType {
   Delete = "delete",
   Heal = "heal",
@@ -70,7 +50,17 @@ export enum SelectionActionType {
   RecalculateTopology = "recalculateTopology",
 }
 
-const actions: ActionCfg[] = [
+type MapboardActionDef =
+  | ActionDef<SelectionActionType.Delete>
+  | ActionDef<SelectionActionType.Heal, string>
+  | ActionDef<SelectionActionType.RecalculateTopology>
+  | ActionDef<SelectionActionType.ChangeType, string>
+  | ActionDef<SelectionActionType.ChangeLayer, number>
+  | ActionDef<SelectionActionType.AdjustWidth, number>
+  | ActionDef<SelectionActionType.AdjustCertainty, number | null>
+  | ActionDef<SelectionActionType.ReverseLines>;
+
+const actions: MapboardActionDef[] = [
   {
     id: SelectionActionType.Delete,
     name: "Delete",
@@ -83,6 +73,10 @@ const actions: ActionCfg[] = [
     name: "Heal",
     icon: "changes",
     description: "Heal selected features",
+    detailsForm: ChangeDataTypeForm,
+    isReady(state) {
+      return state != null;
+    },
   },
   {
     id: SelectionActionType.RecalculateTopology,
@@ -90,24 +84,41 @@ const actions: ActionCfg[] = [
     icon: "polygon-filter",
     description: "Recalculate the topology of selected features",
   },
-  { id: SelectionActionType.ChangeType, name: "Change type", icon: "edit" },
+  {
+    id: SelectionActionType.ChangeType,
+    name: "Change type",
+    icon: "edit",
+    detailsForm: ChangeDataTypeForm,
+    isReady(state) {
+      return state != null;
+    },
+  },
   {
     id: SelectionActionType.ChangeLayer,
     name: "Change layer",
     icon: "layers",
     detailsForm: ChangeLayerForm,
+    isReady(state) {
+      return state != null;
+    },
   },
   {
     id: SelectionActionType.AdjustWidth,
     name: "Adjust width",
     icon: "horizontal-distribution",
     disabled: true,
+    detailsForm: AdjustWidthForm,
+    defaultState: 5,
+    isReady(state) {
+      return state != null;
+    },
   },
   {
     id: SelectionActionType.AdjustCertainty,
     name: "Adjust certainty",
     icon: "confirm",
     disabled: true,
+    detailsForm: AdjustCertaintyForm,
   },
   {
     id: SelectionActionType.ReverseLines,
@@ -118,148 +129,167 @@ const actions: ActionCfg[] = [
 ];
 
 export function SelectionActionsPanel() {
-  const action = useMapState((state) => state.selectionAction);
-  const selectAction = useMapActions((state) => state.setSelectionAction);
-
-  // test vvv
-  return h("div.selection-actions", [
-    h(
-      PickerList,
-      { className: "actions-list" },
-      actions.map((d) => {
-        return h(
-          PickerListItem,
-          {
-            icon: d.icon,
-            active: action?.type == d.id,
-            onClick() {
-              selectAction(d.id);
-            },
-          },
-          d.name,
-        );
-      }),
-    ),
-    h(ActionDetailsPanel, { action }),
-  ]);
-}
-
-function ActionDetailsPanel({
-  action,
-}: {
-  action: SelectionActionState<any> | null;
-}) {
-  let title = "No action selected";
-  const actionCfg = actions.find((d) => d.id == action?.type);
-  if (action != null) {
-    title = actionCfg?.name ?? "Unknown action";
-  }
-
-  let content: any = h(NonIdealState, {
-    icon: "flows",
+  const store = useMapStateAPI();
+  const Toaster = useToaster();
+  return h(ActionsPreflightPanel, {
+    onRunAction(action: MapboardActionDef, state: any) {
+      const mapState = store.getState();
+      console.log("Running action", action, state, mapState);
+      runAction(action, state, mapState).then((resp) => {
+        const defaultMessage = resp.error ? "Error" : "Success";
+        Toaster?.show({
+          message: resp.message ?? resp.reason ?? defaultMessage,
+          intent: resp.error ? "danger" : "success",
+        });
+        // If successful, notify that the layer has changed
+        if (!resp.error) {
+          mapState.actions.notifyChange("line");
+        }
+      });
+    },
+    actions,
   });
-  title = actionCfg?.name ?? "No action selected";
-
-  if (action != null && actionCfg != null) {
-    content = h(ActionDetailsContent, {
-      action: actionCfg,
-      state: action?.state,
-    });
-  }
-
-  return h("div.action-details", [h("h2", title), content]);
 }
 
-function ActionDetailsContent({
-  action,
-  state,
-}: {
-  action: ActionCfg;
-  state: any | null;
-}) {
-  const { description, intent = "primary", detailsForm } = action;
+function synthesizeAction(
+  action: MapboardActionDef,
+  state: any,
+  mapState: MapState,
+) {
+  let actionData = {
+    features: mapState.selection?.lines,
+  };
 
-  const updateState = useMapActions((state) => state.setSelectionActionState);
-
-  let disabled = false;
-  if (action.ready != null) {
-    disabled = !action.ready(state);
+  if (
+    action.id == SelectionActionType.Heal ||
+    action.id == SelectionActionType.ChangeType
+  ) {
+    actionData.type = state;
+  } else if (action.id == SelectionActionType.ChangeLayer) {
+    actionData.layer = state;
   }
 
-  return h("div.action-details-content", [
-    h.if(description != null)("p", description),
-    h.if(detailsForm != null)(detailsForm, { state, updateState }),
-    h("div.spacer"),
-    h(Button, { intent, icon: "play", disabled }, "Run"),
-  ]);
+  const baseAction = {
+    [action.id]: actionData,
+  };
+
+  return {
+    action: baseAction,
+    layer: mapState.activeLayer,
+    mode: "line",
+  };
 }
 
-interface ChangeLayerState {
-  selectedLayerID: number;
+async function runAction(
+  action: MapboardActionDef,
+  state: any,
+  mapState: MapState,
+) {
+  const url = `${mapState.apiBaseURL}/changes`;
+  const lines = mapState.selection?.lines;
+  if (lines == null) {
+    throw new Error("No lines selected");
+  }
+  const actionBody = synthesizeAction(action, state, mapState);
+  console.log(actionBody);
+  const body = JSON.stringify(actionBody);
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body,
+  });
+
+  return response.json();
+}
+
+type DataType = any;
+
+function ChangeDataTypeForm({ state, setState }) {
+  const dataTypes = useMapState((state) => state.dataTypes?.line);
+
+  const selectedItem = dataTypes?.find((d) => d.id == state) ?? null;
+
+  return h(ItemSelect<DataType>, {
+    items: dataTypes,
+    selectedItem,
+    onSelectItem(item) {
+      setState(item.id);
+    },
+    label: "data type",
+    icon: "tag",
+    itemComponent: ({ item, ...rest }) => {
+      return h(MenuItem, {
+        icon: h(Box, {
+          is: "span",
+          width: "1em",
+          height: "1em",
+          backgroundColor: item.color,
+          borderRadius: "3px",
+        }),
+        text: item.name,
+        ...rest,
+      });
+    },
+  });
 }
 
 function ChangeLayerForm({
   state,
-  updateState,
+  setState,
 }: {
-  state: ChangeLayerState | null;
-  updateState(state: ChangeLayerState): void;
+  state: number | null;
+  setState(state: number): void;
 }) {
   const layers = useMapState((state) => state.mapLayers);
-  const currentLayer = useMapState((state) => state.activeLayer);
+  const currentLayerID = useMapState((state) => state.activeLayer);
 
-  if (layers == null) {
-    return h(Spinner);
-  }
+  const selectedLayerID = state;
 
-  const possibleLayers = layers.filter((d) => d.id != currentLayer);
-  const selectedLayerID = state?.selectedLayerID ?? currentLayer;
+  const possibleLayers = layers?.filter((d) => d.id != currentLayerID) ?? null;
+  const selectedLayerItem =
+    layers?.find((d) => d.id == selectedLayerID) ?? null;
 
-  const currentLayerItem = layers.find((d) => d.id == selectedLayerID);
-
-  return h(
-    Select<MapLayer>,
-    {
-      items: possibleLayers,
-      itemRenderer: (layer, { handleClick }) => {
-        return h(LayerItem, { layer, onClick: handleClick });
-      },
-      onItemSelect: (layer) => {
-        updateState({ selectedLayerID: layer.id });
-      },
-      popoverProps: { minimal: true },
-      fill: true,
+  return h(ItemSelect<MapLayer>, {
+    items: possibleLayers,
+    selectedItem: selectedLayerItem,
+    onSelectItem: (layer) => {
+      setState(layer?.id);
     },
-    h(
-      Menu,
-      h(LayerItem, {
-        className: "select-placeholder",
-        layer: currentLayerItem,
-        disabled: selectedLayerID == currentLayer,
-      }),
-    ),
+    label: "layer",
+    icon: "layers",
+  });
+}
+
+function AdjustWidthForm({ state, setState }) {
+  return h(
+    FormGroup,
+    { label: "Width", labelInfo: "pixels" },
+    h(NumericInput, {
+      min: 0,
+      max: 10,
+      value: state,
+      majorStepSize: 1,
+      minorStepSize: 0.2,
+      onValueChange(value) {
+        setState(Math.max(Math.min(value, 10), 0));
+      },
+    }),
   );
 }
 
-function LayerItem({
-  selected,
-  layer,
-  className,
-  onClick,
-  disabled,
-}: {
-  selected?: boolean;
-  layer: any;
-  className?: string;
-  onClick?: MouseEventHandler<HTMLElement>;
-  disabled?: boolean;
-}) {
-  return h(MenuItem, {
-    icon: "layers",
-    text: layer?.name ?? "No layer selected",
-    active: selected,
-    className,
-    onClick,
-    disabled,
-  });
+function AdjustCertaintyForm({ state, setState }) {
+  return h(
+    FormGroup,
+    { label: "Certainty" },
+    h(NullableSlider, {
+      min: 0,
+      max: 10,
+      value: state,
+      onChange(value) {
+        setState(value);
+      },
+    }),
+  );
 }

@@ -8,7 +8,8 @@ export const data = async (pageContext: PageContextServer) => {
   const response = await postgrest
     .from("project")
     .select()
-    .order("id", { ascending: false });
+    .order("id", { ascending: false })
+    .throwOnError();
 
   return (response.data as definitions["projects"][]) ?? [];
 };

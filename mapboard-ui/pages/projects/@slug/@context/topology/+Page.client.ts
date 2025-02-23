@@ -1,5 +1,5 @@
 import hyper from "@macrostrat/hyper";
-import styles from "../map.module.css";
+import styles from "../map.module.scss";
 import { apiDomain, mapboxToken } from "~/settings";
 import { FlexBox, useAPIResult } from "@macrostrat/ui-components";
 import type { Data } from "../../+data";
@@ -30,7 +30,7 @@ function PageInner() {
   const activeLayer = useMapState((state) => state.activeLayer);
 
   const overlayStyle = useMemo(
-    () => buildMapOverlayStyle(baseURL, activeLayer),
+    () => buildMapOverlayStyle(baseURL, { activeLayer }),
     [ctx.project_slug, activeLayer],
   );
 
