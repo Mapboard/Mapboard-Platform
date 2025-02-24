@@ -57,7 +57,7 @@ async function setupStyleImages(map, polygonTypes) {
       const { symbol, id } = type;
       const uid = id + "_fill";
       if (map.hasImage(uid)) return;
-      const url = symbol == null ? null : patternBaseURL + `/${symbol}.svg`;
+      const url = symbol == null ? null : patternBaseURL + `/${symbol}.png`;
       const img = await createUnitFill({
         patternURL: url,
         color: type.color,

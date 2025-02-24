@@ -23,6 +23,11 @@ function recolorPatternImage(
 ) {
   // create hidden canvas
   var canvas = document.createElement("canvas");
+
+  console.log("Image size", img.width, img.height);
+  img.width *= 40;
+  img.height *= 40;
+
   canvas.width = img.width;
   canvas.height = img.height;
 

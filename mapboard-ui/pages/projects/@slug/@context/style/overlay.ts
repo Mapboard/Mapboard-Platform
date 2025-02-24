@@ -80,8 +80,9 @@ export function buildMapOverlayStyle(
       source: "mapboard_topology",
       "source-layer": "faces",
       paint: {
-        "fill-color": ["get", "color"],
-        "fill-opacity": selectedLayerOpacity(0.5, 0.3),
+        //"fill-color": ["get", "color"],
+        //"fill-opacity": selectedLayerOpacity(0.5, 0.3),
+        "fill-pattern": ["concat", ["get", "type"], "-fill"],
       },
       //filter,
     });

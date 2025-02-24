@@ -5,7 +5,7 @@ import { getMapboxStyle, mergeStyles } from "@macrostrat/mapbox-utils";
 import { buildMapOverlayStyle } from "./overlay";
 import { buildSelectionLayers } from "../_tools";
 import { PolygonPatternConfig, setupStyleImages } from "./pattern-fills";
-import { useMapRef } from "@macrostrat/mapbox-react";
+import { useMapRef, useMapStatus } from "@macrostrat/mapbox-react";
 
 function useBaseMapStyle(basemapType: BasemapType) {
   const isEnabled = useInDarkMode();
@@ -42,7 +42,6 @@ export function useMapStyle(
 
   const [baseStyle, setBaseStyle] = useState(null);
   const [overlayStyle, setOverlayStyle] = useState(null);
-  const map = useMapRef();
 
   useEffect(() => {
     if (!isMapView) {
@@ -55,27 +54,6 @@ export function useMapStyle(
   }, [baseStyleURL, mapboxToken, isMapView]);
 
   useAsyncEffect(async () => {
-    if (map.current != null) {
-      const symbols: PolygonPatternConfig[] =
-        polygonTypes
-          ?.map((d) => {
-            const sym = d.symbology;
-            if (sym == null) return null;
-
-            return {
-              color: d.color,
-              id: d.id,
-              symbol: sym.name,
-              symbolColor: sym.color,
-            };
-          })
-          .filter((d) => d != null) ?? [];
-
-      const patternBaseURL = "/assets/geologic-patterns/svg";
-      console.log("Setting up style images", symbols);
-      await setupStyleImages(map.current, symbols, { patternBaseURL });
-    }
-
     const style = buildMapOverlayStyle(baseURL, {
       selectedLayer: activeLayer,
       sourceChangeTimestamps: changeTimestamps,
@@ -89,7 +67,6 @@ export function useMapStyle(
     showLineEndpoints,
     enabledFeatureModes,
     polygonTypes,
-    map.current,
   ]);
 
   return useMemo(() => {
@@ -101,4 +78,33 @@ export function useMapStyle(
       layers: buildSelectionLayers(),
     });
   }, [baseStyle, overlayStyle]);
+}
+
+export function useMapSymbols() {
+  const polygonTypes = useMapState((state) => state.dataTypes.polygon);
+
+  console.log("Using map symbols");
+
+  const map = useMapRef();
+  const isInitialized = useMapStatus((state) => state.isInitialized);
+
+  useAsyncEffect(async () => {
+    if (map.current != null) {
+      const symbols: PolygonPatternConfig[] = polygonTypes?.map((d) => {
+        const sym = d.symbology;
+        return {
+          color: d.color,
+          id: d.id,
+          symbol: sym?.name,
+          symbolColor: sym?.color,
+        };
+      });
+
+      const patternBaseURL = "/assets/geologic-patterns/svg";
+      console.log("Setting up style images", symbols);
+      await setupStyleImages(map.current, symbols, { patternBaseURL });
+    }
+  }, [polygonTypes, map.current, isInitialized]);
+
+  return null;
 }
