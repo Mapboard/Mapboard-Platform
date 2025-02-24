@@ -1,10 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAsyncEffect, useInDarkMode } from "@macrostrat/ui-components";
-import { BasemapType, useMapState } from "../state";
+import { BasemapType, PolygonDataType, useMapState } from "../state";
 import { getMapboxStyle, mergeStyles } from "@macrostrat/mapbox-utils";
 import { buildMapOverlayStyle } from "./overlay";
 import { buildSelectionLayers } from "../_tools";
-import { PolygonPatternConfig, setupStyleImages } from "./pattern-fills";
+import {
+  PolygonPatternConfig,
+  PolygonStyleIndex,
+  setupStyleImages,
+} from "./pattern-fills";
 import { useMapRef, useMapStatus } from "@macrostrat/mapbox-react";
 
 function useBaseMapStyle(basemapType: BasemapType) {
@@ -36,12 +40,13 @@ export function useMapStyle(
   const changeTimestamps = useMapState((state) => state.lastChangeTime);
   const showLineEndpoints = useMapState((state) => state.showLineEndpoints);
   const enabledFeatureModes = useMapState((state) => state.enabledFeatureModes);
-  const polygonTypes = useMapState((state) => state.dataTypes.polygon);
 
   const baseStyleURL = useBaseMapStyle(basemapType);
 
   const [baseStyle, setBaseStyle] = useState(null);
   const [overlayStyle, setOverlayStyle] = useState(null);
+
+  const mapSymbolIndex = useMapSymbols();
 
   useEffect(() => {
     if (!isMapView) {
@@ -59,6 +64,7 @@ export function useMapStyle(
       sourceChangeTimestamps: changeTimestamps,
       enabledFeatureModes,
       showLineEndpoints,
+      mapSymbolIndex,
     });
     setOverlayStyle(style);
   }, [
@@ -66,7 +72,7 @@ export function useMapStyle(
     changeTimestamps,
     showLineEndpoints,
     enabledFeatureModes,
-    polygonTypes,
+    mapSymbolIndex,
   ]);
 
   return useMemo(() => {
@@ -80,31 +86,37 @@ export function useMapStyle(
   }, [baseStyle, overlayStyle]);
 }
 
-export function useMapSymbols() {
+export function useMapSymbols(): PolygonStyleIndex | null {
   const polygonTypes = useMapState((state) => state.dataTypes.polygon);
-
-  console.log("Using map symbols");
 
   const map = useMapRef();
   const isInitialized = useMapStatus((state) => state.isInitialized);
 
-  useAsyncEffect(async () => {
-    if (map.current != null) {
-      const symbols: PolygonPatternConfig[] = polygonTypes?.map((d) => {
-        const sym = d.symbology;
-        return {
-          color: d.color,
-          id: d.id,
-          symbol: sym?.name,
-          symbolColor: sym?.color,
-        };
-      });
-
-      const patternBaseURL = "/assets/geologic-patterns/svg";
-      console.log("Setting up style images", symbols);
-      await setupStyleImages(map.current, symbols, { patternBaseURL });
+  return useAsyncMemo(async () => {
+    if (map.current == null || polygonTypes == null) {
+      return null;
     }
-  }, [polygonTypes, map.current, isInitialized]);
 
-  return null;
+    const symbols: PolygonPatternConfig[] = polygonTypes?.map((d) => {
+      const sym = d.symbology;
+      return {
+        color: d.color,
+        id: d.id,
+        symbol: sym?.name,
+        symbolColor: sym?.color,
+      };
+    });
+
+    const patternBaseURL = "/assets/geologic-patterns/svg";
+    console.log("Setting up style images", symbols);
+    return await setupStyleImages(map.current, symbols, { patternBaseURL });
+  }, [polygonTypes, map.current, isInitialized]);
+}
+
+function useAsyncMemo<T>(fn: () => Promise<T>, deps: any[]): T | null {
+  const [value, setValue] = useState<T | null>(null);
+  useEffect(() => {
+    fn().then(setValue);
+  }, deps);
+  return value;
 }

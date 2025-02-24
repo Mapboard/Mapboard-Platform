@@ -7,6 +7,7 @@ import { MapStateProvider } from "../state";
 import { bbox } from "@turf/bbox";
 import { MapInspectorV2 } from "@macrostrat/map-interface";
 import { useMapStyle, useMapSymbols } from "../style";
+import { useEffect, useState } from "react";
 
 const h = hyper.styled(styles);
 
@@ -25,10 +26,7 @@ export function Page() {
 function PageInner({ baseURL, context: ctx }) {
   const isMapContext = ctx.type === "map";
 
-  const style = useMapStyle(baseURL, {
-    mapboxToken,
-    isMapView: isMapContext,
-  });
+  const [style, setStyle] = useState(null);
 
   let bounds = null;
   // We might not have any bounds yet, though this should probably be required...
@@ -44,11 +42,23 @@ function PageInner({ baseURL, context: ctx }) {
       mapboxToken,
       title: ctx.name + " – Inspector",
     },
-    h(MapSymbolLoader),
+    h(MapStyleLoader, { baseURL, isMapContext, setStyle }),
   );
 }
 
-function MapSymbolLoader() {
+function MapStyleLoader({ baseURL, setStyle, isMapContext }: any) {
+  /** The style object has to be generated with access to the map object,
+   * to allow symbols to be loaded. Thus, it must be nested within the
+   * MapContextProvider
+   */
+  const style = useMapStyle(baseURL, {
+    mapboxToken,
+    isMapView: isMapContext,
+  });
+
+  useEffect(() => {
+    setStyle(style);
+  }, [style]);
   useMapSymbols();
   return null;
 }

@@ -1,4 +1,5 @@
 import { allFeatureModes, FeatureMode } from "../state";
+import { PolygonStyleIndex } from "./pattern-fills";
 
 export interface SourceChangeTimestamps {
   line: number | null;
@@ -11,6 +12,7 @@ interface MapOverlayOptions {
   sourceChangeTimestamps: SourceChangeTimestamps;
   enabledFeatureModes?: Set<FeatureMode>;
   showLineEndpoints?: boolean;
+  mapSymbolIndex?: PolygonStyleIndex | null;
 }
 
 export function buildMapOverlayStyle(
@@ -22,6 +24,7 @@ export function buildMapOverlayStyle(
     selectedLayer,
     enabledFeatureModes = allFeatureModes,
     sourceChangeTimestamps,
+    mapSymbolIndex,
   } = options;
 
   let filter: any = ["!=", "map_layer", ""];
@@ -80,9 +83,9 @@ export function buildMapOverlayStyle(
       source: "mapboard_topology",
       "source-layer": "faces",
       paint: {
-        //"fill-color": ["get", "color"],
-        //"fill-opacity": selectedLayerOpacity(0.5, 0.3),
-        "fill-pattern": ["concat", ["get", "type"], "-fill"],
+        "fill-color": ["get", "color"],
+        "fill-opacity": selectedLayerOpacity(0.5, 0.3),
+        //"fill-pattern": ["concat", ["get", "type"], "-fill"],
       },
       //filter,
     });

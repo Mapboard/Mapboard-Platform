@@ -4,6 +4,11 @@ import h from "@macrostrat/hyper";
 import { subscribeWithSelector } from "zustand/middleware";
 import { SelectionActionType } from "./selection";
 import { SourceChangeTimestamps } from "./style";
+import {
+  PolygonPatternConfig,
+  PolygonStyleIndex,
+  setupStyleImages,
+} from "./style/pattern-fills";
 
 interface RecoverableMapState {
   activeLayer: number | null;
@@ -59,7 +64,7 @@ export const allFeatureModes = new Set([
   FeatureMode.Topology,
 ]);
 
-interface PolygonDataType extends DataType {
+export interface PolygonDataType extends DataType {
   symbology?: {
     name: string;
     color?: string;
@@ -83,6 +88,7 @@ export interface MapState extends RecoverableMapState {
     line: DataType[] | null;
     polygon: PolygonDataType[] | null;
   };
+  polygonPatternIndex: PolygonStyleIndex | null;
 }
 
 const MapStateContext = createContext<StoreApi<MapState> | null>(null);
@@ -125,6 +131,7 @@ function createMapStore(baseURL: string) {
           polygon: null,
         },
         mapLayerIDMap: new Map(),
+        polygonPatternIndex: null,
         actions: {
           setBaseMap: (baseMap: BasemapType) => set({ baseMap }),
           setActiveLayer: (layer) =>
@@ -334,4 +341,27 @@ function setQueryParameters(params: RecoverableMapState) {
   }
   const newUrl = `${window.location.pathname}?${searchParams.toString()}`;
   window.history.replaceState({}, "", newUrl);
+}
+
+async function createPolygonPatternIndex(
+  map: mapboxgl.Map | null,
+  polygonTypes: PolygonDataType[] | null,
+): Promise<PolygonStyleIndex | null> {
+  if (map == null || polygonTypes == null) {
+    return null;
+  }
+
+  const symbols: PolygonPatternConfig[] = polygonTypes?.map((d) => {
+    const sym = d.symbology;
+    return {
+      color: d.color,
+      id: d.id,
+      symbol: sym?.name,
+      symbolColor: sym?.color,
+    };
+  });
+
+  const patternBaseURL = "/assets/geologic-patterns/svg";
+  console.log("Setting up style images", symbols);
+  return await setupStyleImages(map.current, symbols, { patternBaseURL });
 }
