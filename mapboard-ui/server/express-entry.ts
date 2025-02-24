@@ -29,6 +29,15 @@ export default (await startServer()) as unknown;
 async function startServer() {
   const app = express();
 
+  // Assets and static files
+  // Serve FGDC assets
+  const fgdcPatterns = join(
+    dirname(fileURLToPath(import.meta.resolve("geologic-patterns"))),
+    "assets",
+  );
+
+  app.use("/assets/geologic-patterns", express.static(fgdcPatterns));
+
   if (process.env.NODE_ENV === "production") {
     app.use(express.static(`${root}/dist/client`));
   } else {

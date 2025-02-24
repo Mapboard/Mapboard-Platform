@@ -1,148 +1,104 @@
-import { allFeatureModes, FeatureMode } from "../state";
+import { useEffect, useMemo, useState } from "react";
+import { useAsyncEffect, useInDarkMode } from "@macrostrat/ui-components";
+import { BasemapType, useMapState } from "../state";
+import { getMapboxStyle, mergeStyles } from "@macrostrat/mapbox-utils";
+import { buildMapOverlayStyle } from "./overlay";
+import { buildSelectionLayers } from "../_tools";
+import { PolygonPatternConfig, setupStyleImages } from "./pattern-fills";
+import { useMapRef } from "@macrostrat/mapbox-react";
 
-export interface SourceChangeTimestamps {
-  line: number | null;
-  polygon: number | null;
-  topology: number | null;
+function useBaseMapStyle(basemapType: BasemapType) {
+  const isEnabled = useInDarkMode();
+  let baseStyle = isEnabled
+    ? "mapbox://styles/mapbox/dark-v10"
+    : "mapbox://styles/mapbox/light-v10";
+  if (basemapType == "satellite") {
+    baseStyle = "mapbox://styles/mapbox/satellite-v9";
+  } else if (basemapType == "terrain") {
+    baseStyle = isEnabled
+      ? "mapbox://styles/jczaplewski/ckfxmukdy0ej619p7vqy19kow"
+      : "mapbox://styles/jczaplewski/ckxcu9zmu4aln14mfg4monlv3";
+  }
+  return baseStyle;
 }
 
-interface MapOverlayOptions {
-  selectedLayer: number | null;
-  sourceChangeTimestamps: SourceChangeTimestamps;
-  enabledFeatureModes?: Set<FeatureMode>;
-  showLineEndpoints?: boolean;
+interface MapStyleOptions {
+  mapboxToken: string;
+  isMapView: boolean;
 }
 
-export function buildMapOverlayStyle(
+export function useMapStyle(
   baseURL: string,
-  options: MapOverlayOptions,
+  { mapboxToken, isMapView = true }: MapStyleOptions,
 ) {
-  const {
-    showLineEndpoints = true,
-    selectedLayer,
-    enabledFeatureModes = allFeatureModes,
-    sourceChangeTimestamps,
-  } = options;
+  const activeLayer = useMapState((state) => state.activeLayer);
+  const basemapType = useMapState((state) => state.baseMap);
+  const changeTimestamps = useMapState((state) => state.lastChangeTime);
+  const showLineEndpoints = useMapState((state) => state.showLineEndpoints);
+  const enabledFeatureModes = useMapState((state) => state.enabledFeatureModes);
+  const polygonTypes = useMapState((state) => state.dataTypes.polygon);
 
-  let filter: any = ["!=", "map_layer", ""];
-  if (selectedLayer != null) {
-    filter = ["==", "map_layer", selectedLayer];
-  }
-  let params = new URLSearchParams();
+  const baseStyleURL = useBaseMapStyle(basemapType);
 
-  let selectedLayerOpacity = (a, b) => {
-    return a;
-  };
-  if (selectedLayer != null) {
-    params.set("map_layer", selectedLayer.toString());
-    selectedLayerOpacity = (a, b) => {
-      return ["case", ["==", ["get", "map_layer"], selectedLayer], a, b];
-    };
-  }
+  const [baseStyle, setBaseStyle] = useState(null);
+  const [overlayStyle, setOverlayStyle] = useState(null);
+  const map = useMapRef();
 
-  let sources: Record<string, mapboxgl.SourceSpecification> = {
-    "mapbox-dem": {
-      type: "raster-dem",
-      url: "mapbox://mapbox.mapbox-terrain-dem-v1",
-      tileSize: 512,
-      maxzoom: 14,
-    },
-  };
+  useEffect(() => {
+    if (!isMapView) {
+      setBaseStyle(null);
+      return;
+    }
+    getMapboxStyle(baseStyleURL, {
+      access_token: mapboxToken,
+    }).then(setBaseStyle);
+  }, [baseStyleURL, mapboxToken, isMapView]);
 
-  for (const lyr of [
-    "polygon",
-    "line",
-    "topology",
-  ] as (keyof SourceChangeTimestamps)[]) {
-    const time = sourceChangeTimestamps[lyr];
-    if (time != null) {
-      params.set("changed", time.toString());
+  useAsyncEffect(async () => {
+    if (map.current != null) {
+      const symbols: PolygonPatternConfig[] =
+        polygonTypes
+          ?.map((d) => {
+            const sym = d.symbology;
+            if (sym == null) return null;
+
+            return {
+              color: d.color,
+              id: d.id,
+              symbol: sym.name,
+              symbolColor: sym.color,
+            };
+          })
+          .filter((d) => d != null) ?? [];
+
+      const patternBaseURL = "/assets/geologic-patterns/svg";
+      console.log("Setting up style images", symbols);
+      await setupStyleImages(map.current, symbols, { patternBaseURL });
     }
 
-    let suffix = params.toString();
-    if (suffix.length) {
-      suffix = "?" + suffix;
+    const style = buildMapOverlayStyle(baseURL, {
+      selectedLayer: activeLayer,
+      sourceChangeTimestamps: changeTimestamps,
+      enabledFeatureModes,
+      showLineEndpoints,
+    });
+    setOverlayStyle(style);
+  }, [
+    activeLayer,
+    changeTimestamps,
+    showLineEndpoints,
+    enabledFeatureModes,
+    polygonTypes,
+    map.current,
+  ]);
+
+  return useMemo(() => {
+    if (baseStyle == null && overlayStyle == null) {
+      return null;
     }
 
-    sources["mapboard_" + lyr] = {
-      type: "vector",
-      tiles: [baseURL + `/${lyr}/tile/{z}/{x}/{y}${suffix}`],
-      volatile: true,
-    };
-  }
-
-  let layers: mapboxgl.Layer[] = [];
-
-  if (enabledFeatureModes.has(FeatureMode.Topology)) {
-    layers.push({
-      id: "topology",
-      type: "fill",
-      source: "mapboard_topology",
-      "source-layer": "faces",
-      paint: {
-        "fill-color": ["get", "color"],
-        "fill-opacity": selectedLayerOpacity(0.5, 0.3),
-      },
-      //filter,
+    return mergeStyles(baseStyle, overlayStyle, {
+      layers: buildSelectionLayers(),
     });
-  }
-
-  if (enabledFeatureModes.has(FeatureMode.Polygon)) {
-    layers.push({
-      id: "polygons",
-      type: "fill",
-      source: "mapboard_polygon",
-      "source-layer": "polygons",
-      paint: {
-        "fill-color": ["get", "color"],
-        "fill-opacity": selectedLayerOpacity(0.8, 0.4),
-      },
-      //filter,
-    });
-  }
-
-  if (enabledFeatureModes.has(FeatureMode.Line)) {
-    layers.push({
-      id: "lines",
-      type: "line",
-      source: "mapboard_line",
-      "source-layer": "lines",
-      paint: {
-        "line-color": [
-          "case",
-          ["==", ["get", "color"], "none"],
-          "#000000",
-          ["get", "color"],
-        ],
-        "line-width": 1.5,
-        "line-opacity": selectedLayerOpacity(1, 0.5),
-      },
-      //filter,
-    });
-  }
-
-  if (showLineEndpoints) {
-    layers.push({
-      id: "points",
-      type: "circle",
-      source: "mapboard_line",
-      "source-layer": "endpoints",
-      paint: {
-        "circle-color": [
-          "case",
-          ["==", ["get", "color"], "none"],
-          "#000000",
-          ["get", "color"],
-        ],
-        "circle-radius": 2,
-      },
-      filter,
-    });
-  }
-
-  return {
-    version: 8,
-    sources,
-    layers,
-  };
+  }, [baseStyle, overlayStyle]);
 }
