@@ -248,7 +248,7 @@ function useMapStyle(baseURL: string, isMapView: boolean, { mapboxToken }) {
     }).then(setBaseStyle);
   }, [baseStyleURL, mapboxToken, isMapView]);
 
-  useEffect(() => {
+  useAsyncEffect(async () => {
     const style = buildMapOverlayStyle(baseURL, {
       selectedLayer: activeLayer,
       sourceChangeTimestamps: changeTimestamps,
