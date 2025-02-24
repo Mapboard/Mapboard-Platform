@@ -4,11 +4,6 @@ import vike from "vike/plugin";
 import mdx from "@mdx-js/rollup";
 import path from "node:path";
 
-/** Since we are running on a self-signed certificate in development,
- * we need to disable TLS checks.
- */
-process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = "0";
-
 export default defineConfig({
   plugins: [vike(), react(), mdx()],
   build: {
@@ -37,6 +32,21 @@ export default defineConfig({
     watch: {
       // We reload .env files using Nodemon when in development
       ignored: [".env"],
+    },
+  },
+  css: {
+    preprocessorOptions: {
+      sass: {
+        /**
+         https://github.com/vitejs/vite/issues/19052
+         We need to use the legacy API to avoid a bug with
+         tsx import resolution
+         https://github.com/privatenumber/tsx/issues/442
+         If this gets resolved we can switch back to the
+         `sass-embedded` package
+         */
+        api: "modern-compiler",
+      },
     },
   },
 });
