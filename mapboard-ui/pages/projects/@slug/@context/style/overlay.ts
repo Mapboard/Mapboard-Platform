@@ -31,6 +31,7 @@ export function buildMapOverlayStyle(
   if (selectedLayer != null) {
     filter = ["==", "map_layer", selectedLayer];
   }
+
   let params = new URLSearchParams();
 
   let selectedLayerOpacity = (a, b) => {
@@ -74,20 +75,56 @@ export function buildMapOverlayStyle(
     };
   }
 
+  console.log("Map symbol index", mapSymbolIndex);
+
   let layers: mapboxgl.Layer[] = [];
 
+  if (mapSymbolIndex == null) {
+    return {
+      version: 8,
+      sources,
+      layers,
+    };
+  }
+
   if (enabledFeatureModes.has(FeatureMode.Topology)) {
+    let paint = {
+      "fill-color": ["get", "color"],
+      //"fill-opacity": selectedLayerOpacity(0.5, 0.3),
+    };
+
+    const ix = ["literal", mapSymbolIndex];
+
+    const mapSymbolFilter: any[] = ["has", ["get", "type"], ix];
+
+    // Fill pattern layers
     layers.push({
-      id: "topology",
+      id: "topology_colors",
       type: "fill",
       source: "mapboard_topology",
       "source-layer": "faces",
       paint: {
         "fill-color": ["get", "color"],
         "fill-opacity": selectedLayerOpacity(0.5, 0.3),
-        //"fill-pattern": ["concat", ["get", "type"], "-fill"],
       },
-      //filter,
+      //filter: ["!", mapSymbolFilter],
+    });
+
+    layers.push({
+      id: "unit_patterns",
+      type: "fill",
+      source: "mapboard_topology",
+      "source-layer": "faces",
+      paint: {
+        "fill-color": ["get", "color"],
+        "fill-pattern": [
+          "coalesce",
+          ["image", ["get", ["get", "type"], ix]],
+          ["image", "transparent"],
+        ],
+        "fill-opacity": selectedLayerOpacity(0.5, 0.3),
+      },
+      filter: mapSymbolFilter,
     });
   }
 

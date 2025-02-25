@@ -97,15 +97,17 @@ export function useMapSymbols(): PolygonStyleIndex | null {
       return null;
     }
 
-    const symbols: PolygonPatternConfig[] = polygonTypes?.map((d) => {
-      const sym = d.symbology;
-      return {
-        color: d.color,
-        id: d.id,
-        symbol: sym?.name,
-        symbolColor: sym?.color,
-      };
-    });
+    const symbols: PolygonPatternConfig[] = polygonTypes
+      ?.map((d) => {
+        const sym = d.symbology;
+        return {
+          color: d.color,
+          id: d.id,
+          symbol: sym?.name,
+          symbolColor: sym?.color,
+        };
+      })
+      .filter((d) => d.symbol != null);
 
     const patternBaseURL = "/assets/geologic-patterns/svg";
     console.log("Setting up style images", symbols);

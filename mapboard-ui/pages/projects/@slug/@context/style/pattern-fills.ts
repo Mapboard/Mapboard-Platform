@@ -1,4 +1,4 @@
-import { createUnitFill } from "./pattern-images";
+import { createTransparentImage, createUnitFill } from "./pattern-images";
 import mapboxgl, { Map } from "mapbox-gl";
 
 export interface PolygonPatternConfig {
@@ -21,7 +21,7 @@ export async function setupStyleImages(
   patterns: PolygonPatternConfig[],
   options: StyleImageOptions,
 ): Promise<PolygonStyleIndex> {
-  const { patternBaseURL } = options;
+  const { patternBaseURL, pixelRatio = 24 } = options;
 
   const res = await Promise.all(
     patterns.map(async function (type) {
@@ -37,7 +37,7 @@ export async function setupStyleImages(
       if (map.hasImage(uid)) return [id, uid];
       console.log("Adding image", uid);
       try {
-        map.addImage(uid, img, { sdf: false, pixelRatio: 12 });
+        map.addImage(uid, img, { sdf: false, pixelRatio });
       } catch (err) {
         console.error("Error adding image", uid, err);
       }
@@ -45,6 +45,14 @@ export async function setupStyleImages(
       return [id, uid];
     }),
   );
+
+  // Add transparent image
+  const transparent = "transparent";
+  if (!map.hasImage(transparent)) {
+    const img = createTransparentImage();
+    map.addImage(transparent, img, { sdf: false, pixelRatio });
+    res.push([transparent, transparent]);
+  }
 
   return res.reduce((acc, [id, uid]) => {
     acc[id] = uid;

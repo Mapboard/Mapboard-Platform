@@ -58,24 +58,39 @@ function recolorPatternImage(
   return ctx.getImageData(0, 0, img.width, img.height);
 }
 
+export function createTransparentImage() {
+  var canvas = document.createElement("canvas");
+  var ctx = canvas.getContext("2d");
+  canvas.width = 40;
+  canvas.height = 40;
+  ctx.globalAlpha = 0;
+  ctx.fillStyle = "#000000";
+  ctx.fillRect(0, 0, 40, 40);
+  return ctx.getImageData(0, 0, 40, 40);
+}
+
 function createSolidColorImage(imgColor) {
   var canvas = document.createElement("canvas");
   var ctx = canvas.getContext("2d");
   canvas.width = 40;
   canvas.height = 40;
-  ctx.globalAlpha = 0.5;
+  ctx.globalAlpha = 1;
   ctx.fillStyle = imgColor;
   ctx.fillRect(0, 0, 40, 40);
   return ctx.getImageData(0, 0, 40, 40);
 }
 
-async function createUnitFill(spec: PatternFillSpec): Promise<ImageData> {
+async function createUnitFill(
+  spec: PatternFillSpec,
+  createSolidColorImages: boolean = false,
+): Promise<ImageData> {
   if (spec.patternURL != null) {
     const img = await loadImage(spec.patternURL);
     return recolorPatternImage(img, spec.color, spec.patternColor ?? "#000000");
-  } else {
+  } else if (createSolidColorImages) {
     return createSolidColorImage(spec.color);
   }
+  return null;
 }
 
 export { recolorPatternImage, createUnitFill };
