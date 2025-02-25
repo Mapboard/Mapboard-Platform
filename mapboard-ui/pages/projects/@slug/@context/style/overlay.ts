@@ -13,6 +13,10 @@ interface MapOverlayOptions {
   enabledFeatureModes?: Set<FeatureMode>;
   showLineEndpoints?: boolean;
   mapSymbolIndex?: PolygonStyleIndex | null;
+  crossSectionConfig?: {
+    layerID: number;
+    enabled: boolean;
+  };
 }
 
 export function buildMapOverlayStyle(
@@ -25,12 +29,27 @@ export function buildMapOverlayStyle(
     enabledFeatureModes = allFeatureModes,
     sourceChangeTimestamps,
     mapSymbolIndex,
+    crossSectionConfig,
   } = options;
 
-  let filter: any = ["!=", "map_layer", ""];
-  if (selectedLayer != null) {
-    filter = ["==", "map_layer", selectedLayer];
+  let disabledLayers: number[] = [];
+  if (crossSectionConfig != null) {
+    console.log("Cross section config", crossSectionConfig);
+    if (!crossSectionConfig.enabled) {
+      disabledLayers.push(crossSectionConfig.layerID);
+    }
   }
+
+  let filter: any = [
+    "!",
+    ["in", ["get", "map_layer"], ["literal", disabledLayers]],
+  ];
+
+  if (selectedLayer != null) {
+    filter = ["==", ["get", "map_layer"], selectedLayer];
+  }
+
+  console.log("Filter", filter);
 
   let params = new URLSearchParams();
 
@@ -97,6 +116,8 @@ export function buildMapOverlayStyle(
 
     const mapSymbolFilter: any[] = ["has", ["get", "type"], ix];
 
+    console.log("Map symbol filter", mapSymbolFilter);
+
     // Fill pattern layers
     layers.push({
       id: "topology_colors",
@@ -107,6 +128,7 @@ export function buildMapOverlayStyle(
         "fill-color": ["get", "color"],
         "fill-opacity": selectedLayerOpacity(0.5, 0.3),
       },
+      filter,
       //filter: ["!", mapSymbolFilter],
     });
 
@@ -124,7 +146,7 @@ export function buildMapOverlayStyle(
         ],
         "fill-opacity": selectedLayerOpacity(0.5, 0.3),
       },
-      filter: mapSymbolFilter,
+      filter: ["all", filter, mapSymbolFilter],
     });
   }
 
@@ -138,7 +160,7 @@ export function buildMapOverlayStyle(
         "fill-color": ["get", "color"],
         "fill-opacity": selectedLayerOpacity(0.8, 0.4),
       },
-      //filter,
+      filter,
     });
   }
 
@@ -158,7 +180,7 @@ export function buildMapOverlayStyle(
         "line-width": 1.5,
         "line-opacity": selectedLayerOpacity(1, 0.5),
       },
-      //filter,
+      filter,
     });
   }
 

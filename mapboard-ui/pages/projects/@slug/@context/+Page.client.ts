@@ -17,6 +17,7 @@ import { MapLoadingButton } from "@macrostrat/map-interface";
 import { MapArea } from "./map";
 import { ToasterContext } from "@macrostrat/ui-components";
 import { ItemSelect } from "@macrostrat/form-components";
+import { ReactNode } from "react";
 
 const h = hyper.styled(styles);
 
@@ -91,14 +92,35 @@ function BackButton({ href, children, className }) {
 }
 
 function LayerControlPanel() {
-  return h("div.layer-control-panel", [
-    h(LayerList),
-    h(BasemapList),
-    h(ViewOptions),
+  const selectedLayer = useMapState((state) => state.activeLayer);
+
+  let opts: ReactNode;
+
+  if (selectedLayer == null) {
+    opts = h(MultiLayerViewOptions);
+  } else {
+    opts = h(SingleLayerViewOptions);
+  }
+
+  return h("div.layer-control-panel", [h(LayerList), h(BasemapList), opts]);
+}
+
+function MultiLayerViewOptions() {
+  /** View options for the case where no layers are selected */
+
+  const checked = useMapState((state) => state.showCrossSectionLines);
+  const onChange = useMapActions((actions) => actions.toggleCrossSectionLines);
+
+  return h(FormGroup, { label: "View options" }, [
+    h(Switch, {
+      label: "Cross section lines",
+      checked,
+      onChange,
+    }),
   ]);
 }
 
-function ViewOptions() {
+function SingleLayerViewOptions() {
   const enabledFeatureModes = useMapState((state) => state.enabledFeatureModes);
   const toggleFeatureMode = useMapActions(
     (actions) => actions.toggleFeatureMode,
@@ -193,11 +215,12 @@ function LayerList() {
       items: sortedLayers,
       selectedItem,
       onSelectItem: (layer) => {
-        setActive(layer.id);
+        setActive(layer?.id);
       },
       label: "layer",
       icon: "layers",
       fill: false,
+      nullable: true,
     }),
   );
 }

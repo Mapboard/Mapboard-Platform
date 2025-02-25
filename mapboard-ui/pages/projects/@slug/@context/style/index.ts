@@ -40,6 +40,10 @@ export function useMapStyle(
   const changeTimestamps = useMapState((state) => state.lastChangeTime);
   const showLineEndpoints = useMapState((state) => state.showLineEndpoints);
   const enabledFeatureModes = useMapState((state) => state.enabledFeatureModes);
+  const crossSectionLayerID: number | null = useMapState(
+    (state) => state.mapLayers?.find((d) => d.name == "Sections")?.id,
+  );
+  const showCrossSectionLines = useMapState((d) => d.showCrossSectionLines);
 
   const baseStyleURL = useBaseMapStyle(basemapType);
 
@@ -47,6 +51,11 @@ export function useMapStyle(
   const [overlayStyle, setOverlayStyle] = useState(null);
 
   const mapSymbolIndex = useMapSymbols();
+
+  const crossSectionConfig = {
+    layerID: crossSectionLayerID,
+    enabled: showCrossSectionLines,
+  };
 
   useEffect(() => {
     if (!isMapView) {
@@ -65,6 +74,7 @@ export function useMapStyle(
       enabledFeatureModes,
       showLineEndpoints,
       mapSymbolIndex,
+      crossSectionConfig,
     });
     setOverlayStyle(style);
   }, [
@@ -73,6 +83,7 @@ export function useMapStyle(
     showLineEndpoints,
     enabledFeatureModes,
     mapSymbolIndex,
+    showCrossSectionLines,
   ]);
 
   return useMemo(() => {

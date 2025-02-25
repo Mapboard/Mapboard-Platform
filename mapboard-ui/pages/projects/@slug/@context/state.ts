@@ -16,7 +16,7 @@ interface RecoverableMapState {
 }
 
 interface MapActions {
-  setActiveLayer: (layer: number) => void;
+  setActiveLayer: (layer: number | null) => void;
   setBaseMap: (baseMap: BasemapType) => void;
   selectFeatures: (selection: FeatureSelection | null) => void;
   toggleLayerPanel: () => void;
@@ -28,6 +28,9 @@ interface MapActions {
   notifyChange: (mode: "line" | "polygon" | "topo") => void;
   toggleLineEndpoints: () => void;
   toggleFeatureMode: (mode: FeatureMode) => void;
+  toggleMapLayerVisible: (layerID: number) => void;
+
+  toggleCrossSectionLines(): void;
 }
 
 export interface SelectionActionState<T extends object> {
@@ -79,6 +82,7 @@ export interface MapState extends RecoverableMapState {
   selectionMode: SelectionMode;
   enabledFeatureModes: Set<FeatureMode>;
   showLineEndpoints: boolean;
+  showCrossSectionLines: boolean;
   mapLayers: MapLayer[] | null;
   mapLayerIDMap: Map<number, MapLayer>;
   apiBaseURL: string;
@@ -121,6 +125,7 @@ function createMapStore(baseURL: string) {
         mapLayers: null,
         enabledFeatureModes: allFeatureModes,
         showLineEndpoints: false,
+        showCrossSectionLines: true,
         lastChangeTime: {
           line: null,
           polygon: null,
@@ -215,6 +220,11 @@ function createMapStore(baseURL: string) {
               }
               return { enabledFeatureModes };
             }),
+          toggleCrossSectionLines() {
+            set((state) => {
+              return { showCrossSectionLines: !state.showCrossSectionLines };
+            });
+          },
         },
       };
     }),
@@ -254,6 +264,7 @@ function combineFeatureSelection(
 export function MapStateProvider({ children, baseURL }) {
   const [value] = useState(() => createMapStore(baseURL));
 
+  /** Subscriber to set some values to the query parameters */
   useEffect(() => {
     const unsubscribe = value.subscribe(
       (state) => [state.activeLayer, state.baseMap],

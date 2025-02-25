@@ -14,7 +14,7 @@ const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
 const hmrPort = process.env.HMR_PORT
   ? parseInt(process.env.HMR_PORT, 10)
-  : 24678;
+  : 24680;
 const hmrHost = process.env.HMR_HOST ?? "localhost";
 const hmrProtocol = process.env.HMR_PROTOCOL ?? "ws";
 
