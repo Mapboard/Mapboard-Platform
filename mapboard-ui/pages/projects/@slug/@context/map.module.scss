@@ -122,3 +122,7 @@
   transform-origin: right;
   margin-left: 0px
 }
+
+.terrain-exaggeration input:global(.bp5-input) {
+  width: 3em;
+}

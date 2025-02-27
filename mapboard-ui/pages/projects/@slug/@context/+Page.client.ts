@@ -7,6 +7,7 @@ import {
   AnchorButton,
   Divider,
   FormGroup,
+  NumericInput,
   Spinner,
   Switch,
 } from "@blueprintjs/core";
@@ -114,7 +115,35 @@ function LayerControlPanel() {
     opts,
     h(Divider),
     h(BasemapList),
+    h(TerrainExaggeration),
   ]);
+}
+
+function TerrainExaggeration() {
+  const onValueChange = useMapActions(
+    (actions) => actions.setTerrainExaggeration,
+  );
+  const value = useMapState((state) => state.terrainExaggeration);
+
+  return h(
+    FormGroup,
+    {
+      label: "Terrain exaggeration",
+      inline: true,
+      fill: true,
+    },
+    [
+      h(NumericInput, {
+        value,
+        onValueChange,
+        min: 1,
+        max: 3,
+        stepSize: 0.5,
+        className: "terrain-exaggeration",
+        size: "small",
+      }),
+    ],
+  );
 }
 
 function OverlayHeader() {

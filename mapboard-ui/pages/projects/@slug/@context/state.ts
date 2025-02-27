@@ -28,6 +28,7 @@ interface MapActions {
   notifyChange: (mode: "line" | "polygon" | "topo") => void;
   toggleLineEndpoints: () => void;
   toggleFeatureMode: (mode: FeatureMode) => void;
+  setTerrainExaggeration: (exaggeration: number) => void;
 
   toggleShowFacesWithNoUnit(): void;
 
@@ -88,8 +89,10 @@ export interface MapState extends RecoverableMapState {
   showLineEndpoints: boolean;
   showCrossSectionLines: boolean;
   showFacesWithNoUnit: boolean;
+  terrainExaggeration: number;
   mapLayers: MapLayer[] | null;
   mapLayerIDMap: Map<number, MapLayer>;
+  terrainSource: string;
   apiBaseURL: string;
   // Time that we last updated the map elements
   lastChangeTime: SourceChangeTimestamps;
@@ -135,6 +138,8 @@ function createMapStore(baseURL: string) {
           showLineEndpoints: false,
           showCrossSectionLines: true,
           showFacesWithNoUnit: false,
+          terrainExaggeration: 1,
+          terrainSource: "mapbox://mapbox.terrain-rgb",
           lastChangeTime: {
             line: null,
             polygon: null,
@@ -243,6 +248,9 @@ function createMapStore(baseURL: string) {
               set((state) => {
                 return { showOverlay: !state.showOverlay };
               });
+            },
+            setTerrainExaggeration: (exaggeration) => {
+              set({ terrainExaggeration: exaggeration });
             },
           },
         };

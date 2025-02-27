@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAsyncEffect, useInDarkMode } from "@macrostrat/ui-components";
-import { BasemapType, PolygonDataType, useMapState } from "../state";
+import {
+  BasemapType,
+  PolygonDataType,
+  useMapActions,
+  useMapState,
+} from "../state";
 import { getMapboxStyle, mergeStyles } from "@macrostrat/mapbox-utils";
 import { buildMapOverlayStyle, CrossSectionConfig } from "./overlay";
 import { buildSelectionLayers } from "../_tools";
@@ -9,8 +14,11 @@ import {
   PolygonStyleIndex,
   setupStyleImages,
 } from "./pattern-fills";
-import { useMapRef, useMapStatus } from "@macrostrat/mapbox-react";
-import { show } from "@blueprintjs/core/lib/esnext/legacy/contextMenuLegacy";
+import {
+  useMapRef,
+  useMapStatus,
+  addTerrainToStyle,
+} from "@macrostrat/mapbox-react";
 
 function useBaseMapStyle(basemapType: BasemapType) {
   const isEnabled = useInDarkMode();
@@ -47,6 +55,7 @@ export function useMapStyle(
   const showCrossSectionLines = useMapState((d) => d.showCrossSectionLines);
   const showFacesWithNoUnit = useMapState((d) => d.showFacesWithNoUnit);
   const showOverlay = useMapState((d) => d.showOverlay);
+  const exaggeration = useMapState((d) => d.terrainExaggeration);
 
   const baseStyleURL = useBaseMapStyle(basemapType);
 
@@ -103,8 +112,11 @@ export function useMapStyle(
       return null;
     }
 
-    return mergeStyles(baseStyle, overlayStyle);
-  }, [baseStyle, overlayStyle]);
+    let style = addTerrainToStyle(mergeStyles(baseStyle, overlayStyle));
+    style.terrain.exaggeration = exaggeration;
+
+    return style;
+  }, [baseStyle, overlayStyle, exaggeration]);
 }
 
 export function useMapSymbols(): PolygonStyleIndex | null {
