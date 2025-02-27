@@ -1,6 +1,8 @@
+/** Todo: integrate this with Macrostrat web components */
+
 interface PatternFillSpec {
   color: string;
-  patternURL?: string;
+  patternURL: string | null;
   patternColor?: string;
 }
 
@@ -9,7 +11,7 @@ function loadImage(url): Promise<HTMLImageElement> {
     const img = new Image();
     img.crossOrigin = "anonymous";
     img.addEventListener("load", () => resolve(img));
-    img.addEventListener("error", err => reject(err));
+    img.addEventListener("error", (err) => reject(err));
     img.src = url;
   });
 }
@@ -17,10 +19,15 @@ function loadImage(url): Promise<HTMLImageElement> {
 function recolorPatternImage(
   img: HTMLImageElement,
   backgroundColor: string,
-  color: string
+  color: string,
 ) {
   // create hidden canvas
   var canvas = document.createElement("canvas");
+
+  console.log("Image size", img.width, img.height);
+  img.width *= 40;
+  img.height *= 40;
+
   canvas.width = img.width;
   canvas.height = img.height;
 
@@ -51,25 +58,39 @@ function recolorPatternImage(
   return ctx.getImageData(0, 0, img.width, img.height);
 }
 
+export function createTransparentImage() {
+  var canvas = document.createElement("canvas");
+  var ctx = canvas.getContext("2d");
+  canvas.width = 40;
+  canvas.height = 40;
+  ctx.globalAlpha = 0;
+  ctx.fillStyle = "#000000";
+  ctx.fillRect(0, 0, 40, 40);
+  return ctx.getImageData(0, 0, 40, 40);
+}
+
 function createSolidColorImage(imgColor) {
   var canvas = document.createElement("canvas");
   var ctx = canvas.getContext("2d");
   canvas.width = 40;
   canvas.height = 40;
-  ctx.globalAlpha = 0.5;
+  ctx.globalAlpha = 1;
   ctx.fillStyle = imgColor;
   ctx.fillRect(0, 0, 40, 40);
   return ctx.getImageData(0, 0, 40, 40);
 }
 
-async function createUnitFill(spec: PatternFillSpec): Promise<ImageData> {
-  console.log(spec);
+async function createUnitFill(
+  spec: PatternFillSpec,
+  createSolidColorImages: boolean = false,
+): Promise<ImageData> {
   if (spec.patternURL != null) {
     const img = await loadImage(spec.patternURL);
     return recolorPatternImage(img, spec.color, spec.patternColor ?? "#000000");
-  } else {
+  } else if (createSolidColorImages) {
     return createSolidColorImage(spec.color);
   }
+  return null;
 }
 
 export { recolorPatternImage, createUnitFill };

@@ -1,4 +1,5 @@
-import { allFeatureModes, FeatureMode } from "./state";
+import { allFeatureModes, FeatureMode } from "../state";
+import { PolygonStyleIndex } from "./pattern-fills";
 
 export interface SourceChangeTimestamps {
   line: number | null;
@@ -6,11 +7,19 @@ export interface SourceChangeTimestamps {
   topology: number | null;
 }
 
+export interface CrossSectionConfig {
+  layerID: number;
+  enabled: boolean;
+}
+
 interface MapOverlayOptions {
   selectedLayer: number | null;
   sourceChangeTimestamps: SourceChangeTimestamps;
   enabledFeatureModes?: Set<FeatureMode>;
   showLineEndpoints?: boolean;
+  showFacesWithNoUnit?: boolean;
+  mapSymbolIndex?: PolygonStyleIndex | null;
+  crossSectionConfig?: CrossSectionConfig;
 }
 
 export function buildMapOverlayStyle(
@@ -22,12 +31,28 @@ export function buildMapOverlayStyle(
     selectedLayer,
     enabledFeatureModes = allFeatureModes,
     sourceChangeTimestamps,
+    mapSymbolIndex,
+    crossSectionConfig,
+    showFacesWithNoUnit = false,
   } = options;
 
-  let filter: any = ["!=", "map_layer", ""];
-  if (selectedLayer != null) {
-    filter = ["==", "map_layer", selectedLayer];
+  let disabledLayers: number[] = [];
+  if (crossSectionConfig != null) {
+    console.log("Cross section config", crossSectionConfig);
+    if (!crossSectionConfig.enabled) {
+      disabledLayers.push(crossSectionConfig.layerID);
+    }
   }
+
+  let filter: any = [
+    "!",
+    ["in", ["get", "map_layer"], ["literal", disabledLayers]],
+  ];
+
+  if (selectedLayer != null) {
+    filter = ["==", ["get", "map_layer"], selectedLayer];
+  }
+
   let params = new URLSearchParams();
 
   let selectedLayerOpacity = (a, b) => {
@@ -73,9 +98,33 @@ export function buildMapOverlayStyle(
 
   let layers: mapboxgl.Layer[] = [];
 
+  if (mapSymbolIndex == null) {
+    return {
+      version: 8,
+      sources,
+      layers,
+    };
+  }
+
   if (enabledFeatureModes.has(FeatureMode.Topology)) {
+    let paint = {
+      "fill-color": ["get", "color"],
+      //"fill-opacity": selectedLayerOpacity(0.5, 0.3),
+    };
+
+    const ix = ["literal", mapSymbolIndex];
+
+    const mapSymbolFilter: any[] = ["has", ["get", "type"], ix];
+
+    let topoFilters = [filter];
+
+    if (!showFacesWithNoUnit) {
+      topoFilters.push(["has", "type"]);
+    }
+
+    // Fill pattern layers
     layers.push({
-      id: "topology",
+      id: "topology_colors",
       type: "fill",
       source: "mapboard_topology",
       "source-layer": "faces",
@@ -83,7 +132,24 @@ export function buildMapOverlayStyle(
         "fill-color": ["get", "color"],
         "fill-opacity": selectedLayerOpacity(0.5, 0.3),
       },
-      //filter,
+      filter: ["all", ...topoFilters],
+    });
+
+    layers.push({
+      id: "unit_patterns",
+      type: "fill",
+      source: "mapboard_topology",
+      "source-layer": "faces",
+      paint: {
+        "fill-color": ["get", "color"],
+        "fill-pattern": [
+          "coalesce",
+          ["image", ["get", ["get", "type"], ix]],
+          ["image", "transparent"],
+        ],
+        "fill-opacity": selectedLayerOpacity(0.5, 0.3),
+      },
+      filter: ["all", ...topoFilters, mapSymbolFilter],
     });
   }
 
@@ -97,7 +163,7 @@ export function buildMapOverlayStyle(
         "fill-color": ["get", "color"],
         "fill-opacity": selectedLayerOpacity(0.8, 0.4),
       },
-      //filter,
+      filter,
     });
   }
 
@@ -117,7 +183,7 @@ export function buildMapOverlayStyle(
         "line-width": 1.5,
         "line-opacity": selectedLayerOpacity(1, 0.5),
       },
-      //filter,
+      filter,
     });
   }
 

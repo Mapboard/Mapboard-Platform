@@ -1,9 +1,14 @@
 import { createStore, useStore, StoreApi, create } from "zustand";
 import { createContext, useContext, useEffect, useState } from "react";
 import h from "@macrostrat/hyper";
-import { subscribeWithSelector } from "zustand/middleware";
+import { subscribeWithSelector, devtools } from "zustand/middleware";
 import { SelectionActionType } from "./selection";
-import { SourceChangeTimestamps } from "./style";
+import {
+  PolygonPatternConfig,
+  PolygonStyleIndex,
+  setupStyleImages,
+} from "./style/pattern-fills";
+import { SourceChangeTimestamps } from "./style/overlay";
 
 interface RecoverableMapState {
   activeLayer: number | null;
@@ -11,7 +16,7 @@ interface RecoverableMapState {
 }
 
 interface MapActions {
-  setActiveLayer: (layer: number) => void;
+  setActiveLayer: (layer: number | null) => void;
   setBaseMap: (baseMap: BasemapType) => void;
   selectFeatures: (selection: FeatureSelection | null) => void;
   toggleLayerPanel: () => void;
@@ -23,6 +28,11 @@ interface MapActions {
   notifyChange: (mode: "line" | "polygon" | "topo") => void;
   toggleLineEndpoints: () => void;
   toggleFeatureMode: (mode: FeatureMode) => void;
+  toggleMapLayerVisible: (layerID: number) => void;
+
+  toggleShowFacesWithNoUnit(): void;
+
+  toggleCrossSectionLines(): void;
 }
 
 export interface SelectionActionState<T extends object> {
@@ -59,6 +69,13 @@ export const allFeatureModes = new Set([
   FeatureMode.Topology,
 ]);
 
+export interface PolygonDataType extends DataType {
+  symbology?: {
+    name: string;
+    color?: string;
+  };
+}
+
 export interface MapState extends RecoverableMapState {
   actions: MapActions;
   layerPanelIsOpen: boolean;
@@ -67,6 +84,8 @@ export interface MapState extends RecoverableMapState {
   selectionMode: SelectionMode;
   enabledFeatureModes: Set<FeatureMode>;
   showLineEndpoints: boolean;
+  showCrossSectionLines: boolean;
+  showFacesWithNoUnit: boolean;
   mapLayers: MapLayer[] | null;
   mapLayerIDMap: Map<number, MapLayer>;
   apiBaseURL: string;
@@ -74,8 +93,9 @@ export interface MapState extends RecoverableMapState {
   lastChangeTime: SourceChangeTimestamps;
   dataTypes: {
     line: DataType[] | null;
-    polygon: DataType[] | null;
+    polygon: PolygonDataType[] | null;
   };
+  polygonPatternIndex: PolygonStyleIndex | null;
 }
 
 const MapStateContext = createContext<StoreApi<MapState> | null>(null);
@@ -95,115 +115,131 @@ const _subscribeWithSelector = subscribeWithSelector as <T>(fn: T) => T;
 
 function createMapStore(baseURL: string) {
   return create<MapState>(
-    _subscribeWithSelector((set, get): MapState => {
-      const { activeLayer, baseMap } = parseQueryParameters();
-      return {
-        apiBaseURL: baseURL,
-        activeLayer,
-        baseMap,
-        layerPanelIsOpen: false,
-        selection: null,
-        selectionAction: null,
-        selectionMode: SelectionMode.Replace,
-        mapLayers: null,
-        enabledFeatureModes: allFeatureModes,
-        showLineEndpoints: false,
-        lastChangeTime: {
-          line: null,
-          polygon: null,
-          topology: null,
-        },
-        dataTypes: {
-          line: null,
-          polygon: null,
-        },
-        mapLayerIDMap: new Map(),
-        actions: {
-          setBaseMap: (baseMap: BasemapType) => set({ baseMap }),
-          setActiveLayer: (layer) =>
-            set((state) => {
-              // Toggle the active layer if it's already active
-              let activeLayer: number | null = layer;
-              if (state.activeLayer === layer) {
-                activeLayer = null;
-              }
-              return { activeLayer, selection: null };
-            }),
-          notifyChange: (mode: "line" | "polygon" | "topo") => {
-            return set((state) => {
-              return {
-                lastChangeTime: {
-                  ...state.lastChangeTime,
-                  [mode]: Date.now(),
-                },
-              };
-            });
+    // @ts-ignore
+    _subscribeWithSelector(
+      devtools((set, get): MapState => {
+        const { activeLayer, baseMap } = parseQueryParameters();
+        return {
+          apiBaseURL: baseURL,
+          activeLayer,
+          baseMap,
+          layerPanelIsOpen: false,
+          selection: null,
+          selectionAction: null,
+          selectionMode: SelectionMode.Replace,
+          mapLayers: null,
+          enabledFeatureModes: allFeatureModes,
+          showLineEndpoints: false,
+          showCrossSectionLines: true,
+          showFacesWithNoUnit: false,
+          lastChangeTime: {
+            line: null,
+            polygon: null,
+            topology: null,
           },
-          setSelectionMode: (mode: SelectionMode) =>
-            set({ selectionMode: mode }),
-          selectFeatures: (selection) =>
-            set((state) => {
-              return {
-                selection: combineFeatureSelection(
-                  state.selection,
-                  selection,
-                  state.selectionMode,
-                ),
-              };
-            }),
-          toggleLayerPanel: () =>
-            set((state) => {
-              return { layerPanelIsOpen: !state.layerPanelIsOpen };
-            }),
-          setMapLayers: (layers) =>
-            set({
-              mapLayers: layers,
-              mapLayerIDMap: new Map(layers.map((l) => [l.id, l])),
-            }),
-          setDataTypes: (mode: "line" | "polygon", types: DataType[]) =>
-            set((state) => {
-              return {
-                dataTypes: {
-                  ...state.dataTypes,
-                  [mode]: types,
-                },
-              };
-            }),
-          setSelectionAction: (type) =>
-            set((state) => {
-              if (type == null || state.selectionAction?.type == type) {
-                return { selectionAction: null };
-              }
-              return { selectionAction: { type, state: null } };
-            }),
-          setSelectionActionState: (state: any) => {
-            return set((s) => {
-              const { selectionAction } = s;
-              if (selectionAction == null) {
-                return s;
-              }
-              return {
-                selectionAction: { ...selectionAction, state },
-              };
-            });
+          dataTypes: {
+            line: null,
+            polygon: null,
           },
-          toggleLineEndpoints: () =>
-            set((state) => {
-              return { showLineEndpoints: !state.showLineEndpoints };
-            }),
-          toggleFeatureMode: (mode) =>
-            set((state) => {
-              const enabledFeatureModes = new Set(state.enabledFeatureModes);
-              if (enabledFeatureModes.has(mode)) {
-                enabledFeatureModes.delete(mode);
-              } else {
-                enabledFeatureModes.add(mode);
-              }
-              return { enabledFeatureModes };
-            }),
-        },
-      };
-    }),
+          mapLayerIDMap: new Map(),
+          polygonPatternIndex: null,
+          actions: {
+            setBaseMap: (baseMap: BasemapType) => set({ baseMap }),
+            setActiveLayer: (layer) =>
+              set((state) => {
+                // Toggle the active layer if it's already active
+                let activeLayer: number | null = layer;
+                if (state.activeLayer === layer) {
+                  activeLayer = null;
+                }
+                return { activeLayer, selection: null };
+              }),
+            notifyChange: (mode: "line" | "polygon" | "topo") => {
+              return set((state) => {
+                return {
+                  lastChangeTime: {
+                    ...state.lastChangeTime,
+                    [mode]: Date.now(),
+                  },
+                };
+              });
+            },
+            setSelectionMode: (mode: SelectionMode) =>
+              set({ selectionMode: mode }),
+            selectFeatures: (selection) =>
+              set((state) => {
+                return {
+                  selection: combineFeatureSelection(
+                    state.selection,
+                    selection,
+                    state.selectionMode,
+                  ),
+                };
+              }),
+            toggleLayerPanel: () =>
+              set((state) => {
+                return { layerPanelIsOpen: !state.layerPanelIsOpen };
+              }),
+            setMapLayers: (layers) =>
+              set({
+                mapLayers: layers,
+                mapLayerIDMap: new Map(layers.map((l) => [l.id, l])),
+              }),
+            setDataTypes: (mode: "line" | "polygon", types: DataType[]) =>
+              set((state) => {
+                return {
+                  dataTypes: {
+                    ...state.dataTypes,
+                    [mode]: types,
+                  },
+                };
+              }),
+            setSelectionAction: (type) =>
+              set((state) => {
+                if (type == null || state.selectionAction?.type == type) {
+                  return { selectionAction: null };
+                }
+                return { selectionAction: { type, state: null } };
+              }),
+            setSelectionActionState: (state: any) => {
+              return set((s) => {
+                const { selectionAction } = s;
+                if (selectionAction == null) {
+                  return s;
+                }
+                return {
+                  selectionAction: { ...selectionAction, state },
+                };
+              });
+            },
+            toggleLineEndpoints: () =>
+              set((state) => {
+                return { showLineEndpoints: !state.showLineEndpoints };
+              }),
+            toggleFeatureMode: (mode) =>
+              set((state) => {
+                const enabledFeatureModes = new Set(state.enabledFeatureModes);
+                if (enabledFeatureModes.has(mode)) {
+                  enabledFeatureModes.delete(mode);
+                } else {
+                  enabledFeatureModes.add(mode);
+                }
+                return { enabledFeatureModes };
+              }),
+            toggleCrossSectionLines() {
+              set((state) => {
+                return { showCrossSectionLines: !state.showCrossSectionLines };
+              });
+            },
+            toggleShowFacesWithNoUnit() {
+              set((state) => {
+                return { showFacesWithNoUnit: !state.showFacesWithNoUnit };
+              });
+            },
+          },
+        };
+      }),
+    ),
   );
 }
 
@@ -240,6 +276,7 @@ function combineFeatureSelection(
 export function MapStateProvider({ children, baseURL }) {
   const [value] = useState(() => createMapStore(baseURL));
 
+  /** Subscriber to set some values to the query parameters */
   useEffect(() => {
     const unsubscribe = value.subscribe(
       (state) => [state.activeLayer, state.baseMap],
@@ -327,4 +364,27 @@ function setQueryParameters(params: RecoverableMapState) {
   }
   const newUrl = `${window.location.pathname}?${searchParams.toString()}`;
   window.history.replaceState({}, "", newUrl);
+}
+
+async function createPolygonPatternIndex(
+  map: mapboxgl.Map | null,
+  polygonTypes: PolygonDataType[] | null,
+): Promise<PolygonStyleIndex | null> {
+  if (map == null || polygonTypes == null) {
+    return null;
+  }
+
+  const symbols: PolygonPatternConfig[] = polygonTypes?.map((d) => {
+    const sym = d.symbology;
+    return {
+      color: d.color,
+      id: d.id,
+      symbol: sym?.name,
+      symbolColor: sym?.color,
+    };
+  });
+
+  const patternBaseURL = "/assets/geologic-patterns/svg";
+  console.log("Setting up style images", symbols);
+  return await setupStyleImages(map.current, symbols, { patternBaseURL });
 }

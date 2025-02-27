@@ -1,27 +1,18 @@
 // Import other components
 import hyper from "@macrostrat/hyper";
-import { useEffect, useMemo, useState } from "react";
 import {
   BaseInfoDrawer,
-  buildInspectorStyle,
   FloatingNavbar,
   MapAreaContainer,
   MapView,
   PanelCard,
 } from "@macrostrat/map-interface";
 import styles from "./map.module.scss";
-import { useAsyncEffect, useInDarkMode } from "@macrostrat/ui-components";
-import {
-  BasemapType,
-  SelectionMode,
-  useMapActions,
-  useMapState,
-} from "./state";
+import { SelectionMode, useMapActions, useMapState } from "./state";
 import { SphericalMercator } from "@mapbox/sphericalmercator";
 import { useMapRef } from "@macrostrat/mapbox-react";
-import { getMapboxStyle, mergeStyles } from "@macrostrat/mapbox-utils";
-import { buildMapOverlayStyle } from "./style";
-import { BoxSelectionManager, buildSelectionLayers } from "./_tools";
+import { buildMapOverlayStyle, useMapStyle } from "./style";
+import { BoxSelectionManager } from "./_tools";
 import { SelectionActionsPanel } from "./selection";
 import { FormGroup, OptionProps, SegmentedControl } from "@blueprintjs/core";
 
@@ -49,20 +40,12 @@ export function MapArea({
   focusedSourceTitle?: string;
   isMapView: boolean;
 }) {
-  const style = useMapStyle(baseURL, isMapView, {
-    mapboxToken,
-  });
   const isOpen = useMapState((state) => state.layerPanelIsOpen);
 
   let projection = { name: "globe" };
   if (!isMapView) {
     projection = { name: "mercator" };
   }
-
-  if (style == null) {
-    return null;
-  }
-
   // const toolsCard = h(PanelCard, { className: "tools-panel" }, [
   //   h("h4", "Tools"),
   //   h(Button, { icon: "selection", small: true }, "Select"),
@@ -85,13 +68,14 @@ export function MapArea({
     },
     [
       h(MapInner, {
-        style,
         mapPosition: null,
         projection,
         boxZoom: false,
         mapboxToken,
         bounds,
         fitBounds: !isMapView,
+        baseURL,
+        isMapView,
       }),
       h(BoxSelectionManager),
     ],
@@ -157,10 +141,25 @@ function SelectionModePicker() {
   );
 }
 
-function MapInner({ fitBounds, bounds, ...rest }) {
+function MapInner({
+  baseURL,
+  fitBounds,
+  bounds,
+  mapboxToken,
+  isMapView,
+  ...rest
+}) {
   let maxBounds: BBox | null = null;
 
   const mapRef = useMapRef();
+
+  const style = useMapStyle(baseURL, {
+    isMapView,
+    mapboxToken,
+  });
+  if (style == null) {
+    return null;
+  }
 
   let aspectRatio = 1;
   const rect = mapRef?.current?.getContainer().getBoundingClientRect();
@@ -173,7 +172,7 @@ function MapInner({ fitBounds, bounds, ...rest }) {
     maxBounds = expandBounds(bounds, aspectRatio);
   }
 
-  return h(MapView, { maxBounds, bounds, ...rest });
+  return h(MapView, { maxBounds, bounds, mapboxToken, style, ...rest });
 }
 
 type BBox = [number, number, number, number];
@@ -209,59 +208,4 @@ function expandBounds(bounds: BBox, aspectRatio = 1, margin = 0.1) {
     center[1] + dy / 2,
   ];
   return mercator.convert(bbox2, "WGS84");
-}
-
-function useBaseMapStyle(basemapType: BasemapType) {
-  const isEnabled = useInDarkMode();
-  let baseStyle = isEnabled
-    ? "mapbox://styles/mapbox/dark-v10"
-    : "mapbox://styles/mapbox/light-v10";
-  if (basemapType == "satellite") {
-    baseStyle = "mapbox://styles/mapbox/satellite-v9";
-  } else if (basemapType == "terrain") {
-    baseStyle = isEnabled
-      ? "mapbox://styles/jczaplewski/ckfxmukdy0ej619p7vqy19kow"
-      : "mapbox://styles/jczaplewski/ckxcu9zmu4aln14mfg4monlv3";
-  }
-  return baseStyle;
-}
-
-function useMapStyle(baseURL: string, isMapView: boolean, { mapboxToken }) {
-  const activeLayer = useMapState((state) => state.activeLayer);
-  const basemapType = useMapState((state) => state.baseMap);
-  const changeTimestamps = useMapState((state) => state.lastChangeTime);
-  const showLineEndpoints = useMapState((state) => state.showLineEndpoints);
-  const enabledFeatureModes = useMapState((state) => state.enabledFeatureModes);
-
-  const baseStyleURL = useBaseMapStyle(basemapType);
-
-  const [baseStyle, setBaseStyle] = useState(null);
-  useEffect(() => {
-    if (!isMapView) {
-      setBaseStyle(null);
-      return;
-    }
-    getMapboxStyle(baseStyleURL, {
-      access_token: mapboxToken,
-    }).then(setBaseStyle);
-  }, [baseStyleURL, mapboxToken, isMapView]);
-
-  return useMemo(() => {
-    const overlayStyle = buildMapOverlayStyle(baseURL, {
-      selectedLayer: activeLayer,
-      sourceChangeTimestamps: changeTimestamps,
-      enabledFeatureModes,
-      showLineEndpoints,
-    });
-
-    return mergeStyles(baseStyle, overlayStyle, {
-      layers: buildSelectionLayers(),
-    });
-  }, [
-    baseStyle,
-    activeLayer,
-    changeTimestamps,
-    showLineEndpoints,
-    enabledFeatureModes,
-  ]);
 }
