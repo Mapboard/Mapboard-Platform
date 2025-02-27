@@ -112,11 +112,55 @@ export function useMapStyle(
       return null;
     }
 
-    let style = addTerrainToStyle(mergeStyles(baseStyle, overlayStyle));
-    style.terrain.exaggeration = exaggeration;
+    const terrainSources = {
+      sources: {
+        "mapbox-dem": {
+          type: "raster-dem",
+          url: "mapbox://mapbox.mapbox-terrain-dem-v1",
+          tileSize: 512,
+        },
+      },
+      terrain: {
+        source: "mapbox-dem",
+        exaggeration,
+      },
+    };
 
-    return style;
+    let style = mergeStyles(baseStyle, overlayStyle, terrainSources);
+
+    return replaceRasterDEM(style, "mapbox-dem");
   }, [baseStyle, overlayStyle, exaggeration]);
+}
+
+function replaceRasterDEM(style, sourceName) {
+  /** Replace all raster DEM sources with a single source */
+  let removedSources = [];
+  let newSources: any = {};
+  for (const [key, source] of Object.entries(style.sources)) {
+    if (source.type == "raster-dem" && key != sourceName) {
+      removedSources.push(key);
+    } else {
+      newSources[key] = source;
+    }
+  }
+
+  console.log(newSources, removedSources);
+
+  const newLayers = style.layers.map((layer) => {
+    if (removedSources.includes(layer.source)) {
+      return {
+        ...layer,
+        source: sourceName,
+      };
+    }
+    return layer;
+  });
+  let terrain = undefined;
+  if (style.terrain != null) {
+    terrain = { ...style.terrain, source: sourceName };
+  }
+
+  return { ...style, sources: newSources, layers: newLayers, terrain };
 }
 
 export function useMapSymbols(): PolygonStyleIndex | null {
