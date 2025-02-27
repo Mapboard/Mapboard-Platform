@@ -84,6 +84,17 @@
   }
 }
 
+.overlay-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-direction: row;
+
+  h4 {
+    margin: 0.25em 0;
+  }
+}
+
 .right-elements {
   display: flex;
   gap: 0.5em;
@@ -108,6 +119,6 @@
 
 .subsidiary-switches {
   transform: scale(0.85);
-  transform-origin: left;
-  margin-left: 35px
+  transform-origin: right;
+  margin-left: 0px
 }
