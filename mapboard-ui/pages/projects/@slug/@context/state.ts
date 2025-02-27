@@ -28,11 +28,12 @@ interface MapActions {
   notifyChange: (mode: "line" | "polygon" | "topo") => void;
   toggleLineEndpoints: () => void;
   toggleFeatureMode: (mode: FeatureMode) => void;
-  toggleMapLayerVisible: (layerID: number) => void;
 
   toggleShowFacesWithNoUnit(): void;
 
   toggleCrossSectionLines(): void;
+
+  toggleOverlay(): void;
 }
 
 export interface SelectionActionState<T extends object> {
@@ -83,6 +84,7 @@ export interface MapState extends RecoverableMapState {
   selectionAction: SelectionActionState<any> | null;
   selectionMode: SelectionMode;
   enabledFeatureModes: Set<FeatureMode>;
+  showOverlay: boolean;
   showLineEndpoints: boolean;
   showCrossSectionLines: boolean;
   showFacesWithNoUnit: boolean;
@@ -129,6 +131,7 @@ function createMapStore(baseURL: string) {
           selectionMode: SelectionMode.Replace,
           mapLayers: null,
           enabledFeatureModes: allFeatureModes,
+          showOverlay: true,
           showLineEndpoints: false,
           showCrossSectionLines: true,
           showFacesWithNoUnit: false,
@@ -234,6 +237,11 @@ function createMapStore(baseURL: string) {
             toggleShowFacesWithNoUnit() {
               set((state) => {
                 return { showFacesWithNoUnit: !state.showFacesWithNoUnit };
+              });
+            },
+            toggleOverlay() {
+              set((state) => {
+                return { showOverlay: !state.showOverlay };
               });
             },
           },

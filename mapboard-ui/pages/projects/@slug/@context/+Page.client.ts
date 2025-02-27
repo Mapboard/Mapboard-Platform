@@ -102,7 +102,25 @@ function LayerControlPanel() {
     opts = h(SingleLayerViewOptions);
   }
 
-  return h("div.layer-control-panel", [h(LayerList), h(BasemapList), opts]);
+  return h("div.layer-control-panel", [
+    h(OverlaySwitch),
+    h(LayerList),
+    h(BasemapList),
+    opts,
+  ]);
+}
+
+function OverlaySwitch() {
+  const showOverlay = useMapState((state) => state.showOverlay);
+  const toggleOverlay = useMapActions((actions) => actions.toggleOverlay);
+
+  return h(FormGroup, { label: "Overlay" }, [
+    h(Switch, {
+      label: "Show overlay",
+      checked: showOverlay,
+      onChange: toggleOverlay,
+    }),
+  ]);
 }
 
 function MultiLayerViewOptions() {

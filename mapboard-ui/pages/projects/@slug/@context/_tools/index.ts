@@ -100,8 +100,14 @@ export function BoxSelectionManager(props: BoxSelectionProps) {
     (map) => {
       if (map == null) return;
       const fips = selectedFeatures?.lines ?? [];
-      map.setFilter("lines-highlighted", ["in", "id", ...fips]);
-      map.setFilter("lines-endpoints-highlighted", ["in", "id", ...fips]);
+      for (const layerID of [
+        "lines-highlighted",
+        "lines-endpoints-highlighted",
+      ]) {
+        if (map.getLayer(layerID) == null) {
+          map.setFilter(layerID, ["in", "id", ...fips]);
+        }
+      }
     },
     [selectedFeatures],
   );

@@ -46,6 +46,7 @@ export function useMapStyle(
   );
   const showCrossSectionLines = useMapState((d) => d.showCrossSectionLines);
   const showFacesWithNoUnit = useMapState((d) => d.showFacesWithNoUnit);
+  const showOverlay = useMapState((d) => d.showOverlay);
 
   const baseStyleURL = useBaseMapStyle(basemapType);
 
@@ -70,6 +71,11 @@ export function useMapStyle(
   }, [baseStyleURL, mapboxToken, isMapView]);
 
   useAsyncEffect(async () => {
+    console.log("Building overlay style", showOverlay);
+    if (!showOverlay) {
+      setOverlayStyle(null);
+      return;
+    }
     const style = buildMapOverlayStyle(baseURL, {
       selectedLayer: activeLayer,
       sourceChangeTimestamps: changeTimestamps,
@@ -79,7 +85,8 @@ export function useMapStyle(
       crossSectionConfig,
       showFacesWithNoUnit,
     });
-    setOverlayStyle(style);
+    const selectionStyle: any = { layers: buildSelectionLayers() };
+    setOverlayStyle(mergeStyles(style, selectionStyle));
   }, [
     activeLayer,
     changeTimestamps,
@@ -88,6 +95,7 @@ export function useMapStyle(
     mapSymbolIndex,
     showCrossSectionLines,
     showFacesWithNoUnit,
+    showOverlay,
   ]);
 
   return useMemo(() => {
@@ -95,9 +103,7 @@ export function useMapStyle(
       return null;
     }
 
-    return mergeStyles(baseStyle, overlayStyle, {
-      layers: buildSelectionLayers(),
-    });
+    return mergeStyles(baseStyle, overlayStyle);
   }, [baseStyle, overlayStyle]);
 }
 
