@@ -125,8 +125,13 @@ function SingleLayerViewOptions() {
   const toggleFeatureMode = useMapActions(
     (actions) => actions.toggleFeatureMode,
   );
+  const showFacesWithNoUnit = useMapState((state) => state.showFacesWithNoUnit);
+  const toggleFacesWithNoUnit = useMapActions(
+    (actions) => actions.toggleShowFacesWithNoUnit,
+  );
 
   const showLineEndpoints = useMapState((state) => state.showLineEndpoints);
+
   const toggleLineEndpoints = useMapActions(
     (actions) => actions.toggleLineEndpoints,
   );
@@ -162,6 +167,13 @@ function SingleLayerViewOptions() {
       label: "Fills",
       ...switchProps(FeatureMode.Topology),
     }),
+    h("div.subsidiary-switches", [
+      h(Switch, {
+        label: "Faces without units",
+        checked: showFacesWithNoUnit,
+        onChange: toggleFacesWithNoUnit,
+      }),
+    ]),
   ]);
 }
 

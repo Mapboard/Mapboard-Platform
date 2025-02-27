@@ -7,16 +7,19 @@ export interface SourceChangeTimestamps {
   topology: number | null;
 }
 
+export interface CrossSectionConfig {
+  layerID: number;
+  enabled: boolean;
+}
+
 interface MapOverlayOptions {
   selectedLayer: number | null;
   sourceChangeTimestamps: SourceChangeTimestamps;
   enabledFeatureModes?: Set<FeatureMode>;
   showLineEndpoints?: boolean;
+  showFacesWithNoUnit?: boolean;
   mapSymbolIndex?: PolygonStyleIndex | null;
-  crossSectionConfig?: {
-    layerID: number;
-    enabled: boolean;
-  };
+  crossSectionConfig?: CrossSectionConfig;
 }
 
 export function buildMapOverlayStyle(
@@ -30,6 +33,7 @@ export function buildMapOverlayStyle(
     sourceChangeTimestamps,
     mapSymbolIndex,
     crossSectionConfig,
+    showFacesWithNoUnit = false,
   } = options;
 
   let disabledLayers: number[] = [];
@@ -48,8 +52,6 @@ export function buildMapOverlayStyle(
   if (selectedLayer != null) {
     filter = ["==", ["get", "map_layer"], selectedLayer];
   }
-
-  console.log("Filter", filter);
 
   let params = new URLSearchParams();
 
@@ -94,8 +96,6 @@ export function buildMapOverlayStyle(
     };
   }
 
-  console.log("Map symbol index", mapSymbolIndex);
-
   let layers: mapboxgl.Layer[] = [];
 
   if (mapSymbolIndex == null) {
@@ -116,7 +116,11 @@ export function buildMapOverlayStyle(
 
     const mapSymbolFilter: any[] = ["has", ["get", "type"], ix];
 
-    console.log("Map symbol filter", mapSymbolFilter);
+    let topoFilters = [filter];
+
+    if (!showFacesWithNoUnit) {
+      topoFilters.push(["has", "type"]);
+    }
 
     // Fill pattern layers
     layers.push({
@@ -128,8 +132,7 @@ export function buildMapOverlayStyle(
         "fill-color": ["get", "color"],
         "fill-opacity": selectedLayerOpacity(0.5, 0.3),
       },
-      filter,
-      //filter: ["!", mapSymbolFilter],
+      filter: ["all", ...topoFilters],
     });
 
     layers.push({
@@ -146,7 +149,7 @@ export function buildMapOverlayStyle(
         ],
         "fill-opacity": selectedLayerOpacity(0.5, 0.3),
       },
-      filter: ["all", filter, mapSymbolFilter],
+      filter: ["all", ...topoFilters, mapSymbolFilter],
     });
   }
 

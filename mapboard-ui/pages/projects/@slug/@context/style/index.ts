@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useAsyncEffect, useInDarkMode } from "@macrostrat/ui-components";
 import { BasemapType, PolygonDataType, useMapState } from "../state";
 import { getMapboxStyle, mergeStyles } from "@macrostrat/mapbox-utils";
-import { buildMapOverlayStyle } from "./overlay";
+import { buildMapOverlayStyle, CrossSectionConfig } from "./overlay";
 import { buildSelectionLayers } from "../_tools";
 import {
   PolygonPatternConfig,
@@ -10,6 +10,7 @@ import {
   setupStyleImages,
 } from "./pattern-fills";
 import { useMapRef, useMapStatus } from "@macrostrat/mapbox-react";
+import { show } from "@blueprintjs/core/lib/esnext/legacy/contextMenuLegacy";
 
 function useBaseMapStyle(basemapType: BasemapType) {
   const isEnabled = useInDarkMode();
@@ -44,6 +45,7 @@ export function useMapStyle(
     (state) => state.mapLayers?.find((d) => d.name == "Sections")?.id,
   );
   const showCrossSectionLines = useMapState((d) => d.showCrossSectionLines);
+  const showFacesWithNoUnit = useMapState((d) => d.showFacesWithNoUnit);
 
   const baseStyleURL = useBaseMapStyle(basemapType);
 
@@ -52,7 +54,7 @@ export function useMapStyle(
 
   const mapSymbolIndex = useMapSymbols();
 
-  const crossSectionConfig = {
+  const crossSectionConfig: CrossSectionConfig = {
     layerID: crossSectionLayerID,
     enabled: showCrossSectionLines,
   };
@@ -75,6 +77,7 @@ export function useMapStyle(
       showLineEndpoints,
       mapSymbolIndex,
       crossSectionConfig,
+      showFacesWithNoUnit,
     });
     setOverlayStyle(style);
   }, [
@@ -84,6 +87,7 @@ export function useMapStyle(
     enabledFeatureModes,
     mapSymbolIndex,
     showCrossSectionLines,
+    showFacesWithNoUnit,
   ]);
 
   return useMemo(() => {
