@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAsyncEffect, useInDarkMode } from "@macrostrat/ui-components";
-import { BasemapType, PolygonDataType, useMapState } from "../state";
+import {
+  BasemapType,
+  PolygonDataType,
+  useMapActions,
+  useMapState,
+} from "../state";
 import { getMapboxStyle, mergeStyles } from "@macrostrat/mapbox-utils";
 import { buildMapOverlayStyle, CrossSectionConfig } from "./overlay";
 import { buildSelectionLayers } from "../_tools";
@@ -9,8 +14,11 @@ import {
   PolygonStyleIndex,
   setupStyleImages,
 } from "./pattern-fills";
-import { useMapRef, useMapStatus } from "@macrostrat/mapbox-react";
-import { show } from "@blueprintjs/core/lib/esnext/legacy/contextMenuLegacy";
+import {
+  useMapRef,
+  useMapStatus,
+  addTerrainToStyle,
+} from "@macrostrat/mapbox-react";
 
 function useBaseMapStyle(basemapType: BasemapType) {
   const isEnabled = useInDarkMode();
@@ -46,6 +54,8 @@ export function useMapStyle(
   );
   const showCrossSectionLines = useMapState((d) => d.showCrossSectionLines);
   const showFacesWithNoUnit = useMapState((d) => d.showFacesWithNoUnit);
+  const showOverlay = useMapState((d) => d.showOverlay);
+  const exaggeration = useMapState((d) => d.terrainExaggeration);
 
   const baseStyleURL = useBaseMapStyle(basemapType);
 
@@ -70,6 +80,11 @@ export function useMapStyle(
   }, [baseStyleURL, mapboxToken, isMapView]);
 
   useAsyncEffect(async () => {
+    console.log("Building overlay style", showOverlay);
+    if (!showOverlay) {
+      setOverlayStyle(null);
+      return;
+    }
     const style = buildMapOverlayStyle(baseURL, {
       selectedLayer: activeLayer,
       sourceChangeTimestamps: changeTimestamps,
@@ -79,7 +94,8 @@ export function useMapStyle(
       crossSectionConfig,
       showFacesWithNoUnit,
     });
-    setOverlayStyle(style);
+    const selectionStyle: any = { layers: buildSelectionLayers() };
+    setOverlayStyle(mergeStyles(style, selectionStyle));
   }, [
     activeLayer,
     changeTimestamps,
@@ -88,6 +104,7 @@ export function useMapStyle(
     mapSymbolIndex,
     showCrossSectionLines,
     showFacesWithNoUnit,
+    showOverlay,
   ]);
 
   return useMemo(() => {
@@ -95,10 +112,55 @@ export function useMapStyle(
       return null;
     }
 
-    return mergeStyles(baseStyle, overlayStyle, {
-      layers: buildSelectionLayers(),
-    });
-  }, [baseStyle, overlayStyle]);
+    const terrainSources = {
+      sources: {
+        "mapbox-dem": {
+          type: "raster-dem",
+          url: "mapbox://mapbox.mapbox-terrain-dem-v1",
+          tileSize: 512,
+        },
+      },
+      terrain: {
+        source: "mapbox-dem",
+        exaggeration,
+      },
+    };
+
+    let style = mergeStyles(baseStyle, overlayStyle, terrainSources);
+
+    return replaceRasterDEM(style, "mapbox-dem");
+  }, [baseStyle, overlayStyle, exaggeration]);
+}
+
+function replaceRasterDEM(style, sourceName) {
+  /** Replace all raster DEM sources with a single source */
+  let removedSources = [];
+  let newSources: any = {};
+  for (const [key, source] of Object.entries(style.sources)) {
+    if (source.type == "raster-dem" && key != sourceName) {
+      removedSources.push(key);
+    } else {
+      newSources[key] = source;
+    }
+  }
+
+  console.log(newSources, removedSources);
+
+  const newLayers = style.layers.map((layer) => {
+    if (removedSources.includes(layer.source)) {
+      return {
+        ...layer,
+        source: sourceName,
+      };
+    }
+    return layer;
+  });
+  let terrain = undefined;
+  if (style.terrain != null) {
+    terrain = { ...style.terrain, source: sourceName };
+  }
+
+  return { ...style, sources: newSources, layers: newLayers, terrain };
 }
 
 export function useMapSymbols(): PolygonStyleIndex | null {

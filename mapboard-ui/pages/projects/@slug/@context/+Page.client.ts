@@ -3,7 +3,14 @@ import styles from "./map.module.scss";
 import { apiDomain, mapboxToken } from "~/settings";
 import type { Data } from "../+data";
 import { useData } from "vike-react/useData";
-import { AnchorButton, FormGroup, Spinner, Switch } from "@blueprintjs/core";
+import {
+  AnchorButton,
+  Divider,
+  FormGroup,
+  NumericInput,
+  Spinner,
+  Switch,
+} from "@blueprintjs/core";
 import {
   BasemapType,
   FeatureMode,
@@ -102,7 +109,55 @@ function LayerControlPanel() {
     opts = h(SingleLayerViewOptions);
   }
 
-  return h("div.layer-control-panel", [h(LayerList), h(BasemapList), opts]);
+  return h("div.layer-control-panel.bp5-form", [
+    h(OverlayHeader),
+    h(LayerList),
+    opts,
+    h(Divider),
+    h(BasemapList),
+    h(TerrainExaggeration),
+  ]);
+}
+
+function TerrainExaggeration() {
+  const onValueChange = useMapActions(
+    (actions) => actions.setTerrainExaggeration,
+  );
+  const value = useMapState((state) => state.terrainExaggeration);
+
+  return h(
+    FormGroup,
+    {
+      label: "Terrain exaggeration",
+      inline: true,
+      fill: true,
+    },
+    [
+      h(NumericInput, {
+        value,
+        onValueChange,
+        min: 1,
+        max: 3,
+        stepSize: 0.5,
+        className: "terrain-exaggeration",
+        size: "small",
+      }),
+    ],
+  );
+}
+
+function OverlayHeader() {
+  const showOverlay = useMapState((state) => state.showOverlay);
+  const toggleOverlay = useMapActions((actions) => actions.toggleOverlay);
+
+  return h("div.overlay-header", [
+    h("h4", "Overlay"),
+    h(OurSwitch, {
+      label: "Show",
+      checked: showOverlay,
+      onChange: toggleOverlay,
+    }),
+  ]);
 }
 
 function MultiLayerViewOptions() {
@@ -111,13 +166,11 @@ function MultiLayerViewOptions() {
   const checked = useMapState((state) => state.showCrossSectionLines);
   const onChange = useMapActions((actions) => actions.toggleCrossSectionLines);
 
-  return h(FormGroup, { label: "View options" }, [
-    h(Switch, {
-      label: "Cross section lines",
-      checked,
-      onChange,
-    }),
-  ]);
+  return h(OurSwitch, {
+    label: "Cross section lines",
+    checked,
+    onChange,
+  });
 }
 
 function SingleLayerViewOptions() {
@@ -145,13 +198,13 @@ function SingleLayerViewOptions() {
     };
   };
 
-  return h(FormGroup, { label: "View options" }, [
-    h(Switch, {
+  return h("div.view-options", [
+    h(OurSwitch, {
       label: "Lines",
       ...switchProps(FeatureMode.Line),
     }),
     h("div.subsidiary-switches", [
-      h(Switch, {
+      h(OurSwitch, {
         label: "Endpoints",
         checked: showLineEndpoints,
         onChange() {
@@ -159,22 +212,26 @@ function SingleLayerViewOptions() {
         },
       }),
     ]),
-    h(Switch, {
+    h(OurSwitch, {
       label: "Polygons",
       ...switchProps(FeatureMode.Polygon),
     }),
-    h(Switch, {
+    h(OurSwitch, {
       label: "Fills",
       ...switchProps(FeatureMode.Topology),
     }),
     h("div.subsidiary-switches", [
-      h(Switch, {
+      h(OurSwitch, {
         label: "Faces without units",
         checked: showFacesWithNoUnit,
         onChange: toggleFacesWithNoUnit,
       }),
     ]),
   ]);
+}
+
+function OurSwitch(props) {
+  return h(Switch, { alignIndicator: "right", ...props });
 }
 
 function BasemapList() {
