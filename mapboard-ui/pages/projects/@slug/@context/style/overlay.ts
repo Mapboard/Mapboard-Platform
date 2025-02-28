@@ -1,5 +1,6 @@
 import { allFeatureModes, FeatureMode } from "../state";
 import { PolygonStyleIndex } from "./pattern-fills";
+import { createLineSymbolLayers } from "@macrostrat/map-styles";
 
 export interface SourceChangeTimestamps {
   line: number | null;
@@ -36,7 +37,8 @@ export function buildMapOverlayStyle(
     showFacesWithNoUnit = false,
   } = options;
 
-  let disabledLayers: number[] = [];
+  // Disable rivers and roads by default
+  let disabledLayers: number[] = [3, 4];
   if (crossSectionConfig != null) {
     console.log("Cross section config", crossSectionConfig);
     if (!crossSectionConfig.enabled) {
@@ -44,13 +46,12 @@ export function buildMapOverlayStyle(
     }
   }
 
-  let filter: any = [
-    "!",
-    ["in", ["get", "map_layer"], ["literal", disabledLayers]],
-  ];
+  let filter: any = null;
 
   if (selectedLayer != null) {
     filter = ["==", ["get", "map_layer"], selectedLayer];
+  } else {
+    filter = ["!", ["in", ["get", "map_layer"], ["literal", disabledLayers]]];
   }
 
   let params = new URLSearchParams();
@@ -167,24 +168,66 @@ export function buildMapOverlayStyle(
     });
   }
 
+  let lineColor = [
+    "case",
+    ["==", ["get", "color"], "none"],
+    "#000000",
+    [
+      "in",
+      ["get", "type"],
+      ["literal", ["thrust-fault", "normal-fault", "fault"]],
+    ],
+    "#000000",
+    ["get", "color"],
+  ];
+
+  let lineWidth: any = 1;
+  lineWidth = [
+    "case",
+    [
+      "in",
+      ["get", "type"],
+      ["literal", ["thrust-fault", "normal-fault", "fault"]],
+    ],
+    1.5,
+    1,
+  ];
+
+  let lineFilter = filter;
+  if (selectedLayer == null) {
+    lineFilter = ["all", filter, ["!=", ["get", "layer"], "none"]];
+  }
+
   if (enabledFeatureModes.has(FeatureMode.Line)) {
+    // A single layer for all lines
     layers.push({
       id: "lines",
       type: "line",
       source: "mapboard_line",
       "source-layer": "lines",
       paint: {
-        "line-color": [
-          "case",
-          ["==", ["get", "color"], "none"],
-          "#000000",
-          ["get", "color"],
-        ],
-        "line-width": 1.5,
+        "line-color": lineColor,
+        "line-width": lineWidth,
         "line-opacity": selectedLayerOpacity(1, 0.5),
       },
-      filter,
+      filter: lineFilter,
     });
+    layers.push(
+      ...createLineSymbolLayers().map((val: any) => {
+        let newPaint = val.paint;
+        if (val.id == "normal-fault-stroke") {
+          newPaint["icon-color"] = "#000000";
+        }
+
+        return {
+          ...val,
+          source: "mapboard_line",
+          "source-layer": "lines",
+          filter: ["all", lineFilter, val.filter],
+          //paint: newPaint,
+        };
+      }),
+    );
   }
 
   if (showLineEndpoints) {

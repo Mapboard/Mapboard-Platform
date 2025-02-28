@@ -19,6 +19,7 @@ import {
   useMapStatus,
   addTerrainToStyle,
 } from "@macrostrat/mapbox-react";
+import { setupLineSymbols } from "@macrostrat/map-styles";
 
 function useBaseMapStyle(basemapType: BasemapType) {
   const isEnabled = useInDarkMode();
@@ -163,6 +164,8 @@ function replaceRasterDEM(style, sourceName) {
   return { ...style, sources: newSources, layers: newLayers, terrain };
 }
 
+const color = "#e350a3";
+
 export function useMapSymbols(): PolygonStyleIndex | null {
   const polygonTypes = useMapState((state) => state.dataTypes.polygon);
 
@@ -185,6 +188,8 @@ export function useMapSymbols(): PolygonStyleIndex | null {
         };
       })
       .filter((d) => d.symbol != null);
+
+    await setupLineSymbols(map.current);
 
     const patternBaseURL = "/assets/geologic-patterns/svg";
     console.log("Setting up style images", symbols);

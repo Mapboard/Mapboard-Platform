@@ -1,4 +1,9 @@
-import { createTransparentImage, createUnitFill } from "./pattern-images";
+import {
+  createTransparentImage,
+  loadImage,
+  createUnitFill,
+  mapLoadImage,
+} from "./pattern-images";
 import mapboxgl, { Map } from "mapbox-gl";
 
 export interface PolygonPatternConfig {
@@ -35,7 +40,7 @@ export async function setupStyleImages(
         patternColor: type.symbolColor,
       });
       if (map.hasImage(uid)) return [id, uid];
-      console.log("Adding image", uid);
+
       try {
         map.addImage(uid, img, { sdf: false, pixelRatio });
       } catch (err) {
@@ -58,4 +63,27 @@ export async function setupStyleImages(
     acc[id] = uid;
     return acc;
   }, {} as PolygonStyleIndex);
+}
+
+const lineSymbols = [
+  "anticline-hinge",
+  "left-lateral-fault",
+  "normal-fault",
+  "reverse-fault",
+  "right-lateral-fault",
+  "syncline-hinge",
+  "thrust-fault",
+];
+
+const vizBaseURL = "//visualization-assets.s3.amazonaws.com";
+const lineSymbolsURL = vizBaseURL + "/geologic-line-symbols/png";
+
+async function setupLineSymbols(map) {
+  return Promise.all(
+    lineSymbols.map(async function (symbol) {
+      if (map.hasImage(symbol)) return;
+      const image = await mapLoadImage(map, lineSymbolsURL + `/${symbol}.png`);
+      map.addImage(symbol, image, { sdf: true, pixelRatio: 3 });
+    }),
+  );
 }
