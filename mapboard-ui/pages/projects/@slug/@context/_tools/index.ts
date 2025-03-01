@@ -23,7 +23,7 @@ export function buildSelectionLayers(color: string = "#ff0000") {
     {
       id: "lines-highlighted",
       type: "line",
-      source: "mapboard_line",
+      source: "mapboard",
       "source-layer": "lines",
       paint: {
         "line-color": color,
@@ -35,7 +35,7 @@ export function buildSelectionLayers(color: string = "#ff0000") {
     {
       id: "lines-endpoints-highlighted",
       type: "circle",
-      source: "mapboard_line",
+      source: "mapboard",
       "source-layer": "endpoints",
       paint: {
         "circle-color": color,

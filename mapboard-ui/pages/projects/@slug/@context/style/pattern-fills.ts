@@ -1,6 +1,5 @@
 import {
   createTransparentImage,
-  loadImage,
   createUnitFill,
   mapLoadImage,
 } from "./pattern-images";

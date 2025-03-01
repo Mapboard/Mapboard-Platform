@@ -1,11 +1,9 @@
 import { allFeatureModes, FeatureMode } from "../state";
 import { PolygonStyleIndex } from "./pattern-fills";
-import { createLineSymbolLayers } from "@macrostrat/map-styles";
+import { createLineSymbolLayers, LineSymbolIndex } from "./line-symbols";
 
 export interface SourceChangeTimestamps {
-  line: number | null;
-  polygon: number | null;
-  topology: number | null;
+  [key: FeatureMode]: number | null;
 }
 
 export interface CrossSectionConfig {
@@ -19,7 +17,9 @@ interface MapOverlayOptions {
   enabledFeatureModes?: Set<FeatureMode>;
   showLineEndpoints?: boolean;
   showFacesWithNoUnit?: boolean;
-  mapSymbolIndex?: PolygonStyleIndex | null;
+  useSymbols?: boolean;
+  polygonSymbolIndex?: PolygonStyleIndex | null;
+  lineSymbolIndex?: LineSymbolIndex | null;
   crossSectionConfig?: CrossSectionConfig;
 }
 
@@ -32,8 +32,10 @@ export function buildMapOverlayStyle(
     selectedLayer,
     enabledFeatureModes = allFeatureModes,
     sourceChangeTimestamps,
-    mapSymbolIndex,
+    polygonSymbolIndex,
+    lineSymbolIndex,
     crossSectionConfig,
+    useSymbols = true,
     showFacesWithNoUnit = false,
   } = options;
 
@@ -75,31 +77,27 @@ export function buildMapOverlayStyle(
     },
   };
 
-  for (const lyr of [
-    "polygon",
-    "line",
-    "topology",
-  ] as (keyof SourceChangeTimestamps)[]) {
-    const time = sourceChangeTimestamps[lyr];
-    if (time != null) {
-      params.set("changed", time.toString());
-    }
+  params.set(
+    "changed",
+    getMostRecentTimestamp(sourceChangeTimestamps).toString(),
+  );
 
-    let suffix = params.toString();
-    if (suffix.length) {
-      suffix = "?" + suffix;
-    }
-
-    sources["mapboard_" + lyr] = {
-      type: "vector",
-      tiles: [baseURL + `/${lyr}/tile/{z}/{x}/{y}${suffix}`],
-      volatile: true,
-    };
+  let suffix = params.toString();
+  if (suffix.length > 0) {
+    suffix = "?" + suffix;
   }
+
+  const lyr = Array.from(enabledFeatureModes).join(",");
+  /** Could also consider separate sources per layer */
+  sources["mapboard"] = {
+    type: "vector",
+    tiles: [baseURL + `/tile/${lyr}/{z}/{x}/{y}${suffix}`],
+    volatile: true,
+  };
 
   let layers: mapboxgl.Layer[] = [];
 
-  if (mapSymbolIndex == null) {
+  if ((polygonSymbolIndex == null || lineSymbolIndex == null) && useSymbols) {
     return {
       version: 8,
       sources,
@@ -113,10 +111,6 @@ export function buildMapOverlayStyle(
       //"fill-opacity": selectedLayerOpacity(0.5, 0.3),
     };
 
-    const ix = ["literal", mapSymbolIndex];
-
-    const mapSymbolFilter: any[] = ["has", ["get", "type"], ix];
-
     let topoFilters = [filter];
 
     if (!showFacesWithNoUnit) {
@@ -127,7 +121,7 @@ export function buildMapOverlayStyle(
     layers.push({
       id: "topology_colors",
       type: "fill",
-      source: "mapboard_topology",
+      source: "mapboard",
       "source-layer": "faces",
       paint: {
         "fill-color": ["get", "color"],
@@ -136,29 +130,35 @@ export function buildMapOverlayStyle(
       filter: ["all", ...topoFilters],
     });
 
-    layers.push({
-      id: "unit_patterns",
-      type: "fill",
-      source: "mapboard_topology",
-      "source-layer": "faces",
-      paint: {
-        "fill-color": ["get", "color"],
-        "fill-pattern": [
-          "coalesce",
-          ["image", ["get", ["get", "type"], ix]],
-          ["image", "transparent"],
-        ],
-        "fill-opacity": selectedLayerOpacity(0.5, 0.3),
-      },
-      filter: ["all", ...topoFilters, mapSymbolFilter],
-    });
+    if (useSymbols) {
+      const ix = ["literal", polygonSymbolIndex];
+
+      const mapSymbolFilter: any[] = ["has", ["get", "type"], ix];
+
+      layers.push({
+        id: "unit_patterns",
+        type: "fill",
+        source: "mapboard",
+        "source-layer": "faces",
+        paint: {
+          "fill-color": ["get", "color"],
+          "fill-pattern": [
+            "coalesce",
+            ["image", ["get", ["get", "type"], ix]],
+            ["image", "transparent"],
+          ],
+          "fill-opacity": selectedLayerOpacity(0.5, 0.3),
+        },
+        filter: ["all", ...topoFilters, mapSymbolFilter],
+      });
+    }
   }
 
   if (enabledFeatureModes.has(FeatureMode.Polygon)) {
     layers.push({
       id: "polygons",
       type: "fill",
-      source: "mapboard_polygon",
+      source: "mapboard",
       "source-layer": "polygons",
       paint: {
         "fill-color": ["get", "color"],
@@ -170,8 +170,8 @@ export function buildMapOverlayStyle(
 
   let lineColor = [
     "case",
-    ["==", ["get", "color"], "none"],
-    "#000000",
+    // ["==", ["get", "color"], "none"],
+    // "#000000",
     [
       "in",
       ["get", "type"],
@@ -203,7 +203,7 @@ export function buildMapOverlayStyle(
     layers.push({
       id: "lines",
       type: "line",
-      source: "mapboard_line",
+      source: "mapboard",
       "source-layer": "lines",
       paint: {
         "line-color": lineColor,
@@ -212,29 +212,33 @@ export function buildMapOverlayStyle(
       },
       filter: lineFilter,
     });
-    layers.push(
-      ...createLineSymbolLayers().map((val: any) => {
-        let newPaint = val.paint;
-        if (val.id == "normal-fault-stroke") {
-          newPaint["icon-color"] = "#000000";
-        }
 
-        return {
-          ...val,
-          source: "mapboard_line",
-          "source-layer": "lines",
-          filter: ["all", lineFilter, val.filter],
-          //paint: newPaint,
-        };
-      }),
-    );
+    if (lineSymbolIndex != null && useSymbols) {
+      const symbolLayers = createLineSymbolLayers(lineSymbolIndex);
+      layers.push(
+        ...symbolLayers.map((val: any) => {
+          let newPaint = val.paint;
+          if (val.id == "normal-fault-stroke") {
+            newPaint["icon-color"] = "#000000";
+          }
+
+          return {
+            ...val,
+            source: "mapboard",
+            "source-layer": "lines",
+            filter: ["all", lineFilter, val.filter],
+            paint: newPaint,
+          };
+        }),
+      );
+    }
   }
 
   if (showLineEndpoints) {
     layers.push({
       id: "points",
       type: "circle",
-      source: "mapboard_line",
+      source: "mapboard",
       "source-layer": "endpoints",
       paint: {
         "circle-color": [
@@ -254,4 +258,8 @@ export function buildMapOverlayStyle(
     sources,
     layers,
   };
+}
+
+function getMostRecentTimestamp(timestamps: SourceChangeTimestamps): number {
+  return Math.max(...Object.values(timestamps).map((x) => x ?? 0));
 }
