@@ -2,6 +2,16 @@ export interface LineSymbolIndex {
   [key: string]: string;
 }
 
+export const lineSymbols = [
+  "anticline-hinge",
+  "syncline-hinge",
+  "left-lateral-fault",
+  "right-lateral-fault",
+  "normal-fault",
+  "reverse-fault",
+  "thrust-fault",
+];
+
 function createLineSymbolLayers(symbolIndex: LineSymbolIndex, filter) {
   const builder = new SymbolLayerBuilder(symbolIndex, filter);
 
@@ -56,7 +66,6 @@ class SymbolLayerBuilder {
 
   createLayer(id: string, opts) {
     const {
-      filters = null,
       symbolSpacing = 30,
       iconOffset = [0, 0],
       types = Object.keys(this.index),
@@ -99,11 +108,7 @@ class SymbolLayerBuilder {
       paint: {
         "icon-color": matchStatement("type", colorMap, ["get", "color"]),
       },
-      filter: [
-        "all",
-        ["in", ["get", "type"], ["literal", types]],
-        ...(filters ?? []),
-      ],
+      filter: ["all", ["in", ["get", "type"], ["literal", types]], this.filter],
       source: "mapboard",
       "source-layer": "lines",
     };

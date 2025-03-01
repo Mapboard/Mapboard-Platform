@@ -10,7 +10,7 @@ import {
   setupStyleImages,
 } from "./pattern-fills";
 import { useMapRef, useMapStatus } from "@macrostrat/mapbox-react";
-import { lineSymbols } from "@macrostrat/map-styles";
+import { lineSymbols } from "./line-symbols";
 import { loadImage } from "./pattern-images";
 
 export { buildMapOverlayStyle };
@@ -222,9 +222,9 @@ async function setupLineSymbols(map) {
   const symbols = await Promise.all(
     lineSymbols.map(async function (symbol) {
       console.log("Loading line symbol", symbol);
-      if (map.hasImage(symbol)) return null;
+      if (map.hasImage(symbol)) return symbol;
       const image = await loadImage(lineSymbolsURL + `/${symbol}.png`);
-      if (map.hasImage(symbol)) return null;
+      if (map.hasImage(symbol)) return symbol;
       map.addImage(symbol, image, { sdf: true, pixelRatio: 3 });
       return symbol;
     }),

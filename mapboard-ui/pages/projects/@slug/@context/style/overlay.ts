@@ -52,12 +52,13 @@ export function buildMapOverlayStyle(
     }
   }
 
-  let filter: any = null;
+  let featureModes: Set<FeatureMode> = enabledFeatureModes;
 
-  if (selectedLayer != null) {
-    filter = ["==", ["get", "map_layer"], selectedLayer];
-  } else {
+  let filter: any = ["literal", true];
+
+  if (selectedLayer == null) {
     filter = ["!", ["in", ["get", "map_layer"], ["literal", disabledLayers]]];
+    featureModes = new Set([FeatureMode.Line, FeatureMode.Topology]);
   }
 
   let params = new URLSearchParams();
@@ -91,7 +92,7 @@ export function buildMapOverlayStyle(
     suffix = "?" + suffix;
   }
 
-  const lyr = Array.from(enabledFeatureModes).join(",");
+  const lyr = Array.from(featureModes).join(",");
   /** Could also consider separate sources per layer */
   sources["mapboard"] = {
     type: "vector",
@@ -109,7 +110,7 @@ export function buildMapOverlayStyle(
     };
   }
 
-  if (enabledFeatureModes.has(FeatureMode.Topology)) {
+  if (featureModes.has(FeatureMode.Topology)) {
     let paint = {
       "fill-color": ["get", "color"],
       //"fill-opacity": selectedLayerOpacity(0.5, 0.3),
@@ -158,7 +159,7 @@ export function buildMapOverlayStyle(
     }
   }
 
-  if (enabledFeatureModes.has(FeatureMode.Polygon)) {
+  if (featureModes.has(FeatureMode.Polygon)) {
     layers.push({
       id: "polygons",
       type: "fill",
@@ -202,7 +203,7 @@ export function buildMapOverlayStyle(
     lineFilter = ["all", filter, ["!=", ["get", "layer"], "none"]];
   }
 
-  if (enabledFeatureModes.has(FeatureMode.Line)) {
+  if (featureModes.has(FeatureMode.Line)) {
     // A single layer for all lines
     layers.push({
       id: "lines",
