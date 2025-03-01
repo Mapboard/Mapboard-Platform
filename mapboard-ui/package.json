@@ -51,6 +51,9 @@
     "vike": "^0.4.223",
     "vite": "^6.1.0"
   },
+  "resolutions": {
+    "mapbox-gl": "^3.8.0"
+  },
   "type": "module",
   "packageManager": "yarn@4.6.0"
 }

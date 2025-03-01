@@ -6,13 +6,27 @@ interface PatternFillSpec {
   patternColor?: string;
 }
 
-function loadImage(url): Promise<HTMLImageElement> {
+export function loadImage(url): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.crossOrigin = "anonymous";
     img.addEventListener("load", () => resolve(img));
     img.addEventListener("error", (err) => reject(err));
     img.src = url;
+  });
+}
+
+export async function mapLoadImage(map, url: string) {
+  return new Promise((resolve, reject) => {
+    map.loadImage(url, function (err, image) {
+      // Throw an error if something went wrong
+      if (err) {
+        console.error(`Could not load image ${url}`);
+        reject(err);
+      }
+      // Declare the image
+      resolve(image);
+    });
   });
 }
 

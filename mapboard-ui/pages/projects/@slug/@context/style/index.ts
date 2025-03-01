@@ -1,11 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAsyncEffect, useInDarkMode } from "@macrostrat/ui-components";
-import {
-  BasemapType,
-  PolygonDataType,
-  useMapActions,
-  useMapState,
-} from "../state";
+import { BasemapType, useMapState } from "../state";
 import { getMapboxStyle, mergeStyles } from "@macrostrat/mapbox-utils";
 import { buildMapOverlayStyle, CrossSectionConfig } from "./overlay";
 import { buildSelectionLayers } from "../_tools";
@@ -14,11 +9,11 @@ import {
   PolygonStyleIndex,
   setupStyleImages,
 } from "./pattern-fills";
-import {
-  useMapRef,
-  useMapStatus,
-  addTerrainToStyle,
-} from "@macrostrat/mapbox-react";
+import { useMapRef, useMapStatus } from "@macrostrat/mapbox-react";
+import { lineSymbols } from "./line-symbols";
+import { loadImage } from "./pattern-images";
+
+export { buildMapOverlayStyle };
 
 function useBaseMapStyle(basemapType: BasemapType) {
   const isEnabled = useInDarkMode();
@@ -62,7 +57,8 @@ export function useMapStyle(
   const [baseStyle, setBaseStyle] = useState(null);
   const [overlayStyle, setOverlayStyle] = useState(null);
 
-  const mapSymbolIndex = useMapSymbols();
+  const polygonSymbolIndex = useMapSymbols();
+  const lineSymbolIndex = useLineSymbols();
 
   const crossSectionConfig: CrossSectionConfig = {
     layerID: crossSectionLayerID,
@@ -80,7 +76,6 @@ export function useMapStyle(
   }, [baseStyleURL, mapboxToken, isMapView]);
 
   useAsyncEffect(async () => {
-    console.log("Building overlay style", showOverlay);
     if (!showOverlay) {
       setOverlayStyle(null);
       return;
@@ -90,7 +85,8 @@ export function useMapStyle(
       sourceChangeTimestamps: changeTimestamps,
       enabledFeatureModes,
       showLineEndpoints,
-      mapSymbolIndex,
+      polygonSymbolIndex,
+      lineSymbolIndex,
       crossSectionConfig,
       showFacesWithNoUnit,
     });
@@ -101,7 +97,8 @@ export function useMapStyle(
     changeTimestamps,
     showLineEndpoints,
     enabledFeatureModes,
-    mapSymbolIndex,
+    polygonSymbolIndex,
+    lineSymbolIndex,
     showCrossSectionLines,
     showFacesWithNoUnit,
     showOverlay,
@@ -163,6 +160,8 @@ function replaceRasterDEM(style, sourceName) {
   return { ...style, sources: newSources, layers: newLayers, terrain };
 }
 
+const color = "#e350a3";
+
 export function useMapSymbols(): PolygonStyleIndex | null {
   const polygonTypes = useMapState((state) => state.dataTypes.polygon);
 
@@ -186,10 +185,26 @@ export function useMapSymbols(): PolygonStyleIndex | null {
       })
       .filter((d) => d.symbol != null);
 
+    await setupLineSymbols(map.current);
+
     const patternBaseURL = "/assets/geologic-patterns/svg";
     console.log("Setting up style images", symbols);
     return await setupStyleImages(map.current, symbols, { patternBaseURL });
-  }, [polygonTypes, map.current, isInitialized]);
+  }, [polygonTypes, isInitialized]);
+}
+
+type LineStyleIndex = { [key: string]: string };
+
+export function useLineSymbols(): LineStyleIndex | null {
+  const map = useMapRef();
+  const isInitialized = useMapStatus((state) => state.isInitialized);
+
+  return useAsyncMemo(async () => {
+    if (map.current == null) {
+      return null;
+    }
+    return await setupLineSymbols(map.current);
+  }, [isInitialized]);
 }
 
 function useAsyncMemo<T>(fn: () => Promise<T>, deps: any[]): T | null {
@@ -198,4 +213,27 @@ function useAsyncMemo<T>(fn: () => Promise<T>, deps: any[]): T | null {
     fn().then(setValue);
   }, deps);
   return value;
+}
+
+const vizBaseURL = "//visualization-assets.s3.amazonaws.com";
+const lineSymbolsURL = vizBaseURL + "/geologic-line-symbols/png";
+
+async function setupLineSymbols(map) {
+  const symbols = await Promise.all(
+    lineSymbols.map(async function (symbol) {
+      console.log("Loading line symbol", symbol);
+      if (map.hasImage(symbol)) return symbol;
+      const image = await loadImage(lineSymbolsURL + `/${symbol}.png`);
+      if (map.hasImage(symbol)) return symbol;
+      map.addImage(symbol, image, { sdf: true, pixelRatio: 3 });
+      return symbol;
+    }),
+  );
+
+  return symbols
+    .filter((d) => d != null)
+    .reduce((acc: LineStyleIndex, d) => {
+      acc[d] = d;
+      return acc;
+    }, {});
 }
