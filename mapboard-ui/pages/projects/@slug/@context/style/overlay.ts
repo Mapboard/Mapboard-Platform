@@ -1,6 +1,10 @@
 import { allFeatureModes, FeatureMode } from "../state";
 import { PolygonStyleIndex } from "./pattern-fills";
-import { createLineSymbolLayers, LineSymbolIndex } from "./line-symbols";
+import {
+  createLineSymbolLayer,
+  createLineSymbolLayers,
+  LineSymbolIndex,
+} from "./line-symbols";
 
 export interface SourceChangeTimestamps {
   [key: FeatureMode]: number | null;
@@ -214,23 +218,7 @@ export function buildMapOverlayStyle(
     });
 
     if (lineSymbolIndex != null && useSymbols) {
-      const symbolLayers = createLineSymbolLayers(lineSymbolIndex);
-      layers.push(
-        ...symbolLayers.map((val: any) => {
-          let newPaint = val.paint;
-          if (val.id == "normal-fault-stroke") {
-            newPaint["icon-color"] = "#000000";
-          }
-
-          return {
-            ...val,
-            source: "mapboard",
-            "source-layer": "lines",
-            filter: ["all", lineFilter, val.filter],
-            paint: newPaint,
-          };
-        }),
-      );
+      layers.push(...createLineSymbolLayers(lineSymbolIndex, lineFilter));
     }
   }
 
