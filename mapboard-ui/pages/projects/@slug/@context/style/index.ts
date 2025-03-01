@@ -13,6 +13,8 @@ import { useMapRef, useMapStatus } from "@macrostrat/mapbox-react";
 import { lineSymbols } from "@macrostrat/map-styles";
 import { loadImage } from "./pattern-images";
 
+export { buildMapOverlayStyle };
+
 function useBaseMapStyle(basemapType: BasemapType) {
   const isEnabled = useInDarkMode();
   let baseStyle = isEnabled
