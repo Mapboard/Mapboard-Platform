@@ -1,11 +1,12 @@
 import { create, StoreApi, useStore } from "zustand";
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import h from "@macrostrat/hyper";
 import { devtools } from "zustand/middleware";
 import { SelectionActionType } from "./selection";
 import { PolygonStyleIndex } from "./style/pattern-fills";
 import { SourceChangeTimestamps } from "./style/overlay";
 import { MapPosition } from "@macrostrat/mapbox-react";
+import { LocalStorage } from "@macrostrat/ui-components";
 import {
   parseQueryParameters,
   RecoverableMapState,
@@ -76,7 +77,14 @@ export interface PolygonDataType extends DataType {
   };
 }
 
-export interface MapState extends RecoverableMapState {
+interface LocalStorageState {
+  showCrossSectionLines: boolean;
+  showLineEndpoints: boolean;
+}
+
+type StoredMapState = RecoverableMapState & LocalStorageState;
+
+export interface MapState extends StoredMapState {
   actions: MapActions;
   layerPanelIsOpen: boolean;
   selection: FeatureSelection | null;
@@ -84,8 +92,6 @@ export interface MapState extends RecoverableMapState {
   selectionMode: SelectionMode;
   enabledFeatureModes: Set<FeatureMode>;
   showOverlay: boolean;
-  showLineEndpoints: boolean;
-  showCrossSectionLines: boolean;
   showFacesWithNoUnit: boolean;
   terrainExaggeration: number;
   mapLayers: MapLayer[] | null;
@@ -116,21 +122,20 @@ export type FeatureSelection = {
   polygonTypes?: Set<string>;
 };
 
-function createMapStore(baseURL: string) {
+function createMapStore(
+  baseURL: string,
+  initialState: RecoverableMapState & Partial<StoredMapState>,
+) {
   return create<MapState>(
     // @ts-ignore
     devtools((set, get): MapState => {
-      const { activeLayer, baseMap, mapPosition } = parseQueryParameters();
       return {
         apiBaseURL: baseURL,
-        activeLayer,
-        baseMap,
         layerPanelIsOpen: false,
         selection: null,
         selectionAction: null,
         selectionMode: SelectionMode.Replace,
         mapLayers: null,
-        mapPosition,
         enabledFeatureModes: allFeatureModes,
         showOverlay: true,
         showLineEndpoints: false,
@@ -149,6 +154,7 @@ function createMapStore(baseURL: string) {
         },
         mapLayerIDMap: new Map(),
         polygonPatternIndex: null,
+        ...initialState,
         actions: {
           setBaseMap: (baseMap: BasemapType) => set({ baseMap }),
           setMapPosition: (mapPosition: MapPosition) => set({ mapPosition }),
@@ -287,8 +293,26 @@ function combineFeatureSelection(
   }
 }
 
+function validateLocalStorageState(state: any): LocalStorageState | null {
+  if (state == null || typeof state !== "object") {
+    return null;
+  }
+  return {
+    showCrossSectionLines: state.showCrossSectionLines ?? true,
+    showLineEndpoints: state.showLineEndpoints ?? false,
+  };
+}
+
 export function MapStateProvider({ children, baseURL }) {
-  const [value] = useState(() => createMapStore(baseURL));
+  const storage = useRef(new LocalStorage<LocalStorageState>("map-state"));
+  const storedState: Partial<LocalStorageState> =
+    validateLocalStorageState(storage.current.get()) ?? {};
+
+  const params = parseQueryParameters();
+
+  const [value] = useState(() =>
+    createMapStore(baseURL, { ...params, ...storedState }),
+  );
 
   /** Subscriber to set some values to the query parameters */
   useEffect(() => {
@@ -303,6 +327,19 @@ export function MapStateProvider({ children, baseURL }) {
       }
 
       setQueryParameters({ activeLayer, baseMap, mapPosition });
+    });
+  }, []);
+
+  /** Subscriber to set local storage state */
+  useEffect(() => {
+    return value.subscribe((state, prevState) => {
+      const { showCrossSectionLines, showLineEndpoints } = state;
+      if (
+        showCrossSectionLines != prevState.showCrossSectionLines ||
+        showLineEndpoints != prevState.showLineEndpoints
+      ) {
+        storage.current.set({ showCrossSectionLines, showLineEndpoints });
+      }
     });
   }, []);
 
