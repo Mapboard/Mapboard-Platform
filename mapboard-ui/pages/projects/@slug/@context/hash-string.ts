@@ -1,4 +1,6 @@
 import { LatLng, MapPosition } from "@macrostrat/mapbox-utils";
+import { applyMapPositionToHash } from "@macrostrat/map-interface";
+import { BasemapType } from "./state";
 
 export function getMapPositionForHash(
   hashData: URLSearchParams,
@@ -59,4 +61,58 @@ function _fmt(num: string | number | string[]) {
     num = num[0];
   }
   return parseFloat(num.toString());
+}
+
+export function parseQueryParameters(): RecoverableMapState {
+  const params = new URLSearchParams(window.location.search);
+  let lyr = params.get("layer");
+  const activeLayer = lyr == null ? null : parseInt(lyr);
+
+  let baseMap: BasemapType =
+    (params.get("base") as BasemapType) ?? BasemapType.Basic;
+  if (
+    [BasemapType.Satellite, BasemapType.Basic, BasemapType.Terrain].indexOf(
+      baseMap,
+    ) === -1
+  ) {
+    baseMap = BasemapType.Basic;
+  }
+
+  const mapPosition = getMapPositionForHash(params, null);
+
+  return { activeLayer, baseMap, mapPosition };
+}
+
+export function setQueryParameters(params: RecoverableMapState) {
+  const { activeLayer, baseMap, mapPosition } = params;
+  if (mapPosition == null) return;
+  const searchParams = new URLSearchParams();
+  if (baseMap != BasemapType.Basic) {
+    searchParams.set("base", baseMap);
+  }
+  if (activeLayer != null) {
+    searchParams.set("layer", activeLayer.toString());
+  }
+
+  if (mapPosition != null) {
+    let args = {};
+    applyMapPositionToHash(args, mapPosition);
+    for (let [k, v] of Object.entries(args)) {
+      searchParams.set(k, v);
+    }
+  }
+
+  let paramsString = searchParams.toString();
+  if (paramsString.length > 0) {
+    paramsString = `?${paramsString}`;
+  }
+
+  const newUrl = `${window.location.pathname}${paramsString}`;
+  window.history.replaceState({}, "", newUrl);
+}
+
+export interface RecoverableMapState {
+  activeLayer: number | null;
+  baseMap: BasemapType;
+  mapPosition: MapPosition | null;
 }
