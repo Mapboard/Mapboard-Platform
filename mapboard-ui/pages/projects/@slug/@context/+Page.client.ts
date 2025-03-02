@@ -31,7 +31,14 @@ const h = hyper.styled(styles);
 export function Page() {
   const ctx = useData<Data>();
 
-  const baseURL = `${apiDomain}/api/project/${ctx.project_slug}/context/${ctx.slug}`;
+  // Current domain + port if set is the base
+  let domain = document.location.origin;
+  console.log("domain", domain);
+  // if (document.location.port) {
+  //   domain = `${document.location.hostname}:${document.location.port}`;
+  // }
+
+  const baseURL = `${domain}/api/project/${ctx.project_slug}/context/${ctx.slug}`;
 
   return h(
     ToasterContext,

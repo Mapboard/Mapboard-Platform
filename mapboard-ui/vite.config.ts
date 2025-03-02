@@ -28,6 +28,7 @@ export default defineConfig({
       "localhost",
       // For local development
       "mapboard.local",
+      "daven-quinn.local",
     ],
     watch: {
       // We reload .env files using Nodemon when in development
