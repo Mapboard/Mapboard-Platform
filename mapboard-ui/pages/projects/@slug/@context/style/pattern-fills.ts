@@ -25,7 +25,7 @@ export async function setupStyleImages(
   patterns: PolygonPatternConfig[],
   options: StyleImageOptions,
 ): Promise<PolygonStyleIndex> {
-  const { patternBaseURL, pixelRatio = 24 } = options;
+  const { patternBaseURL, pixelRatio = 16 } = options;
 
   const res = await Promise.all(
     patterns.map(async function (type) {

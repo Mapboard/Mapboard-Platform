@@ -5,6 +5,7 @@ import {
   createLineSymbolLayers,
   LineSymbolIndex,
 } from "./line-symbols";
+import { buildSelectionLayers } from "../_tools";
 
 export interface SourceChangeTimestamps {
   [key: FeatureMode]: number | null;

@@ -19,6 +19,7 @@ type BoxSelectionProps = {
 };
 
 export function buildSelectionLayers(color: string = "#ff0000") {
+  const filter = ["in", ["get", "id"], ["literal", []]];
   return [
     {
       id: "lines-highlighted",
@@ -30,7 +31,7 @@ export function buildSelectionLayers(color: string = "#ff0000") {
         "line-width": 3,
         "line-opacity": 0.75,
       },
-      filter: ["in", "id", ""],
+      filter,
     },
     {
       id: "lines-endpoints-highlighted",
@@ -41,7 +42,7 @@ export function buildSelectionLayers(color: string = "#ff0000") {
         "circle-color": color,
         "circle-radius": 3,
       },
-      filter: ["in", "id", ""],
+      filter,
     },
   ];
 }
@@ -104,8 +105,8 @@ export function BoxSelectionManager(props: BoxSelectionProps) {
         "lines-highlighted",
         "lines-endpoints-highlighted",
       ]) {
-        if (map.getLayer(layerID) == null) {
-          map.setFilter(layerID, ["in", "id", ...fips]);
+        if (map.getLayer(layerID) != null) {
+          map.setFilter(layerID, ["in", ["get", "id"], ["literal", fips]]);
         }
       }
     },
