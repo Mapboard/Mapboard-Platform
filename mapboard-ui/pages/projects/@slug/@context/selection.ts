@@ -9,6 +9,7 @@ import {
 } from "@macrostrat/form-components";
 import { Box, NullableSlider, useToaster } from "@macrostrat/ui-components";
 import { apiBaseURL } from "~/settings";
+import { useEffect } from "react";
 
 const h = hyper.styled(styles);
 
@@ -73,7 +74,7 @@ const actions: MapboardActionDef[] = [
     name: "Heal",
     icon: "changes",
     description: "Heal selected features",
-    detailsForm: ChangeDataTypeForm,
+    detailsForm: HealForm,
     isReady(state) {
       return state != null;
     },
@@ -206,10 +207,42 @@ async function runAction(
 
 type DataType = any;
 
-function ChangeDataTypeForm({ state, setState }) {
+function HealForm({
+  state,
+  setState,
+}: {
+  state: string | null;
+  setState(k: string | null): void;
+}) {
+  const selectedLineTypes = useMapState((state) => state.selection?.lineTypes);
+  let defaultSelectedID: string | null = null;
+  if (selectedLineTypes != null && selectedLineTypes.size == 1) {
+    defaultSelectedID = selectedLineTypes.values().next().value ?? null;
+  }
+
+  useEffect(() => {
+    if (defaultSelectedID != null && state == null) {
+      setState(defaultSelectedID);
+    }
+  }, [defaultSelectedID]);
+
+  return h(ChangeDataTypeForm, { state, setState });
+}
+
+function ChangeDataTypeForm({
+  state,
+  setState,
+  defaultSelectedID = null,
+}: {
+  state: string | null;
+  setState(state: string | null): void;
+  defaultSelectedID?: string | null;
+}) {
   const dataTypes = useMapState((state) => state.dataTypes?.line);
 
-  const selectedItem = dataTypes?.find((d) => d.id == state) ?? null;
+  const selectedID = state ?? defaultSelectedID;
+
+  const selectedItem = dataTypes?.find((d) => d.id == selectedID) ?? null;
 
   return h(ItemSelect<DataType>, {
     items: dataTypes,

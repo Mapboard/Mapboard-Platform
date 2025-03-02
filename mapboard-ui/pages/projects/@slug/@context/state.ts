@@ -113,7 +113,9 @@ export enum BasemapType {
 
 export type FeatureSelection = {
   lines: number[];
+  lineTypes?: Set<string>;
   polygons: number[];
+  polygonTypes?: Set<string>;
 };
 
 const _subscribeWithSelector = subscribeWithSelector as <T>(fn: T) => T;

@@ -232,8 +232,14 @@ export function BoxSelectionManager(props: BoxSelectionProps) {
           // to match features with unique FIPS codes to activate
           // the `counties-highlighted` layer.
           const fips = features.map((feature) => feature.properties.id);
+          const lineTypes = new Set(features.map((f) => f.properties.type));
 
-          selectFeatures({ lines: fips, polygons: [] });
+          selectFeatures({
+            lines: fips,
+            lineTypes,
+            polygons: [],
+            polygonTypes: new Set(),
+          });
         }
 
         map.dragPan.enable();
