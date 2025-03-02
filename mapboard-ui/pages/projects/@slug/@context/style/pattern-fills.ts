@@ -45,7 +45,6 @@ export async function setupStyleImages(
       } catch (err) {
         console.error("Error adding image", uid, err);
       }
-      console.log("Added image", uid, type, img);
       return [id, uid];
     }),
   );

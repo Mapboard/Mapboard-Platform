@@ -1,18 +1,18 @@
-import { createStore, useStore, StoreApi, create } from "zustand";
+import { useStore, StoreApi, create } from "zustand";
 import { createContext, useContext, useEffect, useState } from "react";
 import h from "@macrostrat/hyper";
 import { subscribeWithSelector, devtools } from "zustand/middleware";
 import { SelectionActionType } from "./selection";
-import {
-  PolygonPatternConfig,
-  PolygonStyleIndex,
-  setupStyleImages,
-} from "./style/pattern-fills";
+import { PolygonStyleIndex } from "./style/pattern-fills";
 import { SourceChangeTimestamps } from "./style/overlay";
+import { MapPosition } from "@macrostrat/mapbox-react";
+import { applyMapPositionToHash } from "@macrostrat/map-interface";
+import { getMapPositionForHash } from "./hash-string";
 
 interface RecoverableMapState {
   activeLayer: number | null;
   baseMap: BasemapType;
+  mapPosition: MapPosition | null;
 }
 
 interface MapActions {
@@ -29,6 +29,7 @@ interface MapActions {
   toggleLineEndpoints: () => void;
   toggleFeatureMode: (mode: FeatureMode) => void;
   setTerrainExaggeration: (exaggeration: number) => void;
+  setMapPosition: (position: MapPosition) => void;
 
   toggleShowFacesWithNoUnit(): void;
 
@@ -125,7 +126,7 @@ function createMapStore(baseURL: string) {
     // @ts-ignore
     _subscribeWithSelector(
       devtools((set, get): MapState => {
-        const { activeLayer, baseMap } = parseQueryParameters();
+        const { activeLayer, baseMap, mapPosition } = parseQueryParameters();
         return {
           apiBaseURL: baseURL,
           activeLayer,
@@ -135,6 +136,7 @@ function createMapStore(baseURL: string) {
           selectionAction: null,
           selectionMode: SelectionMode.Replace,
           mapLayers: null,
+          mapPosition,
           enabledFeatureModes: allFeatureModes,
           showOverlay: true,
           showLineEndpoints: false,
@@ -155,6 +157,7 @@ function createMapStore(baseURL: string) {
           polygonPatternIndex: null,
           actions: {
             setBaseMap: (baseMap: BasemapType) => set({ baseMap }),
+            setMapPosition: (mapPosition: MapPosition) => set({ mapPosition }),
             setActiveLayer: (layer) =>
               set((state) => {
                 // Toggle the active layer if it's already active
@@ -297,9 +300,9 @@ export function MapStateProvider({ children, baseURL }) {
   /** Subscriber to set some values to the query parameters */
   useEffect(() => {
     const unsubscribe = value.subscribe(
-      (state) => [state.activeLayer, state.baseMap],
-      ([activeLayer, baseMap]) => {
-        setQueryParameters({ activeLayer, baseMap });
+      (state) => [state.activeLayer, state.baseMap, state.mapPosition],
+      ([activeLayer, baseMap, mapPosition]) => {
+        setQueryParameters({ activeLayer, baseMap, mapPosition });
       },
     );
     return unsubscribe;
@@ -366,43 +369,35 @@ function parseQueryParameters(): RecoverableMapState {
     baseMap = BasemapType.Basic;
   }
 
-  return { activeLayer, baseMap };
+  const mapPosition = getMapPositionForHash(params, null);
+
+  return { activeLayer, baseMap, mapPosition };
 }
 
 function setQueryParameters(params: RecoverableMapState) {
-  const { activeLayer, baseMap } = params;
-  const searchParams = new URLSearchParams(window.location.search);
-  searchParams.delete("layer");
-  searchParams.delete("base");
+  const { activeLayer, baseMap, mapPosition } = params;
+  if (mapPosition == null) return;
+  const searchParams = new URLSearchParams();
   if (baseMap != BasemapType.Basic) {
     searchParams.set("base", baseMap);
   }
   if (activeLayer != null) {
     searchParams.set("layer", activeLayer.toString());
   }
-  const newUrl = `${window.location.pathname}?${searchParams.toString()}`;
-  window.history.replaceState({}, "", newUrl);
-}
 
-async function createPolygonPatternIndex(
-  map: mapboxgl.Map | null,
-  polygonTypes: PolygonDataType[] | null,
-): Promise<PolygonStyleIndex | null> {
-  if (map == null || polygonTypes == null) {
-    return null;
+  if (mapPosition != null) {
+    let args = {};
+    applyMapPositionToHash(args, mapPosition);
+    for (let [k, v] of Object.entries(args)) {
+      searchParams.set(k, v);
+    }
   }
 
-  const symbols: PolygonPatternConfig[] = polygonTypes?.map((d) => {
-    const sym = d.symbology;
-    return {
-      color: d.color,
-      id: d.id,
-      symbol: sym?.name,
-      symbolColor: sym?.color,
-    };
-  });
+  let paramsString = searchParams.toString();
+  if (paramsString.length > 0) {
+    paramsString = `?${paramsString}`;
+  }
 
-  const patternBaseURL = "/assets/geologic-patterns/svg";
-  console.log("Setting up style images", symbols);
-  return await setupStyleImages(map.current, symbols, { patternBaseURL });
+  const newUrl = `${window.location.pathname}${paramsString}`;
+  window.history.replaceState({}, "", newUrl);
 }

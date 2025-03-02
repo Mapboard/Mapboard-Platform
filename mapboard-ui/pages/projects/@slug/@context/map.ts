@@ -11,7 +11,7 @@ import styles from "./map.module.scss";
 import { SelectionMode, useMapActions, useMapState } from "./state";
 import { SphericalMercator } from "@mapbox/sphericalmercator";
 import { useMapRef } from "@macrostrat/mapbox-react";
-import { buildMapOverlayStyle, useMapStyle } from "./style";
+import { useMapStyle } from "./style";
 import { BoxSelectionManager } from "./_tools";
 import { SelectionActionsPanel } from "./selection";
 import { FormGroup, OptionProps, SegmentedControl } from "@blueprintjs/core";
@@ -68,7 +68,6 @@ export function MapArea({
     },
     [
       h(MapInner, {
-        mapPosition: null,
         projection,
         boxZoom: false,
         mapboxToken,
@@ -153,6 +152,9 @@ function MapInner({
 
   const mapRef = useMapRef();
 
+  const setMapPosition = useMapActions((a) => a.setMapPosition);
+  const mapPosition = useMapState((state) => state.mapPosition);
+
   const style = useMapStyle(baseURL, {
     isMapView,
     mapboxToken,
@@ -172,7 +174,23 @@ function MapInner({
     maxBounds = expandBounds(bounds, aspectRatio);
   }
 
-  return h(MapView, { maxBounds, bounds, mapboxToken, style, ...rest });
+  let _bounds = undefined;
+  let _mapPosition = undefined;
+  if (mapPosition == null) {
+    _bounds = bounds;
+  } else {
+    _mapPosition = mapPosition;
+  }
+
+  return h(MapView, {
+    maxBounds,
+    bounds: _bounds,
+    mapPosition: _mapPosition,
+    mapboxToken,
+    style,
+    onMapMoved: setMapPosition,
+    ...rest,
+  });
 }
 
 type BBox = [number, number, number, number];

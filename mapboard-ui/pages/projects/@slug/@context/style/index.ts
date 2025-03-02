@@ -188,7 +188,6 @@ export function useMapSymbols(): PolygonStyleIndex | null {
     await setupLineSymbols(map.current);
 
     const patternBaseURL = "/assets/geologic-patterns/svg";
-    console.log("Setting up style images", symbols);
     return await setupStyleImages(map.current, symbols, { patternBaseURL });
   }, [polygonTypes, isInitialized]);
 }
@@ -221,7 +220,6 @@ const lineSymbolsURL = vizBaseURL + "/geologic-line-symbols/png";
 async function setupLineSymbols(map) {
   const symbols = await Promise.all(
     lineSymbols.map(async function (symbol) {
-      console.log("Loading line symbol", symbol);
       if (map.hasImage(symbol)) return symbol;
       const image = await loadImage(lineSymbolsURL + `/${symbol}.png`);
       if (map.hasImage(symbol)) return symbol;
