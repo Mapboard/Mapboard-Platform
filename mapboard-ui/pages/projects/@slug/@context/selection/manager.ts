@@ -4,7 +4,7 @@
  *  */
 
 import { useMapRef, useMapStyleOperator } from "@macrostrat/mapbox-react";
-import styles from "./index.module.sass";
+import styles from "./manager.module.sass";
 import mapboxgl from "mapbox-gl";
 import hyper from "@macrostrat/hyper";
 import { renderToString } from "react-dom/server";

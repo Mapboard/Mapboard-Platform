@@ -12,8 +12,7 @@ import { SelectionMode, useMapActions, useMapState } from "./state";
 import { SphericalMercator } from "@mapbox/sphericalmercator";
 import { useMapRef } from "@macrostrat/mapbox-react";
 import { useMapStyle } from "./style";
-import { BoxSelectionManager } from "./_tools";
-import { SelectionActionsPanel } from "./selection";
+import { BoxSelectionManager, SelectionActionsPanel } from "./selection";
 import { FormGroup, OptionProps, SegmentedControl } from "@blueprintjs/core";
 import { MapReloadWatcher } from "./change-watcher";
 

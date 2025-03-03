@@ -3,7 +3,7 @@ import { useAsyncEffect, useInDarkMode } from "@macrostrat/ui-components";
 import { BasemapType, useMapState } from "../state";
 import { getMapboxStyle, mergeStyles } from "@macrostrat/mapbox-utils";
 import { buildMapOverlayStyle, CrossSectionConfig } from "./overlay";
-import { buildSelectionLayers } from "../_tools";
+import { buildSelectionLayers } from "../selection";
 import {
   PolygonPatternConfig,
   PolygonStyleIndex,
