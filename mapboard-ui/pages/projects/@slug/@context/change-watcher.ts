@@ -1,8 +1,39 @@
 /** Websocket watcher for topology changes */
 import { useCallback, useState } from "react";
 import useWebSocket, { ReadyState } from "react-use-websocket";
+import { useMapActions } from "./state";
+import { useEffect } from "react";
 
-export function useMapReloader(path: string, options = {}) {
+type TopologyChangeMessage = {
+  n_deleted: number;
+  n_created: number;
+  n_faces: number;
+  operation: "INSERT" | "DELETE";
+  table: string;
+  schema: string;
+};
+
+export function MapReloadWatcher({ baseURL }: { baseURL: string }) {
+  const notifyChange = useMapActions((a) => a.notifyChange);
+
+  const ws = useMapReloader(baseURL + "/topology/changes");
+  useEffect(() => {
+    if (ws.lastJsonMessage == null) {
+      return;
+    }
+    /** If the handler changed them, we could notify on topology changes */
+    const { n_deleted, n_created } =
+      ws.lastJsonMessage as TopologyChangeMessage;
+    if (n_deleted > 0 || n_created > 0) {
+      notifyChange("topo");
+    }
+    console.log("Received message", ws.lastJsonMessage);
+  }, [ws.lastJsonMessage]);
+
+  return null;
+}
+
+function useMapReloader(path: string, options = {}) {
   /** An expanded function to use a websocket */
   const [reconnectAttempt, setReconnectAttempt] = useState(1);
   const [hasEverConnected, setConnected] = useState(false);
