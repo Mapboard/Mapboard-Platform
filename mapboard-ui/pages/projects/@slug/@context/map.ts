@@ -177,13 +177,15 @@ function MapInner({
     maxBounds = expandBounds(bounds, aspectRatio);
   }
 
-  let _bounds = undefined;
-  let _mapPosition = undefined;
+  let _bounds = null;
+  let _mapPosition = null;
   if (mapPosition == null) {
     _bounds = bounds;
   } else {
     _mapPosition = mapPosition;
   }
+
+  console.log("Map position", _mapPosition, _bounds);
 
   return h(MapView, {
     maxBounds,

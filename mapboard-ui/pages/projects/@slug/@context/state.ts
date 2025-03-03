@@ -157,7 +157,10 @@ function createMapStore(
         ...initialState,
         actions: {
           setBaseMap: (baseMap: BasemapType) => set({ baseMap }),
-          setMapPosition: (mapPosition: MapPosition) => set({ mapPosition }),
+          setMapPosition: (mapPosition: MapPosition) => {
+            console.log("Setting map position", mapPosition);
+            set({ mapPosition });
+          },
           setActiveLayer: (layer) =>
             set((state) => {
               // Toggle the active layer if it's already active
