@@ -141,8 +141,6 @@ function replaceRasterDEM(style, sourceName) {
     }
   }
 
-  console.log(newSources, removedSources);
-
   const newLayers = style.layers.map((layer) => {
     if (removedSources.includes(layer.source)) {
       return {
