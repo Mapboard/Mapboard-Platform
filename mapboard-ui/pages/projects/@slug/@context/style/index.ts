@@ -51,6 +51,7 @@ export function useMapStyle(
   const showFacesWithNoUnit = useMapState((d) => d.showFacesWithNoUnit);
   const showOverlay = useMapState((d) => d.showOverlay);
   const exaggeration = useMapState((d) => d.terrainExaggeration);
+  const showTopologyPrimitives = useMapState((d) => d.showTopologyPrimitives);
 
   const baseStyleURL = useBaseMapStyle(basemapType);
 
@@ -89,6 +90,7 @@ export function useMapStyle(
       lineSymbolIndex,
       crossSectionConfig,
       showFacesWithNoUnit,
+      showTopologyPrimitives,
     });
     const selectionStyle: any = { layers: buildSelectionLayers() };
     setOverlayStyle(mergeStyles(style, selectionStyle));
@@ -102,6 +104,7 @@ export function useMapStyle(
     showCrossSectionLines,
     showFacesWithNoUnit,
     showOverlay,
+    showTopologyPrimitives,
   ]);
 
   return useMemo(() => {
@@ -140,8 +143,6 @@ function replaceRasterDEM(style, sourceName) {
       newSources[key] = source;
     }
   }
-
-  console.log(newSources, removedSources);
 
   const newLayers = style.layers.map((layer) => {
     if (removedSources.includes(layer.source)) {
@@ -188,7 +189,6 @@ export function useMapSymbols(): PolygonStyleIndex | null {
     await setupLineSymbols(map.current);
 
     const patternBaseURL = "/assets/geologic-patterns/svg";
-    console.log("Setting up style images", symbols);
     return await setupStyleImages(map.current, symbols, { patternBaseURL });
   }, [polygonTypes, isInitialized]);
 }
@@ -221,7 +221,6 @@ const lineSymbolsURL = vizBaseURL + "/geologic-line-symbols/png";
 async function setupLineSymbols(map) {
   const symbols = await Promise.all(
     lineSymbols.map(async function (symbol) {
-      console.log("Loading line symbol", symbol);
       if (map.hasImage(symbol)) return symbol;
       const image = await loadImage(lineSymbolsURL + `/${symbol}.png`);
       if (map.hasImage(symbol)) return symbol;

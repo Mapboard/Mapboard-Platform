@@ -11,10 +11,11 @@ import styles from "./map.module.scss";
 import { SelectionMode, useMapActions, useMapState } from "./state";
 import { SphericalMercator } from "@mapbox/sphericalmercator";
 import { useMapRef } from "@macrostrat/mapbox-react";
-import { buildMapOverlayStyle, useMapStyle } from "./style";
+import { useMapStyle } from "./style";
 import { BoxSelectionManager } from "./_tools";
 import { SelectionActionsPanel } from "./selection";
 import { FormGroup, OptionProps, SegmentedControl } from "@blueprintjs/core";
+import { MapReloadWatcher } from "./change-watcher";
 
 const mercator = new SphericalMercator({
   size: 256,
@@ -46,6 +47,7 @@ export function MapArea({
   if (!isMapView) {
     projection = { name: "mercator" };
   }
+
   // const toolsCard = h(PanelCard, { className: "tools-panel" }, [
   //   h("h4", "Tools"),
   //   h(Button, { icon: "selection", small: true }, "Select"),
@@ -68,7 +70,6 @@ export function MapArea({
     },
     [
       h(MapInner, {
-        mapPosition: null,
         projection,
         boxZoom: false,
         mapboxToken,
@@ -78,6 +79,7 @@ export function MapArea({
         isMapView,
       }),
       h(BoxSelectionManager),
+      h(MapReloadWatcher, { baseURL }),
     ],
   );
 }
@@ -153,6 +155,9 @@ function MapInner({
 
   const mapRef = useMapRef();
 
+  const setMapPosition = useMapActions((a) => a.setMapPosition);
+  const mapPosition = useMapState((state) => state.mapPosition);
+
   const style = useMapStyle(baseURL, {
     isMapView,
     mapboxToken,
@@ -172,7 +177,25 @@ function MapInner({
     maxBounds = expandBounds(bounds, aspectRatio);
   }
 
-  return h(MapView, { maxBounds, bounds, mapboxToken, style, ...rest });
+  let _bounds = null;
+  let _mapPosition = null;
+  if (mapPosition == null) {
+    _bounds = bounds;
+  } else {
+    _mapPosition = mapPosition;
+  }
+
+  console.log("Map position", _mapPosition, _bounds);
+
+  return h(MapView, {
+    maxBounds,
+    bounds: _bounds,
+    mapPosition: _mapPosition,
+    mapboxToken,
+    style,
+    onMapMoved: setMapPosition,
+    ...rest,
+  });
 }
 
 type BBox = [number, number, number, number];

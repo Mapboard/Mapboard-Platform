@@ -1,6 +1,6 @@
 import hyper from "@macrostrat/hyper";
 import styles from "./map.module.scss";
-import { apiDomain, mapboxToken } from "~/settings";
+import { mapboxToken } from "~/settings";
 import type { Data } from "../+data";
 import { useData } from "vike-react/useData";
 import {
@@ -33,11 +33,6 @@ export function Page() {
 
   // Current domain + port if set is the base
   let domain = document.location.origin;
-  console.log("domain", domain);
-  // if (document.location.port) {
-  //   domain = `${document.location.hostname}:${document.location.port}`;
-  // }
-
   const baseURL = `${domain}/api/project/${ctx.project_slug}/context/${ctx.slug}`;
 
   return h(
@@ -67,7 +62,7 @@ function PageInner({ baseURL, context: ctx }) {
         headerElement: h(ContextHeader, ctx),
         isMapView: isMapContext,
       },
-      [h(LayerControlPanel)],
+      h(LayerControlPanel),
     ),
   );
 }
@@ -123,7 +118,21 @@ function LayerControlPanel() {
     h(Divider),
     h(BasemapList),
     h(TerrainExaggeration),
+    h(TopologyPrimitivesSwitch),
   ]);
+}
+
+function TopologyPrimitivesSwitch() {
+  const showPrimitives = useMapState((state) => state.showTopologyPrimitives);
+  const togglePrimitives = useMapActions(
+    (actions) => actions.toggleShowTopologyPrimitives,
+  );
+
+  return h(OurSwitch, {
+    label: "Topology primitives",
+    checked: showPrimitives,
+    onChange: togglePrimitives,
+  });
 }
 
 function TerrainExaggeration() {

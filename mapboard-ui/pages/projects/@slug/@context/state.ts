@@ -1,19 +1,17 @@
-import { createStore, useStore, StoreApi, create } from "zustand";
-import { createContext, useContext, useEffect, useState } from "react";
+import { create, StoreApi, useStore } from "zustand";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import h from "@macrostrat/hyper";
-import { subscribeWithSelector, devtools } from "zustand/middleware";
+import { devtools } from "zustand/middleware";
 import { SelectionActionType } from "./selection";
-import {
-  PolygonPatternConfig,
-  PolygonStyleIndex,
-  setupStyleImages,
-} from "./style/pattern-fills";
+import { PolygonStyleIndex } from "./style/pattern-fills";
 import { SourceChangeTimestamps } from "./style/overlay";
-
-interface RecoverableMapState {
-  activeLayer: number | null;
-  baseMap: BasemapType;
-}
+import { MapPosition } from "@macrostrat/mapbox-react";
+import { LocalStorage } from "@macrostrat/ui-components";
+import {
+  parseQueryParameters,
+  RecoverableMapState,
+  setQueryParameters,
+} from "./hash-string";
 
 interface MapActions {
   setActiveLayer: (layer: number | null) => void;
@@ -29,6 +27,8 @@ interface MapActions {
   toggleLineEndpoints: () => void;
   toggleFeatureMode: (mode: FeatureMode) => void;
   setTerrainExaggeration: (exaggeration: number) => void;
+  setMapPosition: (position: MapPosition) => void;
+  toggleShowTopologyPrimitives: () => void;
 
   toggleShowFacesWithNoUnit(): void;
 
@@ -78,7 +78,15 @@ export interface PolygonDataType extends DataType {
   };
 }
 
-export interface MapState extends RecoverableMapState {
+interface LocalStorageState {
+  showCrossSectionLines: boolean;
+  showLineEndpoints: boolean;
+  showTopologyPrimitives: boolean;
+}
+
+type StoredMapState = RecoverableMapState & LocalStorageState;
+
+export interface MapState extends StoredMapState {
   actions: MapActions;
   layerPanelIsOpen: boolean;
   selection: FeatureSelection | null;
@@ -86,8 +94,6 @@ export interface MapState extends RecoverableMapState {
   selectionMode: SelectionMode;
   enabledFeatureModes: Set<FeatureMode>;
   showOverlay: boolean;
-  showLineEndpoints: boolean;
-  showCrossSectionLines: boolean;
   showFacesWithNoUnit: boolean;
   terrainExaggeration: number;
   mapLayers: MapLayer[] | null;
@@ -118,146 +124,153 @@ export type FeatureSelection = {
   polygonTypes?: Set<string>;
 };
 
-const _subscribeWithSelector = subscribeWithSelector as <T>(fn: T) => T;
-
-function createMapStore(baseURL: string) {
+function createMapStore(
+  baseURL: string,
+  initialState: RecoverableMapState & Partial<StoredMapState>,
+) {
   return create<MapState>(
     // @ts-ignore
-    _subscribeWithSelector(
-      devtools((set, get): MapState => {
-        const { activeLayer, baseMap } = parseQueryParameters();
-        return {
-          apiBaseURL: baseURL,
-          activeLayer,
-          baseMap,
-          layerPanelIsOpen: false,
-          selection: null,
-          selectionAction: null,
-          selectionMode: SelectionMode.Replace,
-          mapLayers: null,
-          enabledFeatureModes: allFeatureModes,
-          showOverlay: true,
-          showLineEndpoints: false,
-          showCrossSectionLines: true,
-          showFacesWithNoUnit: false,
-          terrainExaggeration: 1,
-          terrainSource: "mapbox://mapbox.terrain-rgb",
-          lastChangeTime: {
-            line: null,
-            polygon: null,
-            topology: null,
+    devtools((set, get): MapState => {
+      return {
+        apiBaseURL: baseURL,
+        layerPanelIsOpen: false,
+        selection: null,
+        selectionAction: null,
+        selectionMode: SelectionMode.Replace,
+        mapLayers: null,
+        enabledFeatureModes: allFeatureModes,
+        showOverlay: true,
+        showLineEndpoints: false,
+        showCrossSectionLines: true,
+        showFacesWithNoUnit: false,
+        showTopologyPrimitives: false,
+        terrainExaggeration: 1,
+        terrainSource: "mapbox://mapbox.terrain-rgb",
+        lastChangeTime: {
+          line: null,
+          polygon: null,
+          topology: null,
+        },
+        dataTypes: {
+          line: null,
+          polygon: null,
+        },
+        mapLayerIDMap: new Map(),
+        polygonPatternIndex: null,
+        ...initialState,
+        actions: {
+          setBaseMap: (baseMap: BasemapType) => set({ baseMap }),
+          setMapPosition: (mapPosition: MapPosition) => {
+            console.log("Setting map position", mapPosition);
+            set({ mapPosition });
           },
-          dataTypes: {
-            line: null,
-            polygon: null,
+          setActiveLayer: (layer) =>
+            set((state) => {
+              // Toggle the active layer if it's already active
+              let activeLayer: number | null = layer;
+              if (state.activeLayer === layer) {
+                activeLayer = null;
+              }
+              return { activeLayer, selection: null };
+            }),
+          notifyChange: (mode: "line" | "polygon" | "topo") => {
+            return set((state) => {
+              return {
+                lastChangeTime: {
+                  ...state.lastChangeTime,
+                  [mode]: Date.now(),
+                },
+              };
+            });
           },
-          mapLayerIDMap: new Map(),
-          polygonPatternIndex: null,
-          actions: {
-            setBaseMap: (baseMap: BasemapType) => set({ baseMap }),
-            setActiveLayer: (layer) =>
-              set((state) => {
-                // Toggle the active layer if it's already active
-                let activeLayer: number | null = layer;
-                if (state.activeLayer === layer) {
-                  activeLayer = null;
-                }
-                return { activeLayer, selection: null };
-              }),
-            notifyChange: (mode: "line" | "polygon" | "topo") => {
-              return set((state) => {
-                return {
-                  lastChangeTime: {
-                    ...state.lastChangeTime,
-                    [mode]: Date.now(),
-                  },
-                };
-              });
-            },
-            setSelectionMode: (mode: SelectionMode) =>
-              set({ selectionMode: mode }),
-            selectFeatures: (selection) =>
-              set((state) => {
-                return {
-                  selection: combineFeatureSelection(
-                    state.selection,
-                    selection,
-                    state.selectionMode,
-                  ),
-                };
-              }),
-            toggleLayerPanel: () =>
-              set((state) => {
-                return { layerPanelIsOpen: !state.layerPanelIsOpen };
-              }),
-            setMapLayers: (layers) =>
-              set({
-                mapLayers: layers,
-                mapLayerIDMap: new Map(layers.map((l) => [l.id, l])),
-              }),
-            setDataTypes: (mode: "line" | "polygon", types: DataType[]) =>
-              set((state) => {
-                return {
-                  dataTypes: {
-                    ...state.dataTypes,
-                    [mode]: types,
-                  },
-                };
-              }),
-            setSelectionAction: (type) =>
-              set((state) => {
-                if (type == null || state.selectionAction?.type == type) {
-                  return { selectionAction: null };
-                }
-                return { selectionAction: { type, state: null } };
-              }),
-            setSelectionActionState: (state: any) => {
-              return set((s) => {
-                const { selectionAction } = s;
-                if (selectionAction == null) {
-                  return s;
-                }
-                return {
-                  selectionAction: { ...selectionAction, state },
-                };
-              });
-            },
-            toggleLineEndpoints: () =>
-              set((state) => {
-                return { showLineEndpoints: !state.showLineEndpoints };
-              }),
-            toggleFeatureMode: (mode) =>
-              set((state) => {
-                const enabledFeatureModes = new Set(state.enabledFeatureModes);
-                if (enabledFeatureModes.has(mode)) {
-                  enabledFeatureModes.delete(mode);
-                } else {
-                  enabledFeatureModes.add(mode);
-                }
-                return { enabledFeatureModes };
-              }),
-            toggleCrossSectionLines() {
-              set((state) => {
-                return { showCrossSectionLines: !state.showCrossSectionLines };
-              });
-            },
-            toggleShowFacesWithNoUnit() {
-              set((state) => {
-                return { showFacesWithNoUnit: !state.showFacesWithNoUnit };
-              });
-            },
-            toggleOverlay() {
-              set((state) => {
-                return { showOverlay: !state.showOverlay };
-              });
-            },
-            setTerrainExaggeration: (exaggeration) => {
-              set({ terrainExaggeration: exaggeration });
-            },
+          setSelectionMode: (mode: SelectionMode) =>
+            set({ selectionMode: mode }),
+          selectFeatures: (selection) =>
+            set((state) => {
+              return {
+                selection: combineFeatureSelection(
+                  state.selection,
+                  selection,
+                  state.selectionMode,
+                ),
+              };
+            }),
+          toggleLayerPanel: () =>
+            set((state) => {
+              return { layerPanelIsOpen: !state.layerPanelIsOpen };
+            }),
+          setMapLayers: (layers) =>
+            set({
+              mapLayers: layers,
+              mapLayerIDMap: new Map(layers.map((l) => [l.id, l])),
+            }),
+          setDataTypes: (mode: "line" | "polygon", types: DataType[]) =>
+            set((state) => {
+              return {
+                dataTypes: {
+                  ...state.dataTypes,
+                  [mode]: types,
+                },
+              };
+            }),
+          setSelectionAction: (type) =>
+            set((state) => {
+              if (type == null || state.selectionAction?.type == type) {
+                return { selectionAction: null };
+              }
+              return { selectionAction: { type, state: null } };
+            }),
+          setSelectionActionState: (state: any) => {
+            return set((s) => {
+              const { selectionAction } = s;
+              if (selectionAction == null) {
+                return s;
+              }
+              return {
+                selectionAction: { ...selectionAction, state },
+              };
+            });
           },
-        };
-      }),
-    ),
+          toggleLineEndpoints: () =>
+            set((state) => {
+              return { showLineEndpoints: !state.showLineEndpoints };
+            }),
+          toggleFeatureMode: (mode) =>
+            set((state) => {
+              const enabledFeatureModes = new Set(state.enabledFeatureModes);
+              if (enabledFeatureModes.has(mode)) {
+                enabledFeatureModes.delete(mode);
+              } else {
+                enabledFeatureModes.add(mode);
+              }
+              return { enabledFeatureModes };
+            }),
+          toggleCrossSectionLines() {
+            set((state) => {
+              return { showCrossSectionLines: !state.showCrossSectionLines };
+            });
+          },
+          toggleShowFacesWithNoUnit() {
+            set((state) => {
+              return { showFacesWithNoUnit: !state.showFacesWithNoUnit };
+            });
+          },
+          toggleOverlay() {
+            set((state) => {
+              return { showOverlay: !state.showOverlay };
+            });
+          },
+          setTerrainExaggeration: (exaggeration) => {
+            set({ terrainExaggeration: exaggeration });
+          },
+          toggleShowTopologyPrimitives: () => {
+            set((state) => {
+              return { showTopologyPrimitives: !state.showTopologyPrimitives };
+            });
+          },
+        },
+      };
+    }),
   );
 }
 
@@ -291,18 +304,64 @@ function combineFeatureSelection(
   }
 }
 
+function validateLocalStorageState(state: any): LocalStorageState | null {
+  if (state == null || typeof state !== "object") {
+    return null;
+  }
+  return {
+    showCrossSectionLines: state.showCrossSectionLines ?? true,
+    showLineEndpoints: state.showLineEndpoints ?? false,
+    showTopologyPrimitives: state.showTopologyPrimitives ?? false,
+  };
+}
+
 export function MapStateProvider({ children, baseURL }) {
-  const [value] = useState(() => createMapStore(baseURL));
+  const storage = useRef(new LocalStorage<LocalStorageState>("map-state"));
+  const storedState: Partial<LocalStorageState> =
+    validateLocalStorageState(storage.current.get()) ?? {};
+
+  const params = parseQueryParameters();
+
+  const [value] = useState(() =>
+    createMapStore(baseURL, { ...params, ...storedState }),
+  );
 
   /** Subscriber to set some values to the query parameters */
   useEffect(() => {
-    const unsubscribe = value.subscribe(
-      (state) => [state.activeLayer, state.baseMap],
-      ([activeLayer, baseMap]) => {
-        setQueryParameters({ activeLayer, baseMap });
-      },
-    );
-    return unsubscribe;
+    return value.subscribe((state, prevState) => {
+      const { activeLayer, baseMap, mapPosition } = state;
+      if (
+        activeLayer == prevState.activeLayer &&
+        baseMap == prevState.baseMap &&
+        mapPosition == prevState.mapPosition
+      ) {
+        return;
+      }
+
+      setQueryParameters({ activeLayer, baseMap, mapPosition });
+    });
+  }, []);
+
+  /** Subscriber to set local storage state */
+  useEffect(() => {
+    return value.subscribe((state, prevState) => {
+      const {
+        showCrossSectionLines,
+        showLineEndpoints,
+        showTopologyPrimitives,
+      } = state;
+      if (
+        showCrossSectionLines != prevState.showCrossSectionLines ||
+        showLineEndpoints != prevState.showLineEndpoints ||
+        showTopologyPrimitives != prevState.showTopologyPrimitives
+      ) {
+        storage.current.set({
+          showCrossSectionLines,
+          showLineEndpoints,
+          showTopologyPrimitives,
+        });
+      }
+    });
   }, []);
 
   const allModes = ["line", "polygon"] as ("line" | "polygon")[];
@@ -349,60 +408,4 @@ export function useMapActions<T>(
   selector: (state: MapState["actions"]) => T,
 ): T {
   return useMapState<T>((state) => selector(state.actions));
-}
-
-function parseQueryParameters(): RecoverableMapState {
-  const params = new URLSearchParams(window.location.search);
-  let lyr = params.get("layer");
-  const activeLayer = lyr == null ? null : parseInt(lyr);
-
-  let baseMap: BasemapType =
-    (params.get("base") as BasemapType) ?? BasemapType.Basic;
-  if (
-    [BasemapType.Satellite, BasemapType.Basic, BasemapType.Terrain].indexOf(
-      baseMap,
-    ) === -1
-  ) {
-    baseMap = BasemapType.Basic;
-  }
-
-  return { activeLayer, baseMap };
-}
-
-function setQueryParameters(params: RecoverableMapState) {
-  const { activeLayer, baseMap } = params;
-  const searchParams = new URLSearchParams(window.location.search);
-  searchParams.delete("layer");
-  searchParams.delete("base");
-  if (baseMap != BasemapType.Basic) {
-    searchParams.set("base", baseMap);
-  }
-  if (activeLayer != null) {
-    searchParams.set("layer", activeLayer.toString());
-  }
-  const newUrl = `${window.location.pathname}?${searchParams.toString()}`;
-  window.history.replaceState({}, "", newUrl);
-}
-
-async function createPolygonPatternIndex(
-  map: mapboxgl.Map | null,
-  polygonTypes: PolygonDataType[] | null,
-): Promise<PolygonStyleIndex | null> {
-  if (map == null || polygonTypes == null) {
-    return null;
-  }
-
-  const symbols: PolygonPatternConfig[] = polygonTypes?.map((d) => {
-    const sym = d.symbology;
-    return {
-      color: d.color,
-      id: d.id,
-      symbol: sym?.name,
-      symbolColor: sym?.color,
-    };
-  });
-
-  const patternBaseURL = "/assets/geologic-patterns/svg";
-  console.log("Setting up style images", symbols);
-  return await setupStyleImages(map.current, symbols, { patternBaseURL });
 }
