@@ -28,6 +28,7 @@ interface MapActions {
   toggleFeatureMode: (mode: FeatureMode) => void;
   setTerrainExaggeration: (exaggeration: number) => void;
   setMapPosition: (position: MapPosition) => void;
+  toggleShowTopologyPrimitives: () => void;
 
   toggleShowFacesWithNoUnit(): void;
 
@@ -80,6 +81,7 @@ export interface PolygonDataType extends DataType {
 interface LocalStorageState {
   showCrossSectionLines: boolean;
   showLineEndpoints: boolean;
+  showTopologyPrimitives: boolean;
 }
 
 type StoredMapState = RecoverableMapState & LocalStorageState;
@@ -141,6 +143,7 @@ function createMapStore(
         showLineEndpoints: false,
         showCrossSectionLines: true,
         showFacesWithNoUnit: false,
+        showTopologyPrimitives: false,
         terrainExaggeration: 1,
         terrainSource: "mapbox://mapbox.terrain-rgb",
         lastChangeTime: {
@@ -260,6 +263,11 @@ function createMapStore(
           setTerrainExaggeration: (exaggeration) => {
             set({ terrainExaggeration: exaggeration });
           },
+          toggleShowTopologyPrimitives: () => {
+            set((state) => {
+              return { showTopologyPrimitives: !state.showTopologyPrimitives };
+            });
+          },
         },
       };
     }),
@@ -303,6 +311,7 @@ function validateLocalStorageState(state: any): LocalStorageState | null {
   return {
     showCrossSectionLines: state.showCrossSectionLines ?? true,
     showLineEndpoints: state.showLineEndpoints ?? false,
+    showTopologyPrimitives: state.showTopologyPrimitives ?? false,
   };
 }
 
@@ -336,12 +345,21 @@ export function MapStateProvider({ children, baseURL }) {
   /** Subscriber to set local storage state */
   useEffect(() => {
     return value.subscribe((state, prevState) => {
-      const { showCrossSectionLines, showLineEndpoints } = state;
+      const {
+        showCrossSectionLines,
+        showLineEndpoints,
+        showTopologyPrimitives,
+      } = state;
       if (
         showCrossSectionLines != prevState.showCrossSectionLines ||
-        showLineEndpoints != prevState.showLineEndpoints
+        showLineEndpoints != prevState.showLineEndpoints ||
+        showTopologyPrimitives != prevState.showTopologyPrimitives
       ) {
-        storage.current.set({ showCrossSectionLines, showLineEndpoints });
+        storage.current.set({
+          showCrossSectionLines,
+          showLineEndpoints,
+          showTopologyPrimitives,
+        });
       }
     });
   }, []);

@@ -51,6 +51,7 @@ export function useMapStyle(
   const showFacesWithNoUnit = useMapState((d) => d.showFacesWithNoUnit);
   const showOverlay = useMapState((d) => d.showOverlay);
   const exaggeration = useMapState((d) => d.terrainExaggeration);
+  const showTopologyPrimitives = useMapState((d) => d.showTopologyPrimitives);
 
   const baseStyleURL = useBaseMapStyle(basemapType);
 
@@ -89,6 +90,7 @@ export function useMapStyle(
       lineSymbolIndex,
       crossSectionConfig,
       showFacesWithNoUnit,
+      showTopologyPrimitives,
     });
     const selectionStyle: any = { layers: buildSelectionLayers() };
     setOverlayStyle(mergeStyles(style, selectionStyle));
@@ -102,6 +104,7 @@ export function useMapStyle(
     showCrossSectionLines,
     showFacesWithNoUnit,
     showOverlay,
+    showTopologyPrimitives,
   ]);
 
   return useMemo(() => {

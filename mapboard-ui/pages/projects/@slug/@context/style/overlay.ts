@@ -17,6 +17,7 @@ interface MapOverlayOptions {
   enabledFeatureModes?: Set<FeatureMode>;
   showLineEndpoints?: boolean;
   showFacesWithNoUnit?: boolean;
+  showTopologyPrimitives?: boolean;
   useSymbols?: boolean;
   polygonSymbolIndex?: PolygonStyleIndex | null;
   lineSymbolIndex?: LineSymbolIndex | null;
@@ -37,6 +38,7 @@ export function buildMapOverlayStyle(
     crossSectionConfig,
     useSymbols = true,
     showFacesWithNoUnit = false,
+    showTopologyPrimitives = false,
   } = options;
 
   // Disable rivers and roads by default
@@ -62,12 +64,6 @@ export function buildMapOverlayStyle(
   let selectedLayerOpacity = (a, b) => {
     return a;
   };
-  if (selectedLayer != null) {
-    params.set("map_layer", selectedLayer.toString());
-    selectedLayerOpacity = (a, b) => {
-      return ["case", ["==", ["get", "map_layer"], selectedLayer], a, b];
-    };
-  }
 
   let sources: Record<string, mapboxgl.SourceSpecification> = {
     "mapbox-dem": {
@@ -78,25 +74,35 @@ export function buildMapOverlayStyle(
     },
   };
 
-  params.set(
-    "changed",
-    getMostRecentTimestamp(sourceChangeTimestamps).toString(),
-  );
+  let layers: mapboxgl.Layer[] = [];
 
-  let suffix = params.toString();
-  if (suffix.length > 0) {
-    suffix = "?" + suffix;
+  // Timestamp of the most recent change to a layer
+  const changed = getMostRecentTimestamp(sourceChangeTimestamps);
+
+  if (selectedLayer != null) {
+    params.set("map_layer", selectedLayer.toString());
+    selectedLayerOpacity = (a, b) => {
+      return ["case", ["==", ["get", "map_layer"], selectedLayer], a, b];
+    };
   }
 
-  const lyr = Array.from(featureModes).join(",");
+  let lyr = Array.from(featureModes).join(",");
+  if (lyr.length == 0) {
+    // We can't have an empty layer at the moment, so we request line data
+    lyr = "line";
+  }
+
   /** Could also consider separate sources per layer */
+  const suffix = getTileQueryParams({
+    map_layer: selectedLayer,
+    changed,
+  });
+
   sources["mapboard"] = {
     type: "vector",
     tiles: [baseURL + `/tile/${lyr}/{z}/{x}/{y}${suffix}`],
     volatile: true,
   };
-
-  let layers: mapboxgl.Layer[] = [];
 
   if ((polygonSymbolIndex == null || lineSymbolIndex == null) && useSymbols) {
     return {
@@ -120,7 +126,7 @@ export function buildMapOverlayStyle(
 
     // Fill pattern layers
     layers.push({
-      id: "topology_colors",
+      id: "map-face-colors",
       type: "fill",
       source: "mapboard",
       "source-layer": "faces",
@@ -137,7 +143,7 @@ export function buildMapOverlayStyle(
       const mapSymbolFilter: any[] = ["has", ["get", "type"], ix];
 
       layers.push({
-        id: "unit_patterns",
+        id: "map-face-patterns",
         type: "fill",
         source: "mapboard",
         "source-layer": "faces",
@@ -238,11 +244,76 @@ export function buildMapOverlayStyle(
     });
   }
 
+  if (showTopologyPrimitives) {
+    const suffix = getTileQueryParams({
+      changed,
+    });
+    sources["mapboard-topology"] = {
+      type: "vector",
+      tiles: [baseURL + `/tile/node,edge/{z}/{x}/{y}${suffix}`],
+      volatile: true,
+    };
+
+    layers.push({
+      id: "topo-edges",
+      type: "line",
+      source: "mapboard-topology",
+      "source-layer": "edges",
+      paint: {
+        "line-color": "rgb(217, 23, 128)",
+        "line-width": 1.2,
+      },
+    });
+
+    layers.push({
+      id: "topo-nodes",
+      type: "circle",
+      source: "mapboard-topology",
+      "source-layer": "nodes",
+      paint: {
+        "circle-color": "rgb(217, 23, 128)",
+        "circle-radius": [
+          "interpolate",
+          ["linear"],
+          ["zoom"],
+          2,
+          1.5,
+          7,
+          2.2,
+          12,
+          3,
+        ],
+      },
+    });
+  }
+
   return {
     version: 8,
     sources,
     layers,
   };
+}
+
+function getTileQueryParams(params: Record<string, any>) {
+  let suffix = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value == null) {
+      continue;
+    }
+    let val = value;
+    // If has "toString" method, use it
+    if (value.toString) {
+      val = value.toString();
+    }
+    suffix.set(key, val);
+  }
+
+  let str = suffix.toString();
+  if (str.length > 0) {
+    str = "?" + str;
+  }
+
+  return str;
 }
 
 function getMostRecentTimestamp(timestamps: SourceChangeTimestamps): number {

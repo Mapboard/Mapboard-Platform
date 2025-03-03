@@ -118,7 +118,21 @@ function LayerControlPanel() {
     h(Divider),
     h(BasemapList),
     h(TerrainExaggeration),
+    h(TopologyPrimitivesSwitch),
   ]);
+}
+
+function TopologyPrimitivesSwitch() {
+  const showPrimitives = useMapState((state) => state.showTopologyPrimitives);
+  const togglePrimitives = useMapActions(
+    (actions) => actions.toggleShowTopologyPrimitives,
+  );
+
+  return h(OurSwitch, {
+    label: "Topology primitives",
+    checked: showPrimitives,
+    onChange: togglePrimitives,
+  });
 }
 
 function TerrainExaggeration() {
