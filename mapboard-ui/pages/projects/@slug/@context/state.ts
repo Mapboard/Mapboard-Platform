@@ -83,6 +83,7 @@ interface LocalStorageState {
   showCrossSectionLines: boolean;
   showLineEndpoints: boolean;
   showTopologyPrimitives: boolean;
+  selectionFeatureMode: FeatureMode;
 }
 
 type StoredMapState = RecoverableMapState & LocalStorageState;
@@ -93,7 +94,6 @@ export interface MapState extends StoredMapState {
   selection: FeatureSelection | null;
   selectionAction: SelectionActionState<any> | null;
   selectionMode: SelectionMode;
-  selectionFeatureMode: FeatureMode;
   enabledFeatureModes: Set<FeatureMode>;
   showOverlay: boolean;
   showFacesWithNoUnit: boolean;
@@ -312,10 +312,19 @@ function validateLocalStorageState(state: any): LocalStorageState | null {
   if (state == null || typeof state !== "object") {
     return null;
   }
+  let selectionFeatureMode = state.selectionFeatureMode;
+  if (
+    selectionFeatureMode != null &&
+    !allFeatureModes.has(selectionFeatureMode)
+  ) {
+    selectionFeatureMode = null;
+  }
+
   return {
     showCrossSectionLines: state.showCrossSectionLines ?? true,
     showLineEndpoints: state.showLineEndpoints ?? false,
     showTopologyPrimitives: state.showTopologyPrimitives ?? false,
+    selectionFeatureMode: selectionFeatureMode ?? FeatureMode.Line,
   };
 }
 
@@ -353,16 +362,19 @@ export function MapStateProvider({ children, baseURL }) {
         showCrossSectionLines,
         showLineEndpoints,
         showTopologyPrimitives,
+        selectionFeatureMode,
       } = state;
       if (
         showCrossSectionLines != prevState.showCrossSectionLines ||
         showLineEndpoints != prevState.showLineEndpoints ||
-        showTopologyPrimitives != prevState.showTopologyPrimitives
+        showTopologyPrimitives != prevState.showTopologyPrimitives ||
+        selectionFeatureMode != prevState.selectionFeatureMode
       ) {
         storage.current.set({
           showCrossSectionLines,
           showLineEndpoints,
           showTopologyPrimitives,
+          selectionFeatureMode,
         });
       }
     });
