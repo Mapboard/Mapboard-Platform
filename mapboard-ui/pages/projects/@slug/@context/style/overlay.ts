@@ -56,7 +56,7 @@ export function buildMapOverlayStyle(
 
   if (selectedLayer == null) {
     filter = ["!", ["in", ["get", "map_layer"], ["literal", disabledLayers]]];
-    featureModes = new Set([FeatureMode.Line, FeatureMode.Topology]);
+    featureModes = new Set([FeatureMode.Line, FeatureMode.Face]);
   }
 
   let params = new URLSearchParams();
@@ -86,7 +86,7 @@ export function buildMapOverlayStyle(
     };
   }
 
-  let lyr = Array.from(featureModes).join(",");
+  let lyr = Array.from(featureModes).map(tileLayerNameForFeatureMode).join(",");
   if (lyr.length == 0) {
     // We can't have an empty layer at the moment, so we request line data
     lyr = "line";
@@ -112,7 +112,7 @@ export function buildMapOverlayStyle(
     };
   }
 
-  if (featureModes.has(FeatureMode.Topology)) {
+  if (featureModes.has(FeatureMode.Face)) {
     let paint = {
       "fill-color": ["get", "color"],
       //"fill-opacity": selectedLayerOpacity(0.5, 0.3),
@@ -126,7 +126,7 @@ export function buildMapOverlayStyle(
 
     // Fill pattern layers
     layers.push({
-      id: "map-face-colors",
+      id: "faces",
       type: "fill",
       source: "mapboard",
       "source-layer": "faces",
@@ -143,7 +143,7 @@ export function buildMapOverlayStyle(
       const mapSymbolFilter: any[] = ["has", ["get", "type"], ix];
 
       layers.push({
-        id: "map-face-patterns",
+        id: "faces-patterns",
         type: "fill",
         source: "mapboard",
         "source-layer": "faces",
@@ -292,6 +292,17 @@ export function buildMapOverlayStyle(
     sources,
     layers,
   };
+}
+
+function tileLayerNameForFeatureMode(mode: FeatureMode): string {
+  switch (mode) {
+    case FeatureMode.Face:
+      return "topology";
+    case FeatureMode.Line:
+      return "line";
+    case FeatureMode.Polygon:
+      return "polygon";
+  }
 }
 
 function getTileQueryParams(params: Record<string, any>) {

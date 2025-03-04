@@ -21,9 +21,10 @@ interface MapActions {
   setMapLayers: (layers: any[]) => void;
   setSelectionAction: (action: SelectionActionType | null) => void;
   setSelectionMode: (mode: SelectionMode) => void;
+  setSelectionFeatureMode: (mode: FeatureMode) => void;
   setSelectionActionState: (state: any) => void;
   setDataTypes: (mode: "line" | "polygon", types: DataType[]) => void;
-  notifyChange: (mode: "line" | "polygon" | "topo") => void;
+  notifyChange: (mode: FeatureMode) => void;
   toggleLineEndpoints: () => void;
   toggleFeatureMode: (mode: FeatureMode) => void;
   setTerrainExaggeration: (exaggeration: number) => void;
@@ -62,13 +63,13 @@ export enum SelectionMode {
 export enum FeatureMode {
   Line = "line",
   Polygon = "polygon",
-  Topology = "topology",
+  Face = "face",
 }
 
 export const allFeatureModes = new Set([
   FeatureMode.Line,
   FeatureMode.Polygon,
-  FeatureMode.Topology,
+  FeatureMode.Face,
 ]);
 
 export interface PolygonDataType extends DataType {
@@ -82,6 +83,7 @@ interface LocalStorageState {
   showCrossSectionLines: boolean;
   showLineEndpoints: boolean;
   showTopologyPrimitives: boolean;
+  selectionFeatureMode: FeatureMode;
 }
 
 type StoredMapState = RecoverableMapState & LocalStorageState;
@@ -118,10 +120,9 @@ export enum BasemapType {
 }
 
 export type FeatureSelection = {
-  lines: number[];
-  lineTypes?: Set<string>;
-  polygons: number[];
-  polygonTypes?: Set<string>;
+  type: FeatureMode;
+  features: number[];
+  dataTypes: Set<string>;
 };
 
 function createMapStore(
@@ -136,6 +137,7 @@ function createMapStore(
         layerPanelIsOpen: false,
         selection: null,
         selectionAction: null,
+        selectionFeatureMode: FeatureMode.Line,
         selectionMode: SelectionMode.Replace,
         mapLayers: null,
         enabledFeatureModes: allFeatureModes,
@@ -173,7 +175,7 @@ function createMapStore(
               }
               return { activeLayer, selection: null };
             }),
-          notifyChange: (mode: "line" | "polygon" | "topo") => {
+          notifyChange: (mode: FeatureMode) => {
             return set((state) => {
               return {
                 lastChangeTime: {
@@ -231,6 +233,8 @@ function createMapStore(
               };
             });
           },
+          setSelectionFeatureMode: (mode) =>
+            set({ selectionFeatureMode: mode }),
           toggleLineEndpoints: () =>
             set((state) => {
               return { showLineEndpoints: !state.showLineEndpoints };
@@ -308,10 +312,19 @@ function validateLocalStorageState(state: any): LocalStorageState | null {
   if (state == null || typeof state !== "object") {
     return null;
   }
+  let selectionFeatureMode = state.selectionFeatureMode;
+  if (
+    selectionFeatureMode != null &&
+    !allFeatureModes.has(selectionFeatureMode)
+  ) {
+    selectionFeatureMode = null;
+  }
+
   return {
     showCrossSectionLines: state.showCrossSectionLines ?? true,
     showLineEndpoints: state.showLineEndpoints ?? false,
     showTopologyPrimitives: state.showTopologyPrimitives ?? false,
+    selectionFeatureMode: selectionFeatureMode ?? FeatureMode.Line,
   };
 }
 
@@ -349,16 +362,19 @@ export function MapStateProvider({ children, baseURL }) {
         showCrossSectionLines,
         showLineEndpoints,
         showTopologyPrimitives,
+        selectionFeatureMode,
       } = state;
       if (
         showCrossSectionLines != prevState.showCrossSectionLines ||
         showLineEndpoints != prevState.showLineEndpoints ||
-        showTopologyPrimitives != prevState.showTopologyPrimitives
+        showTopologyPrimitives != prevState.showTopologyPrimitives ||
+        selectionFeatureMode != prevState.selectionFeatureMode
       ) {
         storage.current.set({
           showCrossSectionLines,
           showLineEndpoints,
           showTopologyPrimitives,
+          selectionFeatureMode,
         });
       }
     });

@@ -234,7 +234,7 @@ function SingleLayerViewOptions() {
     }),
     h(OurSwitch, {
       label: "Fills",
-      ...switchProps(FeatureMode.Topology),
+      ...switchProps(FeatureMode.Face),
     }),
     h("div.subsidiary-switches", [
       h(OurSwitch, {

@@ -1,21 +1,19 @@
 // Import other components
 import hyper from "@macrostrat/hyper";
 import {
-  BaseInfoDrawer,
   FloatingNavbar,
   MapAreaContainer,
   MapView,
   PanelCard,
 } from "@macrostrat/map-interface";
 import styles from "./map.module.scss";
-import { SelectionMode, useMapActions, useMapState } from "./state";
+import { useMapActions, useMapState } from "./state";
 import { SphericalMercator } from "@mapbox/sphericalmercator";
 import { useMapRef } from "@macrostrat/mapbox-react";
 import { useMapStyle } from "./style";
-import { BoxSelectionManager } from "./_tools";
-import { SelectionActionsPanel } from "./selection";
-import { FormGroup, OptionProps, SegmentedControl } from "@blueprintjs/core";
+import { BoxSelectionManager } from "./selection";
 import { MapReloadWatcher } from "./change-watcher";
+import { SelectionDrawer } from "./selection/control-panel";
 
 const mercator = new SphericalMercator({
   size: 256,
@@ -65,7 +63,7 @@ export function MapArea({
       contextPanelOpen: isOpen,
       fitViewport: true,
       //detailPanel: h("div.right-elements", [toolsCard, h(InfoDrawer)]),
-      detailPanel: h(InfoDrawer),
+      detailPanel: h(SelectionDrawer),
       className: "mapboard-map",
     },
     [
@@ -81,65 +79,6 @@ export function MapArea({
       h(BoxSelectionManager),
       h(MapReloadWatcher, { baseURL }),
     ],
-  );
-}
-
-const featureTypes = ["lines", "points", "polygons"];
-
-function InfoDrawer() {
-  const selection = useMapState((state) => state.selection);
-  const selectFeatures = useMapActions((a) => a.selectFeatures);
-  if (selection == null) {
-    return null;
-  }
-
-  return h(
-    BaseInfoDrawer,
-    {
-      title: "Selection",
-      onClose() {
-        selectFeatures(null);
-      },
-    },
-    [
-      h("div.selection-counts", [
-        featureTypes.map((type) => {
-          const count = selection[type]?.length;
-          if (count == null || count == 0) {
-            return null;
-          }
-          return h("p", `${count} ${type} selected`);
-        }),
-      ]),
-      h(SelectionModePicker),
-      h(SelectionActionsPanel),
-    ],
-  );
-}
-
-const modes: OptionProps<string>[] = [
-  { value: SelectionMode.Add, label: "Add" },
-  { value: SelectionMode.Subtract, label: "Subtract" },
-  { value: SelectionMode.Replace, label: "Replace" },
-];
-
-function SelectionModePicker() {
-  /** Picker to define how we are selecting features */
-  const setSelectionMode = useMapActions((a) => a.setSelectionMode);
-  const activeMode = useMapState((state) => state.selectionMode);
-  return h(
-    FormGroup,
-    {
-      className: "selection-mode-control",
-      inline: true,
-      label: "Selection mode",
-    },
-    h(SegmentedControl, {
-      options: modes,
-      value: activeMode,
-      onValueChange: setSelectionMode,
-      small: true,
-    }),
   );
 }
 
