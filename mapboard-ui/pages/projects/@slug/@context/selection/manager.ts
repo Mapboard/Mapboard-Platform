@@ -74,7 +74,7 @@ export function layerNameForFeatureMode(mode: FeatureMode) {
       return "lines";
     case FeatureMode.Polygon:
       return "polygons";
-    case FeatureMode.Topology:
+    case FeatureMode.Face:
       return "faces";
   }
 }

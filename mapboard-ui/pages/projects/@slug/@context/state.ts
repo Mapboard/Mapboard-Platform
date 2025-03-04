@@ -63,13 +63,13 @@ export enum SelectionMode {
 export enum FeatureMode {
   Line = "line",
   Polygon = "polygon",
-  Topology = "topology",
+  Face = "face",
 }
 
 export const allFeatureModes = new Set([
   FeatureMode.Line,
   FeatureMode.Polygon,
-  FeatureMode.Topology,
+  FeatureMode.Face,
 ]);
 
 export interface PolygonDataType extends DataType {
@@ -175,7 +175,7 @@ function createMapStore(
               }
               return { activeLayer, selection: null };
             }),
-          notifyChange: (mode: "line" | "polygon" | "topo") => {
+          notifyChange: (mode: FeatureMode) => {
             return set((state) => {
               return {
                 lastChangeTime: {

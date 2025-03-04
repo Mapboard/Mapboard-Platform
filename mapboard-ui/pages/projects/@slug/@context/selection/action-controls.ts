@@ -72,7 +72,7 @@ function buildActions(mode: FeatureMode): MapboardActionDef[] {
       id: SelectionActionType.Delete,
       name: "Delete",
       icon: "trash",
-      disabled: mode == FeatureMode.Topology,
+      disabled: mode == FeatureMode.Face,
       description: "Delete selected features",
       intent: "danger",
     },
@@ -98,7 +98,7 @@ function buildActions(mode: FeatureMode): MapboardActionDef[] {
       id: SelectionActionType.ChangeType,
       name: "Change type",
       icon: "edit",
-      disabled: mode == FeatureMode.Topology,
+      disabled: mode == FeatureMode.Face,
       detailsForm: ChangeDataTypeForm,
       isReady(state) {
         return state != null;
@@ -108,7 +108,7 @@ function buildActions(mode: FeatureMode): MapboardActionDef[] {
       id: SelectionActionType.ChangeLayer,
       name: "Change layer",
       icon: "layers",
-      disabled: mode == FeatureMode.Topology,
+      disabled: mode == FeatureMode.Face,
       detailsForm: ChangeLayerForm,
       isReady(state) {
         return state != null;

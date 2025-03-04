@@ -51,7 +51,7 @@ export function SelectionDrawer() {
 const featureModes: OptionProps<string>[] = [
   { value: FeatureMode.Line, label: "Lines" },
   { value: FeatureMode.Polygon, label: "Polygons" },
-  { value: FeatureMode.Topology, label: "Faces" },
+  { value: FeatureMode.Face, label: "Faces" },
 ];
 
 function SelectionFeatureModePicker() {
