@@ -21,6 +21,7 @@ interface MapActions {
   setMapLayers: (layers: any[]) => void;
   setSelectionAction: (action: SelectionActionType | null) => void;
   setSelectionMode: (mode: SelectionMode) => void;
+  setSelectionFeatureMode: (mode: FeatureMode) => void;
   setSelectionActionState: (state: any) => void;
   setDataTypes: (mode: "line" | "polygon", types: DataType[]) => void;
   notifyChange: (mode: "line" | "polygon" | "topo") => void;

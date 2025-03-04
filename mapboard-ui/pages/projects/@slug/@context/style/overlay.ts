@@ -126,7 +126,7 @@ export function buildMapOverlayStyle(
 
     // Fill pattern layers
     layers.push({
-      id: "map-face-colors",
+      id: "faces",
       type: "fill",
       source: "mapboard",
       "source-layer": "faces",
@@ -143,7 +143,7 @@ export function buildMapOverlayStyle(
       const mapSymbolFilter: any[] = ["has", ["get", "type"], ix];
 
       layers.push({
-        id: "map-face-patterns",
+        id: "faces-patterns",
         type: "fill",
         source: "mapboard",
         "source-layer": "faces",

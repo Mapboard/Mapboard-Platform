@@ -8,7 +8,7 @@ import styles from "./manager.module.sass";
 import mapboxgl from "mapbox-gl";
 import hyper from "@macrostrat/hyper";
 import { renderToString } from "react-dom/server";
-import { useMapActions, useMapState } from "../state";
+import { FeatureMode, useMapActions, useMapState } from "../state";
 import { useEffect, useRef, useState } from "react";
 import { DataField } from "@macrostrat/data-components";
 
@@ -20,7 +20,7 @@ type BoxSelectionProps = {
 
 export function buildSelectionLayers(color: string = "#ff0000") {
   const filter = ["in", ["get", "id"], ["literal", []]];
-  return [
+  let layers = [
     {
       id: "lines-selected",
       type: "line",
@@ -45,6 +45,33 @@ export function buildSelectionLayers(color: string = "#ff0000") {
       filter,
     },
   ];
+
+  for (const layer of ["polygons", "faces"]) {
+    layers.push({
+      id: `${layer}-selected`,
+      type: "fill",
+      source: "mapboard",
+      "source-layer": layer,
+      paint: {
+        "fill-color": color,
+        "fill-opacity": 0.5,
+      },
+      filter,
+    });
+  }
+
+  return layers;
+}
+
+function layerNameForFeatureMode(mode: FeatureMode) {
+  switch (mode) {
+    case FeatureMode.Line:
+      return "lines";
+    case FeatureMode.Polygon:
+      return "polygons";
+    case FeatureMode.Topology:
+      return "faces";
+  }
 }
 
 export function BoxSelectionManager(props: BoxSelectionProps) {
@@ -201,6 +228,8 @@ export function BoxSelectionManager(props: BoxSelectionProps) {
         if (e.keyCode === 27) finish();
       }
 
+      const layerName = layerNameForFeatureMode(selectionFeatureMode);
+
       function finish(bbox) {
         // Remove these events now that finish has been called.
         document.removeEventListener("mousemove", onMouseMove);
@@ -220,7 +249,7 @@ export function BoxSelectionManager(props: BoxSelectionProps) {
           }
 
           const features = map.queryRenderedFeatures(bbox, {
-            layers: ["lines"],
+            layers: [layerName],
             filter,
           });
 
@@ -249,7 +278,7 @@ export function BoxSelectionManager(props: BoxSelectionProps) {
 
       const listener = (e) => {
         const features = map.queryRenderedFeatures(e.point, {
-          layers: ["lines-selected"],
+          layers: [`${layerName}-selected`],
         });
 
         const f: any = features[0]?.properties;
@@ -263,7 +292,7 @@ export function BoxSelectionManager(props: BoxSelectionProps) {
         map.off("mousemove", listener);
       };
     },
-    [activeLayer],
+    [activeLayer, selectionFeatureMode],
   );
 
   return null;
