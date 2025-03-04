@@ -1,5 +1,5 @@
 import hyper from "@macrostrat/hyper";
-import styles from "./action-panel.module.css";
+import styles from "./action-controls.module.css";
 import { FormGroup, MenuItem, NumericInput } from "@blueprintjs/core";
 import { MapLayer, MapState, useMapState, useMapStateAPI } from "../state";
 import {
