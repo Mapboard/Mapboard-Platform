@@ -8,7 +8,6 @@ import {
   ItemSelect,
 } from "@macrostrat/form-components";
 import { Box, NullableSlider, useToaster } from "@macrostrat/ui-components";
-import { apiBaseURL } from "~/settings";
 import { useEffect } from "react";
 
 const h = hyper.styled(styles);

@@ -22,7 +22,7 @@ export function buildSelectionLayers(color: string = "#ff0000") {
   const filter = ["in", ["get", "id"], ["literal", []]];
   return [
     {
-      id: "lines-highlighted",
+      id: "lines-selected",
       type: "line",
       source: "mapboard",
       "source-layer": "lines",
@@ -34,7 +34,7 @@ export function buildSelectionLayers(color: string = "#ff0000") {
       filter,
     },
     {
-      id: "lines-endpoints-highlighted",
+      id: "lines-selected-endpoints",
       type: "circle",
       source: "mapboard",
       "source-layer": "endpoints",
@@ -52,6 +52,9 @@ export function BoxSelectionManager(props: BoxSelectionProps) {
   const selectFeatures = useMapActions((actions) => actions.selectFeatures);
   const selectedFeatures = useMapState((state) => state.selection);
   const mapLayerIDMap = useMapState((state) => state.mapLayerIDMap);
+  const selectionFeatureMode = useMapState(
+    (state) => state.selectionFeatureMode,
+  );
 
   const [hoveredFeature, setHoveredFeature] = useState<any | null>(null);
   const [hoverLocation, setHoverLocation] =
@@ -101,10 +104,7 @@ export function BoxSelectionManager(props: BoxSelectionProps) {
     (map) => {
       if (map == null) return;
       const fips = selectedFeatures?.lines ?? [];
-      for (const layerID of [
-        "lines-highlighted",
-        "lines-endpoints-highlighted",
-      ]) {
+      for (const layerID of ["lines-selected", "lines-selected-endpoints"]) {
         if (map.getLayer(layerID) != null) {
           map.setFilter(layerID, ["in", ["get", "id"], ["literal", fips]]);
         }
@@ -236,9 +236,11 @@ export function BoxSelectionManager(props: BoxSelectionProps) {
 
           selectFeatures({
             lines: fips,
-            lineTypes,
             polygons: [],
+            faces: [],
+            lineTypes,
             polygonTypes: new Set(),
+            faceTypes: new Set(),
           });
         }
 
@@ -247,7 +249,7 @@ export function BoxSelectionManager(props: BoxSelectionProps) {
 
       const listener = (e) => {
         const features = map.queryRenderedFeatures(e.point, {
-          layers: ["lines-highlighted"],
+          layers: ["lines-selected"],
         });
 
         const f: any = features[0]?.properties;

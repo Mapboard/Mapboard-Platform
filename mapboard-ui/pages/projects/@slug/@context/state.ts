@@ -92,6 +92,7 @@ export interface MapState extends StoredMapState {
   selection: FeatureSelection | null;
   selectionAction: SelectionActionState<any> | null;
   selectionMode: SelectionMode;
+  selectionFeatureMode: FeatureMode;
   enabledFeatureModes: Set<FeatureMode>;
   showOverlay: boolean;
   showFacesWithNoUnit: boolean;
@@ -119,9 +120,11 @@ export enum BasemapType {
 
 export type FeatureSelection = {
   lines: number[];
-  lineTypes?: Set<string>;
   polygons: number[];
+  faces: number[];
+  lineTypes?: Set<string>;
   polygonTypes?: Set<string>;
+  faceTypes?: Set<string>;
 };
 
 function createMapStore(
@@ -136,6 +139,7 @@ function createMapStore(
         layerPanelIsOpen: false,
         selection: null,
         selectionAction: null,
+        selectionFeatureMode: FeatureMode.Line,
         selectionMode: SelectionMode.Replace,
         mapLayers: null,
         enabledFeatureModes: allFeatureModes,
