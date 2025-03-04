@@ -1,9 +1,15 @@
-import { SelectionMode, useMapActions, useMapState } from "../state";
+import {
+  FeatureMode,
+  SelectionMode,
+  useMapActions,
+  useMapState,
+} from "../state";
 import { BaseInfoDrawer } from "@macrostrat/map-interface";
 import { SelectionActionsPanel } from "./action-controls";
 import { FormGroup, OptionProps, SegmentedControl } from "@blueprintjs/core";
 import hyper from "@macrostrat/hyper";
 import styles from "./control-panel.module.sass";
+import { layerNameForFeatureMode } from "./manager";
 
 const h = hyper.styled(styles);
 
@@ -16,6 +22,13 @@ export function SelectionDrawer() {
     return null;
   }
 
+  const { type, features } = selection;
+  const count = features.length;
+  let typeName = layerNameForFeatureMode(type);
+  if (count == 1) {
+    typeName = typeName.replace(/s$/, "");
+  }
+
   return h(
     BaseInfoDrawer,
     {
@@ -25,18 +38,39 @@ export function SelectionDrawer() {
       },
     },
     [
+      h(SelectionFeatureModePicker),
       h("div.selection-counts", [
-        featureTypes.map((type) => {
-          const count = selection[type]?.length;
-          if (count == null || count == 0) {
-            return null;
-          }
-          return h("p", `${count} ${type} selected`);
-        }),
+        h.if(count > 0)("p", `${count} ${typeName} selected`),
       ]),
       h(SelectionModePicker),
-      h(SelectionActionsPanel),
+      h(SelectionActionsPanel, { featureMode: type }),
     ],
+  );
+}
+
+const featureModes: OptionProps<string>[] = [
+  { value: FeatureMode.Line, label: "Lines" },
+  { value: FeatureMode.Polygon, label: "Polygons" },
+  { value: FeatureMode.Topology, label: "Faces" },
+];
+
+function SelectionFeatureModePicker() {
+  const setFeatureMode = useMapActions((a) => a.setSelectionFeatureMode);
+  const activeMode = useMapState((state) => state.selectionFeatureMode);
+
+  return h(
+    FormGroup,
+    {
+      className: "selection-mode-control",
+      inline: true,
+      label: "Feature mode",
+    },
+    h(SegmentedControl, {
+      options: featureModes,
+      value: activeMode,
+      onValueChange: setFeatureMode,
+      small: true,
+    }),
   );
 }
 

@@ -8,7 +8,12 @@ import styles from "./manager.module.sass";
 import mapboxgl from "mapbox-gl";
 import hyper from "@macrostrat/hyper";
 import { renderToString } from "react-dom/server";
-import { FeatureMode, useMapActions, useMapState } from "../state";
+import {
+  allFeatureModes,
+  FeatureMode,
+  useMapActions,
+  useMapState,
+} from "../state";
 import { useEffect, useRef, useState } from "react";
 import { DataField } from "@macrostrat/data-components";
 
@@ -63,7 +68,7 @@ export function buildSelectionLayers(color: string = "#ff0000") {
   return layers;
 }
 
-function layerNameForFeatureMode(mode: FeatureMode) {
+export function layerNameForFeatureMode(mode: FeatureMode) {
   switch (mode) {
     case FeatureMode.Line:
       return "lines";
@@ -130,10 +135,26 @@ export function BoxSelectionManager(props: BoxSelectionProps) {
   useMapStyleOperator(
     (map) => {
       if (map == null) return;
-      const fips = selectedFeatures?.lines ?? [];
-      for (const layerID of ["lines-selected", "lines-selected-endpoints"]) {
+      const features = selectedFeatures?.features ?? [];
+      const selectedFeatureType = selectedFeatures?.type;
+
+      for (const type of allFeatureModes) {
+        const lyr = layerNameForFeatureMode(type);
+        const layerID = `${lyr}-selected`;
+        let selected = selectedFeatureType == type ? features : [];
+
         if (map.getLayer(layerID) != null) {
-          map.setFilter(layerID, ["in", ["get", "id"], ["literal", fips]]);
+          map.setFilter(layerID, ["in", ["get", "id"], ["literal", selected]]);
+        }
+        if (type == FeatureMode.Line) {
+          const endpointsLayerID = `${lyr}-endpoints-selected`;
+          if (map.getLayer(endpointsLayerID) != null) {
+            map.setFilter(endpointsLayerID, [
+              "in",
+              ["get", "id"],
+              ["literal", selected],
+            ]);
+          }
         }
       }
     },
@@ -261,15 +282,12 @@ export function BoxSelectionManager(props: BoxSelectionProps) {
           // to match features with unique FIPS codes to activate
           // the `counties-highlighted` layer.
           const fips = features.map((feature) => feature.properties.id);
-          const lineTypes = new Set(features.map((f) => f.properties.type));
+          const featureTypes = new Set(features.map((f) => f.properties.type));
 
           selectFeatures({
-            lines: fips,
-            polygons: [],
-            faces: [],
-            lineTypes,
-            polygonTypes: new Set(),
-            faceTypes: new Set(),
+            type: selectionFeatureMode,
+            features: fips,
+            dataTypes: featureTypes,
           });
         }
 

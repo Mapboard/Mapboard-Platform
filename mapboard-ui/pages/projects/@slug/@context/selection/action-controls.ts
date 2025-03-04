@@ -1,7 +1,13 @@
 import hyper from "@macrostrat/hyper";
 import styles from "./action-controls.module.css";
 import { FormGroup, MenuItem, NumericInput } from "@blueprintjs/core";
-import { MapLayer, MapState, useMapState, useMapStateAPI } from "../state";
+import {
+  FeatureMode,
+  MapLayer,
+  MapState,
+  useMapState,
+  useMapStateAPI,
+} from "../state";
 import {
   ActionDef,
   ActionsPreflightPanel,
@@ -60,75 +66,86 @@ type MapboardActionDef =
   | ActionDef<SelectionActionType.AdjustCertainty, number | null>
   | ActionDef<SelectionActionType.ReverseLines>;
 
-const actions: MapboardActionDef[] = [
-  {
-    id: SelectionActionType.Delete,
-    name: "Delete",
-    icon: "trash",
-    description: "Delete selected features",
-    intent: "danger",
-  },
-  {
-    id: SelectionActionType.Heal,
-    name: "Heal",
-    icon: "changes",
-    description: "Heal selected features",
-    detailsForm: HealForm,
-    isReady(state) {
-      return state != null;
+function buildActions(mode: FeatureMode): MapboardActionDef[] {
+  return [
+    {
+      id: SelectionActionType.Delete,
+      name: "Delete",
+      icon: "trash",
+      disabled: mode == FeatureMode.Topology,
+      description: "Delete selected features",
+      intent: "danger",
     },
-  },
-  {
-    id: SelectionActionType.RecalculateTopology,
-    name: "Recalculate topology",
-    icon: "polygon-filter",
-    description: "Recalculate the topology of selected features",
-  },
-  {
-    id: SelectionActionType.ChangeType,
-    name: "Change type",
-    icon: "edit",
-    detailsForm: ChangeDataTypeForm,
-    isReady(state) {
-      return state != null;
+    {
+      id: SelectionActionType.Heal,
+      name: "Heal",
+      icon: "changes",
+      disabled: mode != FeatureMode.Line,
+      description: "Heal lines",
+      detailsForm: HealForm,
+      isReady(state) {
+        return state != null;
+      },
     },
-  },
-  {
-    id: SelectionActionType.ChangeLayer,
-    name: "Change layer",
-    icon: "layers",
-    detailsForm: ChangeLayerForm,
-    isReady(state) {
-      return state != null;
+    {
+      id: SelectionActionType.RecalculateTopology,
+      name: "Recalculate topology",
+      icon: "polygon-filter",
+      disabled: mode != FeatureMode.Line,
+      description: "Recalculate the topology of selected features",
     },
-  },
-  {
-    id: SelectionActionType.AdjustWidth,
-    name: "Adjust width",
-    icon: "horizontal-distribution",
-    disabled: true,
-    detailsForm: AdjustWidthForm,
-    defaultState: 5,
-    isReady(state) {
-      return state != null;
+    {
+      id: SelectionActionType.ChangeType,
+      name: "Change type",
+      icon: "edit",
+      disabled: mode == FeatureMode.Topology,
+      detailsForm: ChangeDataTypeForm,
+      isReady(state) {
+        return state != null;
+      },
     },
-  },
-  {
-    id: SelectionActionType.AdjustCertainty,
-    name: "Adjust certainty",
-    icon: "confirm",
-    disabled: true,
-    detailsForm: AdjustCertaintyForm,
-  },
-  {
-    id: SelectionActionType.ReverseLines,
-    name: "Reverse lines",
-    icon: "swap-horizontal",
-    disabled: true,
-  },
-];
+    {
+      id: SelectionActionType.ChangeLayer,
+      name: "Change layer",
+      icon: "layers",
+      disabled: mode == FeatureMode.Topology,
+      detailsForm: ChangeLayerForm,
+      isReady(state) {
+        return state != null;
+      },
+    },
+    {
+      id: SelectionActionType.AdjustWidth,
+      name: "Adjust width",
+      icon: "horizontal-distribution",
+      disabled: true,
+      detailsForm: AdjustWidthForm,
+      defaultState: 5,
+      isReady(state) {
+        return state != null;
+      },
+    },
+    {
+      id: SelectionActionType.AdjustCertainty,
+      name: "Adjust certainty",
+      icon: "confirm",
+      disabled: true,
+      detailsForm: AdjustCertaintyForm,
+    },
+    {
+      id: SelectionActionType.ReverseLines,
+      name: "Reverse lines",
+      icon: "swap-horizontal",
+      disabled: true,
+    },
+  ];
+}
 
-export function SelectionActionsPanel() {
+export function SelectionActionsPanel({
+  featureMode,
+}: {
+  featureMode: FeatureMode;
+}) {
   const store = useMapStateAPI();
   const Toaster = useToaster();
   return h(ActionsPreflightPanel, {
@@ -143,11 +160,11 @@ export function SelectionActionsPanel() {
         });
         // If successful, notify that the layer has changed
         if (!resp.error) {
-          mapState.actions.notifyChange("line");
+          mapState.actions.notifyChange(featureMode);
         }
       });
     },
-    actions,
+    actions: buildActions(featureMode),
   });
 }
 
@@ -156,8 +173,12 @@ function synthesizeAction(
   state: any,
   mapState: MapState,
 ) {
+  if (mapState.selection == null) {
+    throw new Error("No features selected");
+  }
+  const { features, type } = mapState.selection;
   let actionData = {
-    features: mapState.selection?.lines,
+    features,
   };
 
   if (
@@ -176,7 +197,7 @@ function synthesizeAction(
   return {
     action: baseAction,
     layer: mapState.activeLayer,
-    mode: "line",
+    mode: type,
   };
 }
 
@@ -186,12 +207,11 @@ async function runAction(
   mapState: MapState,
 ) {
   const url = `${mapState.apiBaseURL}/changes`;
-  const lines = mapState.selection?.lines;
-  if (lines == null) {
-    throw new Error("No lines selected");
+  const features = mapState.selection?.features;
+  if (features == null) {
+    throw new Error("No features selected");
   }
   const actionBody = synthesizeAction(action, state, mapState);
-  console.log(actionBody);
   const body = JSON.stringify(actionBody);
   const response = await fetch(url, {
     method: "POST",

@@ -24,7 +24,7 @@ interface MapActions {
   setSelectionFeatureMode: (mode: FeatureMode) => void;
   setSelectionActionState: (state: any) => void;
   setDataTypes: (mode: "line" | "polygon", types: DataType[]) => void;
-  notifyChange: (mode: "line" | "polygon" | "topo") => void;
+  notifyChange: (mode: FeatureMode) => void;
   toggleLineEndpoints: () => void;
   toggleFeatureMode: (mode: FeatureMode) => void;
   setTerrainExaggeration: (exaggeration: number) => void;
@@ -120,12 +120,9 @@ export enum BasemapType {
 }
 
 export type FeatureSelection = {
-  lines: number[];
-  polygons: number[];
-  faces: number[];
-  lineTypes?: Set<string>;
-  polygonTypes?: Set<string>;
-  faceTypes?: Set<string>;
+  type: FeatureMode;
+  features: number[];
+  dataTypes: Set<string>;
 };
 
 function createMapStore(
@@ -236,6 +233,8 @@ function createMapStore(
               };
             });
           },
+          setSelectionFeatureMode: (mode) =>
+            set({ selectionFeatureMode: mode }),
           toggleLineEndpoints: () =>
             set((state) => {
               return { showLineEndpoints: !state.showLineEndpoints };
