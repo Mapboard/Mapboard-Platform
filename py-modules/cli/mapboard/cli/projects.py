@@ -3,7 +3,7 @@ from pathlib import Path
 
 from macrostrat.app_frame.compose import console
 from macrostrat.database.transfer import pg_dump, pg_dump_to_file, pg_restore
-from macrostrat.database.transfer.utils import print_stdout, print_stream_progress
+from macrostrat.database.transfer.stream_utils import print_stdout, print_stream_progress
 from macrostrat.database.utils import create_database, database_exists
 from mapboard.topology_manager.database import Database
 from mapboard.topology_manager.commands.create_tables import _create_tables

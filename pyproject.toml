@@ -14,6 +14,7 @@ python = "^3.11"
 "mapboard.core" = { path = "./py-modules/core", develop = true }
 "mapboard.cross-sections" = { path = "./py-modules/cross-sections", develop = true }
 "mapboard.api" = { path = "./py-modules/api", develop = true }
+setuptools = "^75.8.2"
 
 
 [tool.poetry.group.dev.dependencies]
