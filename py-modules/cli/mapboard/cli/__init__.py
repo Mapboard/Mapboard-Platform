@@ -78,7 +78,6 @@ app.add_typer(cdr_app, help="CriticalMAAS CDR commands", rich_help_panel="Subsys
 def _topology(ctx: typer.Context, project: str):
     """Watch a project's topology for changes"""
     params = project_params(project)
-    console.print(params)
     database = params.pop("database")
 
     db_url = connection_string(database, container_internal=False)
