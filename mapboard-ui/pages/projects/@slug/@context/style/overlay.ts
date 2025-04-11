@@ -65,6 +65,8 @@ export function buildMapOverlayStyle(
     return a;
   };
 
+  const overlayLayers: mapboxgl.Layer[] = [];
+
   let sources: Record<string, mapboxgl.SourceSpecification> = {
     "mapbox-dem": {
       type: "raster-dem",
@@ -86,11 +88,20 @@ export function buildMapOverlayStyle(
     };
   }
 
-  let lyr = Array.from(featureModes).map(tileLayerNameForFeatureMode).join(",");
-  if (lyr.length == 0) {
-    // We can't have an empty layer at the moment, so we request line data
-    lyr = "line";
+  const tilesetArray = Array.from(featureModes).map(tileLayerNameForFeatureMode);
+
+  if (showTopologyPrimitives) {
+    tilesetArray.push("nodes");
+    tilesetArray.push("edges");
+    overlayLayers.push(...buildTopologyLayers());
   }
+
+  if (tilesetArray.length == 0) {
+    // We can't have an empty layer at the moment, so we request line data
+    tilesetArray.push("line");
+  }
+
+  const compositeTileset = tilesetArray.join(",");
 
   /** Could also consider separate sources per layer */
   const suffix = getTileQueryParams({
@@ -100,7 +111,7 @@ export function buildMapOverlayStyle(
 
   sources["mapboard"] = {
     type: "vector",
-    tiles: [baseURL + `/tile/${lyr}/{z}/{x}/{y}${suffix}`],
+    tiles: [baseURL + `/tile/${compositeTileset}/{z}/{x}/{y}${suffix}`],
     volatile: true
   };
 
@@ -108,7 +119,7 @@ export function buildMapOverlayStyle(
     return {
       version: 8,
       sources,
-      layers
+      layers: [...layers, ...overlayLayers]
     };
   }
 
@@ -244,55 +255,61 @@ export function buildMapOverlayStyle(
     });
   }
 
-  if (showTopologyPrimitives) {
-    const suffix = getTileQueryParams({
-      changed
-    });
-    sources["mapboard-topology"] = {
-      type: "vector",
-      tiles: [baseURL + `/tile/node,edge/{z}/{x}/{y}${suffix}`],
-      volatile: true
-    };
+  return {
+    version: 8,
+    sources,
+    layers: [...layers, ...overlayLayers]
+  };
+}
 
-    layers.push({
-      id: "topo-edges",
+export function buildTopologyLayers() {
+  return [
+    // Edges
+    {
+      id: "edges",
       type: "line",
-      source: "mapboard-topology",
+      source: "mapboard",
       "source-layer": "edges",
       paint: {
-        "line-color": "rgb(217, 23, 128)",
-        "line-width": 1.2
+        "line-width": [
+          "interpolate",
+          ["linear"],
+          ["zoom"],
+          0, 0.2,
+          12, 1.5
+        ],
+        "line-color": "#4f11ab"
       }
-    });
-
-    layers.push({
-      id: "topo-nodes",
+    },
+    // Nodes
+    {
+      id: "nodes",
       type: "circle",
-      source: "mapboard-topology",
+      source: "mapboard",
       "source-layer": "nodes",
+      "min-zoom": 4,
       paint: {
-        "circle-color": "rgb(217, 23, 128)",
+        // Small radius when zoomed out and larger when zoomed in
         "circle-radius": [
           "interpolate",
           ["linear"],
           ["zoom"],
-          2,
-          1.5,
-          7,
-          2.2,
-          12,
-          3
+          0, 0.5,
+          12, 3
+        ],
+        "circle-color": [
+          "interpolate",
+          ["linear"],
+          ["get", "n_edges"],
+          1, "#d20045",
+          2, "#4f11ab",
+          4, "#606ad9"
         ]
       }
-    });
-  }
-
-  return {
-    version: 8,
-    sources,
-    layers
-  };
+    }
+  ];
 }
+
 
 function tileLayerNameForFeatureMode(mode: FeatureMode): string {
   switch (mode) {

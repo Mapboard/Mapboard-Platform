@@ -1008,7 +1008,7 @@ files = []
 develop = true
 
 [package.dependencies]
-"macrostrat.database" = "^3.3.0"
+"macrostrat.database" = "^3.5.0"
 "macrostrat.utils" = "^1.2.1"
 pytest-profiling = "^1.7.0"
 python-dotenv = "^1.0.1"

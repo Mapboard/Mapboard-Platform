@@ -13,6 +13,7 @@ import { bbox } from "@turf/bbox";
 import { MapLoadingButton, DevMapPage } from "@macrostrat/map-interface";
 import { MapArea } from "../map";
 import { PickerList } from "~/components/list";
+import { buildTopologyLayers } from "../style/overlay";
 
 const h = hyper.styled(styles);
 
@@ -29,51 +30,7 @@ function buildTopologyOverlay(baseURL: string) {
         "tiles": [`${baseURL}/tile/nodes,edges/{z}/{x}/{y}`]
       }
     },
-    layers: [
-      // Edges
-      {
-        id: "edges",
-        type: "line",
-        source: "mapboard",
-        "source-layer": "edges",
-        paint: {
-          "line-width": [
-            "interpolate",
-            ["linear"],
-            ["zoom"],
-            0, 0.2,
-            12, 1.5
-          ],
-          "line-color": "#4f11ab"
-        }
-      },
-      // Nodes
-      {
-        id: "nodes",
-        type: "circle",
-        source: "mapboard",
-        "source-layer": "nodes",
-        "min-zoom": 4,
-        paint: {
-          // Small radius when zoomed out and larger when zoomed in
-          "circle-radius": [
-            "interpolate",
-            ["linear"],
-            ["zoom"],
-            0, 0.5,
-            12, 3
-          ],
-          "circle-color": [
-            "interpolate",
-            ["linear"],
-            ["get", "n_edges"],
-            1, "#d20045",
-            2, "#4f11ab",
-            4, "#606ad9"
-          ]
-        }
-      }
-    ]
+    layers: buildTopologyLayers()
   };
 }
 
