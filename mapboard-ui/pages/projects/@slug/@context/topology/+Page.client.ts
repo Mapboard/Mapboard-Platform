@@ -20,6 +20,63 @@ export function Page() {
   return h(MapStateProvider, h(PageInner));
 }
 
+function buildTopologyOverlay(baseURL: string) {
+  return {
+    version: 8,
+    sources: {
+      "mapboard": {
+        "type": "vector",
+        "tiles": [`${baseURL}/tile/nodes,edges/{z}/{x}/{y}`]
+      }
+    },
+    layers: [
+      // Edges
+      {
+        id: "edges",
+        type: "line",
+        source: "mapboard",
+        "source-layer": "edges",
+        paint: {
+          "line-width": [
+            "interpolate",
+            ["linear"],
+            ["zoom"],
+            0, 0.2,
+            12, 1.5
+          ],
+          "line-color": "#4f11ab"
+        }
+      },
+      // Nodes
+      {
+        id: "nodes",
+        type: "circle",
+        source: "mapboard",
+        "source-layer": "nodes",
+        "min-zoom": 4,
+        paint: {
+          // Small radius when zoomed out and larger when zoomed in
+          "circle-radius": [
+            "interpolate",
+            ["linear"],
+            ["zoom"],
+            0, 0.5,
+            12, 3
+          ],
+          "circle-color": [
+            "interpolate",
+            ["linear"],
+            ["get", "n_edges"],
+            1, "#d20045",
+            2, "#4f11ab",
+            4, "#606ad9"
+          ]
+        }
+      }
+    ]
+  };
+}
+
 function PageInner() {
   const ctx = useData<Data>();
 
@@ -29,9 +86,11 @@ function PageInner() {
 
   const activeLayer = useMapState((state) => state.activeLayer);
 
+  const sourceChangeTimestamps = useMapState((state) => state.lastChangeTime);
+
   const overlayStyle = useMemo(
-    () => buildMapOverlayStyle(baseURL, { activeLayer }),
-    [ctx.project_slug, activeLayer],
+    () => buildTopologyOverlay(baseURL),
+    [baseURL]
   );
 
   return h(
@@ -42,9 +101,9 @@ function PageInner() {
       overlayStyle,
       bounds,
       //headerElement: h(ContextHeader, ctx),
-      baseURL,
+      baseURL
     },
-    [h(LayerControlPanel, { baseURL })],
+    [h(LayerControlPanel, { baseURL })]
   );
 
   return h(
@@ -59,11 +118,11 @@ function PageInner() {
         headerElement: h(ContextHeader, {
           backLink: `/projects/${ctx.project_slug}/${ctx.slug}`,
           backLinkText: ctx.name,
-          name: "Topology",
-        }),
+          name: "Topology"
+        })
       },
-      [h(LayerControlPanel, { baseURL })],
-    ),
+      [h(LayerControlPanel, { baseURL })]
+    )
   );
 }
 
@@ -75,7 +134,7 @@ function ContextHeader({ backLink, backLinkText, name }) {
     h(
       BackButton,
       { href: backLink, className: "back-to-project" },
-      backLinkText,
+      backLinkText
     ),
     h("div.title-row", [
       h(MapLoadingButton, {
@@ -83,10 +142,10 @@ function ContextHeader({ backLink, backLinkText, name }) {
         icon: "layers",
         active: isOpen,
         className: "layer-toggle",
-        onClick: () => setOpen(!isOpen),
+        onClick: () => setOpen(!isOpen)
       }),
-      h("h2", name),
-    ]),
+      h("h2", name)
+    ])
   ]);
 }
 
@@ -94,14 +153,14 @@ function BackButton({ href, children, className }) {
   return h(
     AnchorButton,
     { minimal: true, href, icon: "arrow-left", small: true, className },
-    children,
+    children
   );
 }
 
 function LayerControlPanel({ baseURL }) {
   return h("div.layer-control-panel", [
     h("h2", "Layers"),
-    h(LayerList, { baseURL }),
+    h(LayerList, { baseURL })
   ]);
 }
 
@@ -119,7 +178,7 @@ function LayerList({ baseURL }) {
   return h(
     PickerList,
     { className: "layer-list" },
-    sortedLayers.map((layer) => h(LayerControl, { layer })),
+    sortedLayers.map((layer) => h(LayerControl, { layer }))
   );
 }
 
@@ -133,8 +192,8 @@ function LayerControl({ layer }) {
       onClick() {
         setActive(layer.id);
       },
-      className: classNames({ active: active === layer.id }),
+      className: classNames({ active: active === layer.id })
     },
-    [h("span.name", layer.name)],
+    [h("span.name", layer.name)]
   );
 }

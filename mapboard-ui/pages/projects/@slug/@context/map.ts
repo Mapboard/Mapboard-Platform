@@ -4,7 +4,7 @@ import {
   FloatingNavbar,
   MapAreaContainer,
   MapView,
-  PanelCard,
+  PanelCard
 } from "@macrostrat/map-interface";
 import styles from "./map.module.scss";
 import { useMapActions, useMapState } from "./state";
@@ -17,19 +17,19 @@ import { SelectionDrawer } from "./selection/control-panel";
 
 const mercator = new SphericalMercator({
   size: 256,
-  antimeridian: true,
+  antimeridian: true
 });
 
 export const h = hyper.styled(styles);
 
 export function MapArea({
-  mapboxToken = null,
-  baseURL = null,
-  children,
-  bounds = null,
-  headerElement = null,
-  isMapView = true,
-}: {
+                          mapboxToken = null,
+                          baseURL = null,
+                          children,
+                          bounds = null,
+                          headerElement = null,
+                          isMapView = true
+                        }: {
   headerElement?: React.ReactElement;
   transformRequest?: mapboxgl.TransformRequestFunction;
   children?: React.ReactNode;
@@ -57,14 +57,14 @@ export function MapArea({
       navbar: h(FloatingNavbar, {
         headerElement,
         width: "fit-content",
-        height: "fit-content",
+        height: "fit-content"
       }),
       contextPanel: h(PanelCard, [children]),
       contextPanelOpen: isOpen,
       fitViewport: true,
       //detailPanel: h("div.right-elements", [toolsCard, h(InfoDrawer)]),
       detailPanel: h(SelectionDrawer),
-      className: "mapboard-map",
+      className: "mapboard-map"
     },
     [
       h(MapInner, {
@@ -73,23 +73,24 @@ export function MapArea({
         mapboxToken,
         bounds,
         fitBounds: !isMapView,
+        maxZoom: 22,
         baseURL,
-        isMapView,
+        isMapView
       }),
       h(BoxSelectionManager),
-      h(MapReloadWatcher, { baseURL }),
-    ],
+      h(MapReloadWatcher, { baseURL })
+    ]
   );
 }
 
 function MapInner({
-  baseURL,
-  fitBounds,
-  bounds,
-  mapboxToken,
-  isMapView,
-  ...rest
-}) {
+                    baseURL,
+                    fitBounds,
+                    bounds,
+                    mapboxToken,
+                    isMapView,
+                    ...rest
+                  }) {
   let maxBounds: BBox | null = null;
 
   const mapRef = useMapRef();
@@ -99,7 +100,7 @@ function MapInner({
 
   const style = useMapStyle(baseURL, {
     isMapView,
-    mapboxToken,
+    mapboxToken
   });
   if (style == null) {
     return null;
@@ -133,7 +134,7 @@ function MapInner({
     mapboxToken,
     style,
     onMapMoved: setMapPosition,
-    ...rest,
+    ...rest
   });
 }
 
@@ -167,7 +168,7 @@ function expandBounds(bounds: BBox, aspectRatio = 1, margin = 0.1) {
     center[0] - dx / 2,
     center[1] - dy / 2,
     center[0] + dx / 2,
-    center[1] + dy / 2,
+    center[1] + dy / 2
   ];
   return mercator.convert(bbox2, "WGS84");
 }
