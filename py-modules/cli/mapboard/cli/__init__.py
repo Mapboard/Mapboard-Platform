@@ -60,6 +60,10 @@ from .ingest import ingest_map
 
 app.command(name="ingest")(ingest_map)
 
+from .ops import app as ops_app
+
+app.add_typer(ops_app, name="ops", help="Misc. operations")
+
 from mapboard.cross_sections import app as xs_app
 
 app.add_typer(xs_app, help="Cross sections (Naukluft)", rich_help_panel="Subsystems")

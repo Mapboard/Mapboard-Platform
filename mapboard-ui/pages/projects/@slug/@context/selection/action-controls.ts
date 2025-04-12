@@ -6,12 +6,12 @@ import {
   MapLayer,
   MapState,
   useMapState,
-  useMapStateAPI,
+  useMapStateAPI
 } from "../state";
 import {
   ActionDef,
   ActionsPreflightPanel,
-  ItemSelect,
+  ItemSelect
 } from "@macrostrat/form-components";
 import { Box, NullableSlider, useToaster } from "@macrostrat/ui-components";
 import { useEffect } from "react";
@@ -74,7 +74,7 @@ function buildActions(mode: FeatureMode): MapboardActionDef[] {
       icon: "trash",
       disabled: mode == FeatureMode.Face,
       description: "Delete selected features",
-      intent: "danger",
+      intent: "danger"
     },
     {
       id: SelectionActionType.Heal,
@@ -85,14 +85,14 @@ function buildActions(mode: FeatureMode): MapboardActionDef[] {
       detailsForm: HealForm,
       isReady(state) {
         return state != null;
-      },
+      }
     },
     {
       id: SelectionActionType.RecalculateTopology,
       name: "Recalculate topology",
       icon: "polygon-filter",
       disabled: mode != FeatureMode.Line,
-      description: "Recalculate the topology of selected features",
+      description: "Recalculate the topology of selected features"
     },
     {
       id: SelectionActionType.ChangeType,
@@ -102,7 +102,7 @@ function buildActions(mode: FeatureMode): MapboardActionDef[] {
       detailsForm: ChangeDataTypeForm,
       isReady(state) {
         return state != null;
-      },
+      }
     },
     {
       id: SelectionActionType.ChangeLayer,
@@ -112,7 +112,7 @@ function buildActions(mode: FeatureMode): MapboardActionDef[] {
       detailsForm: ChangeLayerForm,
       isReady(state) {
         return state != null;
-      },
+      }
     },
     {
       id: SelectionActionType.AdjustWidth,
@@ -123,27 +123,27 @@ function buildActions(mode: FeatureMode): MapboardActionDef[] {
       defaultState: 5,
       isReady(state) {
         return state != null;
-      },
+      }
     },
     {
       id: SelectionActionType.AdjustCertainty,
       name: "Adjust certainty",
       icon: "confirm",
       disabled: true,
-      detailsForm: AdjustCertaintyForm,
+      detailsForm: AdjustCertaintyForm
     },
     {
       id: SelectionActionType.ReverseLines,
       name: "Reverse lines",
       icon: "swap-horizontal",
-      disabled: true,
-    },
+      disabled: true
+    }
   ];
 }
 
 export function SelectionActionsPanel({
-  featureMode,
-}: {
+                                        featureMode
+                                      }: {
   featureMode: FeatureMode;
 }) {
   const store = useMapStateAPI();
@@ -156,7 +156,7 @@ export function SelectionActionsPanel({
         const defaultMessage = resp.error ? "Error" : "Success";
         Toaster?.show({
           message: resp.message ?? resp.reason ?? defaultMessage,
-          intent: resp.error ? "danger" : "success",
+          intent: resp.error ? "danger" : "success"
         });
         // If successful, notify that the layer has changed
         if (!resp.error) {
@@ -164,21 +164,21 @@ export function SelectionActionsPanel({
         }
       });
     },
-    actions: buildActions(featureMode),
+    actions: buildActions(featureMode)
   });
 }
 
 function synthesizeAction(
   action: MapboardActionDef,
   state: any,
-  mapState: MapState,
+  mapState: MapState
 ) {
   if (mapState.selection == null) {
     throw new Error("No features selected");
   }
   const { features, type } = mapState.selection;
   let actionData = {
-    features,
+    features
   };
 
   if (
@@ -191,20 +191,20 @@ function synthesizeAction(
   }
 
   const baseAction = {
-    [action.id]: actionData,
+    [action.id]: actionData
   };
 
   return {
     action: baseAction,
     layer: mapState.activeLayer,
-    mode: type,
+    mode: type
   };
 }
 
 async function runAction(
   action: MapboardActionDef,
   state: any,
-  mapState: MapState,
+  mapState: MapState
 ) {
   const url = `${mapState.apiBaseURL}/changes`;
   const features = mapState.selection?.features;
@@ -216,9 +216,9 @@ async function runAction(
   const response = await fetch(url, {
     method: "POST",
     headers: {
-      "Content-Type": "application/json",
+      "Content-Type": "application/json"
     },
-    body,
+    body
   });
 
   return response.json();
@@ -227,20 +227,20 @@ async function runAction(
 type DataType = any;
 
 function HealForm({
-  state,
-  setState,
-}: {
+                    state,
+                    setState
+                  }: {
   state: string | null;
   setState(k: string | null): void;
 }) {
-  const selectedLineTypes = useMapState((state) => state.selection?.lineTypes);
+  const selectedLineTypes = useMapState((state) => state.selection?.dataTypes);
   let defaultSelectedID: string | null = null;
   if (selectedLineTypes != null && selectedLineTypes.size == 1) {
     defaultSelectedID = selectedLineTypes.values().next().value ?? null;
   }
 
   useEffect(() => {
-    if (defaultSelectedID != null && state == null) {
+    if (defaultSelectedID != null) {
       setState(defaultSelectedID);
     }
   }, [defaultSelectedID]);
@@ -249,10 +249,10 @@ function HealForm({
 }
 
 function ChangeDataTypeForm({
-  state,
-  setState,
-  defaultSelectedID = null,
-}: {
+                              state,
+                              setState,
+                              defaultSelectedID = null
+                            }: {
   state: string | null;
   setState(state: string | null): void;
   defaultSelectedID?: string | null;
@@ -278,19 +278,19 @@ function ChangeDataTypeForm({
           width: "1em",
           height: "1em",
           backgroundColor: item.color,
-          borderRadius: "3px",
+          borderRadius: "3px"
         }),
         text: item.name,
-        ...rest,
+        ...rest
       });
-    },
+    }
   });
 }
 
 function ChangeLayerForm({
-  state,
-  setState,
-}: {
+                           state,
+                           setState
+                         }: {
   state: number | null;
   setState(state: number): void;
 }) {
@@ -310,7 +310,7 @@ function ChangeLayerForm({
       setState(layer?.id);
     },
     label: "layer",
-    icon: "layers",
+    icon: "layers"
   });
 }
 
@@ -326,8 +326,8 @@ function AdjustWidthForm({ state, setState }) {
       minorStepSize: 0.2,
       onValueChange(value) {
         setState(Math.max(Math.min(value, 10), 0));
-      },
-    }),
+      }
+    })
   );
 }
 
@@ -341,7 +341,7 @@ function AdjustCertaintyForm({ state, setState }) {
       value: state,
       onChange(value) {
         setState(value);
-      },
-    }),
+      }
+    })
   );
 }
