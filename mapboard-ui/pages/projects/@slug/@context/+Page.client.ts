@@ -9,7 +9,7 @@ import {
   FormGroup,
   NumericInput,
   Spinner,
-  Switch,
+  Switch
 } from "@blueprintjs/core";
 import {
   BasemapType,
@@ -17,7 +17,7 @@ import {
   MapLayer,
   MapStateProvider,
   useMapActions,
-  useMapState,
+  useMapState
 } from "./state";
 import { bbox } from "@turf/bbox";
 import { MapLoadingButton } from "@macrostrat/map-interface";
@@ -37,7 +37,7 @@ export function Page() {
 
   return h(
     ToasterContext,
-    h(MapStateProvider, { baseURL }, h(PageInner, { baseURL, context: ctx })),
+    h(MapStateProvider, { baseURL }, h(PageInner, { baseURL, context: ctx }))
   );
 }
 
@@ -60,10 +60,10 @@ function PageInner({ baseURL, context: ctx }) {
         baseURL,
         bounds,
         headerElement: h(ContextHeader, ctx),
-        isMapView: isMapContext,
+        isMapView: isMapContext
       },
-      h(LayerControlPanel),
-    ),
+      h(LayerControlPanel)
+    )
   );
 }
 
@@ -76,9 +76,9 @@ function ContextHeader({ project_name, project_slug, name }) {
       h(
         BackButton,
         { href: `/projects/${project_slug}`, className: "back-to-project" },
-        project_name,
+        project_name
       ),
-      h("h2", name),
+      h("h2", name)
     ]),
     h("div.settings-toggle", [
       h(MapLoadingButton, {
@@ -86,9 +86,9 @@ function ContextHeader({ project_name, project_slug, name }) {
         icon: "cog",
         active: isOpen,
         className: "layer-toggle",
-        onClick: () => setOpen(!isOpen),
-      }),
-    ]),
+        onClick: () => setOpen(!isOpen)
+      })
+    ])
   ]);
 }
 
@@ -96,7 +96,7 @@ function BackButton({ href, children, className }) {
   return h(
     AnchorButton,
     { minimal: true, href, icon: "arrow-left", small: true, className },
-    children,
+    children
   );
 }
 
@@ -118,26 +118,26 @@ function LayerControlPanel() {
     h(Divider),
     h(BasemapList),
     h(TerrainExaggeration),
-    h(TopologyPrimitivesSwitch),
+    h(TopologyPrimitivesSwitch)
   ]);
 }
 
 function TopologyPrimitivesSwitch() {
   const showPrimitives = useMapState((state) => state.showTopologyPrimitives);
   const togglePrimitives = useMapActions(
-    (actions) => actions.toggleShowTopologyPrimitives,
+    (actions) => actions.toggleShowTopologyPrimitives
   );
 
   return h(OurSwitch, {
     label: "Topology primitives",
     checked: showPrimitives,
-    onChange: togglePrimitives,
+    onChange: togglePrimitives
   });
 }
 
 function TerrainExaggeration() {
   const onValueChange = useMapActions(
-    (actions) => actions.setTerrainExaggeration,
+    (actions) => actions.setTerrainExaggeration
   );
   const value = useMapState((state) => state.terrainExaggeration);
 
@@ -146,7 +146,7 @@ function TerrainExaggeration() {
     {
       label: "Terrain exaggeration",
       inline: true,
-      fill: true,
+      fill: true
     },
     [
       h(NumericInput, {
@@ -156,9 +156,9 @@ function TerrainExaggeration() {
         max: 3,
         stepSize: 0.5,
         className: "terrain-exaggeration",
-        size: "small",
-      }),
-    ],
+        size: "small"
+      })
+    ]
   );
 }
 
@@ -171,8 +171,8 @@ function OverlayHeader() {
     h(OurSwitch, {
       label: "Show",
       checked: showOverlay,
-      onChange: toggleOverlay,
-    }),
+      onChange: toggleOverlay
+    })
   ]);
 }
 
@@ -185,24 +185,24 @@ function MultiLayerViewOptions() {
   return h(OurSwitch, {
     label: "Cross section lines",
     checked,
-    onChange,
+    onChange
   });
 }
 
 function SingleLayerViewOptions() {
   const enabledFeatureModes = useMapState((state) => state.enabledFeatureModes);
   const toggleFeatureMode = useMapActions(
-    (actions) => actions.toggleFeatureMode,
+    (actions) => actions.toggleFeatureMode
   );
   const showFacesWithNoUnit = useMapState((state) => state.showFacesWithNoUnit);
   const toggleFacesWithNoUnit = useMapActions(
-    (actions) => actions.toggleShowFacesWithNoUnit,
+    (actions) => actions.toggleShowFacesWithNoUnit
   );
 
   const showLineEndpoints = useMapState((state) => state.showLineEndpoints);
 
   const toggleLineEndpoints = useMapActions(
-    (actions) => actions.toggleLineEndpoints,
+    (actions) => actions.toggleLineEndpoints
   );
 
   const switchProps = (mode: FeatureMode) => {
@@ -210,14 +210,14 @@ function SingleLayerViewOptions() {
       checked: enabledFeatureModes.has(mode),
       onChange() {
         toggleFeatureMode(mode);
-      },
+      }
     };
   };
 
   return h("div.view-options", [
     h(OurSwitch, {
       label: "Lines",
-      ...switchProps(FeatureMode.Line),
+      ...switchProps(FeatureMode.Line)
     }),
     h("div.subsidiary-switches", [
       h(OurSwitch, {
@@ -225,24 +225,24 @@ function SingleLayerViewOptions() {
         checked: showLineEndpoints,
         onChange() {
           toggleLineEndpoints();
-        },
-      }),
+        }
+      })
     ]),
     h(OurSwitch, {
       label: "Polygons",
-      ...switchProps(FeatureMode.Polygon),
+      ...switchProps(FeatureMode.Polygon)
     }),
     h(OurSwitch, {
       label: "Fills",
-      ...switchProps(FeatureMode.Face),
+      ...switchProps(FeatureMode.Fill)
     }),
     h("div.subsidiary-switches", [
       h(OurSwitch, {
         label: "Faces without units",
         checked: showFacesWithNoUnit,
-        onChange: toggleFacesWithNoUnit,
-      }),
-    ]),
+        onChange: toggleFacesWithNoUnit
+      })
+    ])
   ]);
 }
 
@@ -255,7 +255,7 @@ function BasemapList() {
   const items: BasemapItem[] = [
     { id: BasemapType.Basic, name: "Standard" },
     { id: BasemapType.Satellite, name: "Satellite" },
-    { id: BasemapType.Terrain, name: "Terrain" },
+    { id: BasemapType.Terrain, name: "Terrain" }
   ];
 
   const setBasemap = useMapActions((actions) => actions.setBaseMap);
@@ -273,8 +273,8 @@ function BasemapList() {
       },
       label: "basemap",
       icon: "map",
-      fill: false,
-    }),
+      fill: false
+    })
   );
 }
 
@@ -305,7 +305,7 @@ function LayerList() {
       label: "layer",
       icon: "layers",
       fill: false,
-      nullable: true,
-    }),
+      nullable: true
+    })
   );
 }

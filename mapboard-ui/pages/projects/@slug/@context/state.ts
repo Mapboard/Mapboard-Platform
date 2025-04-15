@@ -10,7 +10,7 @@ import { LocalStorage } from "@macrostrat/ui-components";
 import {
   parseQueryParameters,
   RecoverableMapState,
-  setQueryParameters,
+  setQueryParameters
 } from "./hash-string";
 
 interface MapActions {
@@ -63,13 +63,13 @@ export enum SelectionMode {
 export enum FeatureMode {
   Line = "line",
   Polygon = "polygon",
-  Face = "face",
+  Fill = "fill",
 }
 
 export const allFeatureModes = new Set([
   FeatureMode.Line,
   FeatureMode.Polygon,
-  FeatureMode.Face,
+  FeatureMode.Fill
 ]);
 
 export interface PolygonDataType extends DataType {
@@ -127,7 +127,7 @@ export type FeatureSelection = {
 
 function createMapStore(
   baseURL: string,
-  initialState: RecoverableMapState & Partial<StoredMapState>,
+  initialState: RecoverableMapState & Partial<StoredMapState>
 ) {
   return create<MapState>(
     // @ts-ignore
@@ -151,11 +151,11 @@ function createMapStore(
         lastChangeTime: {
           line: null,
           polygon: null,
-          topology: null,
+          topology: null
         },
         dataTypes: {
           line: null,
-          polygon: null,
+          polygon: null
         },
         mapLayerIDMap: new Map(),
         polygonPatternIndex: null,
@@ -180,8 +180,8 @@ function createMapStore(
               return {
                 lastChangeTime: {
                   ...state.lastChangeTime,
-                  [mode]: Date.now(),
-                },
+                  [mode]: Date.now()
+                }
               };
             });
           },
@@ -193,8 +193,8 @@ function createMapStore(
                 selection: combineFeatureSelection(
                   state.selection,
                   selection,
-                  state.selectionMode,
-                ),
+                  state.selectionMode
+                )
               };
             }),
           toggleLayerPanel: () =>
@@ -204,15 +204,15 @@ function createMapStore(
           setMapLayers: (layers) =>
             set({
               mapLayers: layers,
-              mapLayerIDMap: new Map(layers.map((l) => [l.id, l])),
+              mapLayerIDMap: new Map(layers.map((l) => [l.id, l]))
             }),
           setDataTypes: (mode: "line" | "polygon", types: DataType[]) =>
             set((state) => {
               return {
                 dataTypes: {
                   ...state.dataTypes,
-                  [mode]: types,
-                },
+                  [mode]: types
+                }
               };
             }),
           setSelectionAction: (type) =>
@@ -229,7 +229,7 @@ function createMapStore(
                 return s;
               }
               return {
-                selectionAction: { ...selectionAction, state },
+                selectionAction: { ...selectionAction, state }
               };
             });
           },
@@ -271,17 +271,17 @@ function createMapStore(
             set((state) => {
               return { showTopologyPrimitives: !state.showTopologyPrimitives };
             });
-          },
-        },
+          }
+        }
       };
-    }),
+    })
   );
 }
 
 function combineFeatureSelection(
   selection: FeatureSelection | null,
   newSelection: FeatureSelection | null,
-  mode: SelectionMode,
+  mode: SelectionMode
 ): FeatureSelection | null {
   if (selection == null) {
     return newSelection;
@@ -294,14 +294,14 @@ function combineFeatureSelection(
     case SelectionMode.Add:
       return {
         lines: [...selection.lines, ...newSelection.lines],
-        polygons: [...selection.polygons, ...newSelection.polygons],
+        polygons: [...selection.polygons, ...newSelection.polygons]
       };
     case SelectionMode.Subtract:
       return {
         lines: selection.lines.filter((l) => !newSelection.lines.includes(l)),
         polygons: selection.polygons.filter(
-          (l) => !newSelection.polygons.includes(l),
-        ),
+          (l) => !newSelection.polygons.includes(l)
+        )
       };
     case SelectionMode.Replace:
       return newSelection;
@@ -324,7 +324,7 @@ function validateLocalStorageState(state: any): LocalStorageState | null {
     showCrossSectionLines: state.showCrossSectionLines ?? true,
     showLineEndpoints: state.showLineEndpoints ?? false,
     showTopologyPrimitives: state.showTopologyPrimitives ?? false,
-    selectionFeatureMode: selectionFeatureMode ?? FeatureMode.Line,
+    selectionFeatureMode: selectionFeatureMode ?? FeatureMode.Line
   };
 }
 
@@ -336,7 +336,7 @@ export function MapStateProvider({ children, baseURL }) {
   const params = parseQueryParameters();
 
   const [value] = useState(() =>
-    createMapStore(baseURL, { ...params, ...storedState }),
+    createMapStore(baseURL, { ...params, ...storedState })
   );
 
   /** Subscriber to set some values to the query parameters */
@@ -362,7 +362,7 @@ export function MapStateProvider({ children, baseURL }) {
         showCrossSectionLines,
         showLineEndpoints,
         showTopologyPrimitives,
-        selectionFeatureMode,
+        selectionFeatureMode
       } = state;
       if (
         showCrossSectionLines != prevState.showCrossSectionLines ||
@@ -374,7 +374,7 @@ export function MapStateProvider({ children, baseURL }) {
           showCrossSectionLines,
           showLineEndpoints,
           showTopologyPrimitives,
-          selectionFeatureMode,
+          selectionFeatureMode
         });
       }
     });
@@ -421,7 +421,7 @@ export function useMapState<T>(selector: (state: MapState) => T): T {
 }
 
 export function useMapActions<T>(
-  selector: (state: MapState["actions"]) => T,
+  selector: (state: MapState["actions"]) => T
 ): T {
   return useMapState<T>((state) => selector(state.actions));
 }

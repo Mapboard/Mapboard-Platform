@@ -56,7 +56,7 @@ export function buildMapOverlayStyle(
 
   if (selectedLayer == null) {
     filter = ["!", ["in", ["get", "map_layer"], ["literal", disabledLayers]]];
-    featureModes = new Set([FeatureMode.Line, FeatureMode.Face]);
+    featureModes = new Set([FeatureMode.Line, FeatureMode.Fill]);
   }
 
   let params = new URLSearchParams();
@@ -123,7 +123,7 @@ export function buildMapOverlayStyle(
     };
   }
 
-  if (featureModes.has(FeatureMode.Face)) {
+  if (featureModes.has(FeatureMode.Fill)) {
     let paint = {
       "fill-color": ["get", "color"]
       //"fill-opacity": selectedLayerOpacity(0.5, 0.3),
@@ -137,10 +137,10 @@ export function buildMapOverlayStyle(
 
     // Fill pattern layers
     layers.push({
-      id: "faces",
+      id: "fills",
       type: "fill",
       source: "mapboard",
-      "source-layer": "faces",
+      "source-layer": "fills",
       paint: {
         "fill-color": ["get", "color"],
         "fill-opacity": selectedLayerOpacity(0.5, 0.3)
@@ -154,10 +154,10 @@ export function buildMapOverlayStyle(
       const mapSymbolFilter: any[] = ["has", ["get", "type"], ix];
 
       layers.push({
-        id: "faces-patterns",
+        id: "fill-patterns",
         type: "fill",
         source: "mapboard",
-        "source-layer": "faces",
+        "source-layer": "fills",
         paint: {
           "fill-color": ["get", "color"],
           "fill-pattern": [
@@ -288,6 +288,9 @@ export function buildTopologyLayers() {
       source: "mapboard",
       "source-layer": "nodes",
       "min-zoom": 4,
+      layout: {
+        "circle-sort-key": ["get", "n_edges"]
+      },
       paint: {
         // Small radius when zoomed out and larger when zoomed in
         "circle-radius": [
@@ -313,12 +316,12 @@ export function buildTopologyLayers() {
 
 function tileLayerNameForFeatureMode(mode: FeatureMode): string {
   switch (mode) {
-    case FeatureMode.Face:
-      return "topology";
+    case FeatureMode.Fill:
+      return "fills";
     case FeatureMode.Line:
-      return "line";
+      return "lines";
     case FeatureMode.Polygon:
-      return "polygon";
+      return "polygons";
   }
 }
 

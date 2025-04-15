@@ -2,7 +2,7 @@ import {
   FeatureMode,
   SelectionMode,
   useMapActions,
-  useMapState,
+  useMapState
 } from "../state";
 import { BaseInfoDrawer } from "@macrostrat/map-interface";
 import { SelectionActionsPanel } from "./action-controls";
@@ -35,23 +35,23 @@ export function SelectionDrawer() {
       title: "Selection",
       onClose() {
         selectFeatures(null);
-      },
+      }
     },
     [
       h(SelectionFeatureModePicker),
       h("div.selection-counts", [
-        h.if(count > 0)("p", `${count} ${typeName} selected`),
+        h.if(count > 0)("p", `${count} ${typeName} selected`)
       ]),
       h(SelectionModePicker),
-      h(SelectionActionsPanel, { featureMode: type }),
-    ],
+      h(SelectionActionsPanel, { featureMode: type })
+    ]
   );
 }
 
 const featureModes: OptionProps<string>[] = [
   { value: FeatureMode.Line, label: "Lines" },
   { value: FeatureMode.Polygon, label: "Polygons" },
-  { value: FeatureMode.Face, label: "Faces" },
+  { value: FeatureMode.Fill, label: "Fills" }
 ];
 
 function SelectionFeatureModePicker() {
@@ -63,21 +63,21 @@ function SelectionFeatureModePicker() {
     {
       className: "selection-mode-control",
       inline: true,
-      label: "Feature mode",
+      label: "Feature mode"
     },
     h(SegmentedControl, {
       options: featureModes,
       value: activeMode,
       onValueChange: setFeatureMode,
-      small: true,
-    }),
+      small: true
+    })
   );
 }
 
 const modes: OptionProps<string>[] = [
   { value: SelectionMode.Add, label: "Add" },
   { value: SelectionMode.Subtract, label: "Subtract" },
-  { value: SelectionMode.Replace, label: "Replace" },
+  { value: SelectionMode.Replace, label: "Replace" }
 ];
 
 function SelectionModePicker() {
@@ -89,13 +89,13 @@ function SelectionModePicker() {
     {
       className: "selection-mode-control",
       inline: true,
-      label: "Selection mode",
+      label: "Selection mode"
     },
     h(SegmentedControl, {
       options: modes,
       value: activeMode,
       onValueChange: setSelectionMode,
-      small: true,
-    }),
+      small: true
+    })
   );
 }
