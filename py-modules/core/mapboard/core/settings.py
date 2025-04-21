@@ -4,10 +4,12 @@ from pathlib import Path
 from dotenv import load_dotenv
 from macrostrat.database import Database
 
+root = Path(__file__).parent.parent.parent.parent
+
 # For some reason, environment variables aren't loading correctly
 # using the app_frame module. Or maybe, env vars set there
 # aren't available outside of module code.
-MAPBOARD_ROOT = environ.get("MAPBOARD_ROOT", None)
+MAPBOARD_ROOT = environ.get("MAPBOARD_ROOT", root)
 if MAPBOARD_ROOT is not None:
     MAPBOARD_ROOT = Path(MAPBOARD_ROOT)
     load_dotenv(MAPBOARD_ROOT / ".env")

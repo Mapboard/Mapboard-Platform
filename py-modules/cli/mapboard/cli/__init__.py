@@ -42,13 +42,15 @@ app_ = Application(
     log_modules=[
         "mapboard.server",
         "mapboard.cli",
+        "mapboard.topology_manager",
+        # "macrostrat.database",
     ],
     compose_files=[MAPBOARD_ROOT / "system" / "docker-compose.yaml"],
     env=prepare_compose_env,
 )
-app_.setup_logs(verbose=True)
-setup_stderr_logs("macrostrat.utils", level=logging.DEBUG)
+# setup_stderr_logs("macrostrat.utils", level=logging.DEBUG)
 app = app_.control_command()
+app_.setup_logs(verbose=True)
 
 app.add_typer(projects_app, help="Manage Mapboard projects")
 app.add_typer(db_app, help="Database management")
