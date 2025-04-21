@@ -263,6 +263,7 @@ export function buildMapOverlayStyle(
 }
 
 export function buildTopologyLayers() {
+
   return [
     // Edges
     {
