@@ -10,7 +10,7 @@ from macrostrat.app_frame.compose import compose, console
 from macrostrat.database import Database
 from macrostrat.dinosaur import temp_database
 from macrostrat.utils import setup_stderr_logs
-
+import logging
 from mapboard.core.settings import MAPBOARD_ROOT, connection_string
 from mapboard.core.workers import watch_topology, send_event
 
@@ -51,6 +51,7 @@ app_ = Application(
 # setup_stderr_logs("macrostrat.utils", level=logging.DEBUG)
 app = app_.control_command()
 app_.setup_logs(verbose=True)
+setup_stderr_logs("mapboard.topology_manager", level=logging.INFO)
 
 app.add_typer(projects_app, help="Manage Mapboard projects")
 app.add_typer(db_app, help="Database management")

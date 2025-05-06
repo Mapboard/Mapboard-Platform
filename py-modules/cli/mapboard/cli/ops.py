@@ -86,20 +86,23 @@ def create_grid_layer(
             params={"grid_layer_id": grid_layer_id, "type_id": type_id},
         )
 
+    # Tolerance to make sure grid edges overlap
+    tolerance = 0.01 * spacing
+
     # Create the grid
     for i in range(n_x + 1):
         # Create vertical lines
         coords = [
-            (x_range[0] + i * spacing, y_range[0]),
-            (x_range[0] + i * spacing, y_range[1]),
+            (x_range[0] + i * spacing, y_range[0] - tolerance),
+            (x_range[0] + i * spacing, y_range[1] + tolerance),
         ]
         insert_line(db, coords, grid_layer_id, type_id)
 
     for i in range(n_y + 1):
         # Create horizontal lines
         coords = [
-            (x_range[0], y_range[0] + i * spacing),
-            (x_range[1], y_range[0] + i * spacing),
+            (x_range[0] - tolerance, y_range[0] + i * spacing),
+            (x_range[1] + tolerance, y_range[0] + i * spacing),
         ]
         insert_line(db, coords, grid_layer_id, type_id)
 

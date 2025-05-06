@@ -44,12 +44,8 @@ export function MapArea({
   isMapView: boolean;
 }) {
   const isOpen = useMapState((state) => state.layerPanelIsOpen);
-
-  const [inspectPosition, setInspectPosition] = useState<LngLat | null>(null);
-
-  const onSelectPosition = useCallback((position: mapboxgl.LngLat) => {
-    setInspectPosition(position);
-  }, []);
+  const onSelectPosition = useMapActions((a) => a.setInspectPosition);
+  const inspectPosition = useMapState((state) => state.inspectPosition);
 
   let projection = { name: "globe" };
   if (!isMapView) {

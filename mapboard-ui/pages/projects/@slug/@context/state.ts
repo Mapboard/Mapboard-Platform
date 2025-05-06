@@ -12,6 +12,7 @@ import {
   RecoverableMapState,
   setQueryParameters
 } from "./hash-string";
+import type { LngLat } from "mapbox-gl";
 
 interface MapActions {
   setActiveLayer: (layer: number | null) => void;
@@ -36,6 +37,8 @@ interface MapActions {
   toggleCrossSectionLines(): void;
 
   toggleOverlay(): void;
+
+  setInspectPosition: (position: LngLat | null) => void;
 }
 
 export interface SelectionActionState<T extends object> {
@@ -109,6 +112,7 @@ export interface MapState extends StoredMapState {
     polygon: PolygonDataType[] | null;
   };
   polygonPatternIndex: PolygonStyleIndex | null;
+  inspectPosition: LngLat | null;
 }
 
 const MapStateContext = createContext<StoreApi<MapState> | null>(null);
@@ -139,6 +143,7 @@ function createMapStore(
         selectionAction: null,
         selectionFeatureMode: FeatureMode.Line,
         selectionMode: SelectionMode.Replace,
+        inspectPosition: null,
         mapLayers: null,
         enabledFeatureModes: allFeatureModes,
         showOverlay: true,
@@ -194,7 +199,8 @@ function createMapStore(
                   state.selection,
                   selection,
                   state.selectionMode
-                )
+                ),
+                inspectPosition: null
               };
             }),
           toggleLayerPanel: () =>
@@ -271,6 +277,9 @@ function createMapStore(
             set((state) => {
               return { showTopologyPrimitives: !state.showTopologyPrimitives };
             });
+          },
+          setInspectPosition: (position) => {
+            return set({ inspectPosition: position, selection: null });
           }
         }
       };
@@ -290,18 +299,26 @@ function combineFeatureSelection(
     return null;
   }
 
-  switch (mode) {
+  let _mode = mode;
+  if (selection.type !== newSelection.type) {
+    _mode = SelectionMode.Replace;
+  }
+
+
+  switch (_mode) {
     case SelectionMode.Add:
       return {
-        lines: [...selection.lines, ...newSelection.lines],
-        polygons: [...selection.polygons, ...newSelection.polygons]
+        type: selection.type,
+        features: [...selection.features, ...newSelection.features],
+        dataTypes: new Set([...selection.dataTypes, ...newSelection.dataTypes])
       };
     case SelectionMode.Subtract:
       return {
-        lines: selection.lines.filter((l) => !newSelection.lines.includes(l)),
-        polygons: selection.polygons.filter(
-          (l) => !newSelection.polygons.includes(l)
-        )
+        type: selection.type,
+        features: selection.features.filter(
+          (f) => !newSelection.features.includes(f)
+        ),
+        dataTypes: selection.dataTypes
       };
     case SelectionMode.Replace:
       return newSelection;

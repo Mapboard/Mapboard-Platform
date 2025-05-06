@@ -276,8 +276,8 @@ export function buildTopologyLayers() {
           "interpolate",
           ["linear"],
           ["zoom"],
-          0, 0.2,
-          12, 1.5
+          0, 0.5,
+          12, 2
         ],
         "line-color": "#4f11ab"
       }

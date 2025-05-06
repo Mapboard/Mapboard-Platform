@@ -51,7 +51,7 @@ export function buildSelectionLayers(color: string = "#ff0000") {
     }
   ];
 
-  for (const layer of ["polygons", "faces"]) {
+  for (const layer of ["polygons", "fills"]) {
     layers.push({
       id: `${layer}-selected`,
       type: "fill",
@@ -75,7 +75,7 @@ export function layerNameForFeatureMode(mode: FeatureMode) {
     case FeatureMode.Polygon:
       return "polygons";
     case FeatureMode.Fill:
-      return "faces";
+      return "fills";
   }
 }
 

@@ -4,23 +4,69 @@ import {
   useMapActions,
   useMapState
 } from "../state";
-import { BaseInfoDrawer } from "@macrostrat/map-interface";
+import { BaseInfoDrawer, InfoDrawerContainer } from "@macrostrat/map-interface";
 import { SelectionActionsPanel } from "./action-controls";
-import { FormGroup, OptionProps, SegmentedControl } from "@blueprintjs/core";
+import {
+  FormGroup,
+  OptionProps,
+  SegmentedControl,
+  Spinner
+} from "@blueprintjs/core";
 import hyper from "@macrostrat/hyper";
 import styles from "./control-panel.module.sass";
 import { layerNameForFeatureMode } from "./manager";
+import { useEffect } from "react";
+import { JSONView, useAPIResult } from "@macrostrat/ui-components";
 
 const h = hyper.styled(styles);
 
 const featureTypes = ["lines", "points", "polygons"];
 
+function InspectPositionDrawer({ position, onClose }) {
+  const url = `test/${position.lng.toLocaleString()},${position.lat.toLocaleString()}`;
+  useEffect(() => {
+    console.log(url);
+  });
+
+  const baseURL = useMapState((state) => state.apiBaseURL);
+
+  const res = useAPIResult(`${baseURL}/info/${position.lng},${position.lat}?radius=20`);
+
+  let data = h(Spinner);
+  if (res != null) {
+    data = h(JSONView, { data: res, showRoot: false, expanded: true });
+  }
+
+  return h(
+    BaseInfoDrawer,
+    {
+      position,
+      onClose
+    },
+    data
+  );
+}
+
 export function SelectionDrawer() {
   const selection = useMapState((state) => state.selection);
   const selectFeatures = useMapActions((a) => a.selectFeatures);
-  if (selection == null) {
+
+  const inspectPosition = useMapState((state) => state.inspectPosition);
+
+  if (selection == null && inspectPosition == null) {
     return null;
   }
+
+  if (inspectPosition != null) {
+    return h(InspectPositionDrawer, {
+      position: inspectPosition,
+      onClose() {
+        selectFeatures(null);
+      }
+    });
+  }
+
+  console.log(selection);
 
   const { type, features } = selection;
   const count = features.length;
