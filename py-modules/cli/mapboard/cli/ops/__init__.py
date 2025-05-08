@@ -9,8 +9,11 @@ from mapboard.core.settings import connection_string, core_db
 from mapboard.core.database import setup_database
 from sys import stderr
 from shapely.geometry import MultiLineString
+from .dangling_edges import remove_dangling_edges
 
 app = Typer(name="ops", no_args_is_help=True)
+
+app.command("remove-dangling-edges")(remove_dangling_edges)
 
 
 @app.command(name="create-grid")

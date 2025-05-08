@@ -135,8 +135,7 @@ function buildActions(mode: FeatureMode): MapboardActionDef[] {
     {
       id: SelectionActionType.ReverseLines,
       name: "Reverse lines",
-      icon: "swap-horizontal",
-      disabled: true
+      icon: "swap-horizontal"
     }
   ];
 }
