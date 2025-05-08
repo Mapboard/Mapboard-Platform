@@ -118,7 +118,14 @@ def insert_line(db: Database, coords: list, map_layer: int, linework_type: str):
     INSERT INTO {data_schema}.linework (geometry, map_layer, type)
     SELECT :geom, :map_layer, :linework_type
     """
-    db.run_query(sql, params={"geom": geom.wkb_hex, "map_layer": map_layer, "linework_type": linework_type})
+    db.run_query(
+        sql,
+        params={
+            "geom": geom.wkb_hex,
+            "map_layer": map_layer,
+            "linework_type": linework_type,
+        },
+    )
 
 
 def range_round(min, max, spacing):
@@ -136,7 +143,13 @@ def get_layer_id(db: Database, name: str):
     return db.run_query(sql, params={"name": name}).scalar()
 
 
-def create_layer(db: Database, name: str, *, parent: Optional[int] = None, topological: Optional[bool] = True):
+def create_layer(
+    db: Database,
+    name: str,
+    *,
+    parent: Optional[int] = None,
+    topological: Optional[bool] = True,
+):
     """Create a map layer"""
     sql = """
     INSERT INTO {data_schema}.map_layer (name, parent, topological)
@@ -144,7 +157,9 @@ def create_layer(db: Database, name: str, *, parent: Optional[int] = None, topol
     ON CONFLICT DO NOTHING
     RETURNING id
     """
-    return db.run_query(sql, params={"name": name, "parent": parent, "topological": topological}).scalar()
+    return db.run_query(
+        sql, params={"name": name, "parent": parent, "topological": topological}
+    ).scalar()
 
 
 def create_linework_type(db: Database, name: str, layer_id: Optional[int] = None):
@@ -201,7 +216,9 @@ def drop_layer(project: str, layer: str, force: bool = False):
     ).all()
 
     if len(children) > 0:
-        print(f"Layer {layer} has children: {children}, these must be dropped separately")
+        print(
+            f"Layer {layer} has children: {children}, these must be dropped separately"
+        )
         return
 
     if force:

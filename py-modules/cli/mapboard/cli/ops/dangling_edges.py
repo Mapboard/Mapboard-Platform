@@ -6,12 +6,19 @@ from pathlib import Path
 from typer import Argument, Context, Option, Typer
 from rich import print
 from rich.prompt import Confirm
+from sqlalchemy import text
 
 from mapboard.core.database import setup_database
 
 here = Path(__file__).parent.resolve()
 
 app = Typer(no_args_is_help=True)
+
+
+def get_procedure(key: str):
+    """Get the SQL procedure for a given key."""
+    sql = (here / ".." / "procedures" / f"{key}.sql").read_text()
+    return sql
 
 
 @app.command()
@@ -31,30 +38,22 @@ def remove_dangling_edges(
     """
     db = setup_database(project)
 
-    sql = (here / ".." / "procedures" / "get-dangling-edges.sql").read_text()
+    sql = get_procedure("get-dangling-edges")
 
-    # Construct a filter stack
-    filters = []
-    params = {}
+    filters = SQLFilters()
 
     if max_length is None:
         raise ValueError("max_length must be provided")
 
-    filters.append("ST_Length(e.geom) <= :max_length")
-    params["max_length"] = max_length
+    filters.add("ST_Length(e.geom) <= :max_length", {"max_length": max_length})
 
     if map_layer is not None:
-        filters.append("l.map_layer = :map_layer")
-        params["map_layer"] = map_layer
+        filters.add("l.map_layer = :map_layer", {"map_layer": map_layer})
     if line_type is not None:
-        filters.append("l.type = :type")
-        params["type"] = line_type
-    if len(filters) == 0:
-        filters = ["true"]
-    filter_text = " AND ".join(filters)
-    sql = sql.replace("{filters}", filter_text)
+        filters.add("l.type = :type", {"type": line_type})
+    sql = sql.replace("{filters}", str(filters))
 
-    edges = db.run_query(sql, params=params).all()
+    edges = db.run_query(sql, params=filters.params).all()
 
     if len(edges) == 0:
         print("No dangling edges found")
@@ -73,10 +72,35 @@ def remove_dangling_edges(
         return
 
     # Remove the dangling edges
-    for edge in edges:
-        db.run_query(
-            """
-            DELETE FROM {data_schema}.linework WHERE id = :id
-            """,
-            params={"edge_id": edge.id, "line_id": edge.line_id},
-        )
+    with db.transaction():
+        for edge in edges:
+            print(
+                f"Removing edge {edge.edge_id} from line {edge.line_id} ({edge.length:.2g} m)"
+            )
+            db.run_query(
+                get_procedure("remove-edge-from-line"),
+                params={
+                    "edge_id": edge.edge_id,
+                    "line_id": edge.line_id,
+                },
+            )
+
+
+class SQLFilters:
+    """A stack of filters for SQL queries."""
+
+    def __init__(self):
+        self.filters = []
+        self.params = {}
+
+    def add(self, _filter: str, params: dict = None):
+        """Add a filter to the stack."""
+        self.filters.append(_filter)
+        if params is not None:
+            self.params.update(params)
+
+    def __str__(self):
+        _filters = self.filters
+        if len(_filters) == 0:
+            return "true"
+        return " AND ".join(_filters)
