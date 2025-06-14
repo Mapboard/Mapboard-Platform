@@ -7,7 +7,7 @@ import { buildSelectionLayers } from "../selection";
 import {
   PolygonPatternConfig,
   PolygonStyleIndex,
-  setupStyleImages,
+  setupStyleImages
 } from "./pattern-fills";
 import { useMapRef, useMapStatus } from "@macrostrat/mapbox-react";
 import { lineSymbols } from "./line-symbols";
@@ -37,7 +37,7 @@ interface MapStyleOptions {
 
 export function useMapStyle(
   baseURL: string,
-  { mapboxToken, isMapView = true }: MapStyleOptions,
+  { mapboxToken, isMapView = true }: MapStyleOptions
 ) {
   const activeLayer = useMapState((state) => state.activeLayer);
   const basemapType = useMapState((state) => state.baseMap);
@@ -45,7 +45,7 @@ export function useMapStyle(
   const showLineEndpoints = useMapState((state) => state.showLineEndpoints);
   const enabledFeatureModes = useMapState((state) => state.enabledFeatureModes);
   const crossSectionLayerID: number | null = useMapState(
-    (state) => state.mapLayers?.find((d) => d.name == "Sections")?.id,
+    (state) => state.mapLayers?.find((d) => d.name == "Sections")?.id
   );
   const showCrossSectionLines = useMapState((d) => d.showCrossSectionLines);
   const showFacesWithNoUnit = useMapState((d) => d.showFacesWithNoUnit);
@@ -63,7 +63,7 @@ export function useMapStyle(
 
   const crossSectionConfig: CrossSectionConfig = {
     layerID: crossSectionLayerID,
-    enabled: showCrossSectionLines,
+    enabled: showCrossSectionLines
   };
 
   useEffect(() => {
@@ -72,7 +72,7 @@ export function useMapStyle(
       return;
     }
     getMapboxStyle(baseStyleURL, {
-      access_token: mapboxToken,
+      access_token: mapboxToken
     }).then(setBaseStyle);
   }, [baseStyleURL, mapboxToken, isMapView]);
 
@@ -90,7 +90,7 @@ export function useMapStyle(
       lineSymbolIndex,
       crossSectionConfig,
       showFacesWithNoUnit,
-      showTopologyPrimitives,
+      showTopologyPrimitives
     });
     const selectionStyle: any = { layers: buildSelectionLayers() };
     setOverlayStyle(mergeStyles(style, selectionStyle));
@@ -104,7 +104,7 @@ export function useMapStyle(
     showCrossSectionLines,
     showFacesWithNoUnit,
     showOverlay,
-    showTopologyPrimitives,
+    showTopologyPrimitives
   ]);
 
   return useMemo(() => {
@@ -117,13 +117,17 @@ export function useMapStyle(
         "mapbox-dem": {
           type: "raster-dem",
           url: "mapbox://mapbox.mapbox-terrain-dem-v1",
-          tileSize: 512,
-        },
+          // // Overlay terrain on tiles
+          // tiles: [
+          //   "/dem-tiles/tiles/{z}/{x}/{y}"
+          // ],
+          tileSize: 512
+        }
       },
       terrain: {
         source: "mapbox-dem",
-        exaggeration,
-      },
+        exaggeration
+      }
     };
 
     let style = mergeStyles(baseStyle, overlayStyle, terrainSources);
@@ -148,7 +152,7 @@ function replaceRasterDEM(style, sourceName) {
     if (removedSources.includes(layer.source)) {
       return {
         ...layer,
-        source: sourceName,
+        source: sourceName
       };
     }
     return layer;
@@ -181,7 +185,7 @@ export function useMapSymbols(): PolygonStyleIndex | null {
           color: d.color,
           id: d.id,
           symbol: sym?.name,
-          symbolColor: sym?.color,
+          symbolColor: sym?.color
         };
       })
       .filter((d) => d.symbol != null);
@@ -220,13 +224,13 @@ const lineSymbolsURL = vizBaseURL + "/geologic-line-symbols/png";
 
 async function setupLineSymbols(map) {
   const symbols = await Promise.all(
-    lineSymbols.map(async function (symbol) {
+    lineSymbols.map(async function(symbol) {
       if (map.hasImage(symbol)) return symbol;
       const image = await loadImage(lineSymbolsURL + `/${symbol}.png`);
       if (map.hasImage(symbol)) return symbol;
       map.addImage(symbol, image, { sdf: true, pixelRatio: 3 });
       return symbol;
-    }),
+    })
   );
 
   return symbols
@@ -236,3 +240,5 @@ async function setupLineSymbols(map) {
       return acc;
     }, {});
 }
+
+

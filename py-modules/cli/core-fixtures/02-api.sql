@@ -44,10 +44,19 @@ SELECT
   p.main_context = c.id        AS is_main,
   p.slug                       AS project_slug,
   p.title                      AS project_name,
-  p.uuid                       AS project_uuid
+  p.uuid                       AS project_uuid,
+  -- Base layers
+  (SELECT jsonb_agg(
+      jsonb_delete(
+        row_to_json(r)::jsonb,
+        'context_id',
+        'id'
+      )
+    )
+    FROM mapboard.base_layer r
+    WHERE context_id = c.id
+  ) layers
 FROM
   mapboard.context c
   JOIN mapboard.project p
-    ON c.project_id = p.id;
-
-
+    ON c.project_id = p.id
