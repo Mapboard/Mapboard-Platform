@@ -91,9 +91,19 @@ interface LocalStorageState {
 
 type StoredMapState = RecoverableMapState & LocalStorageState;
 
+type LayerType = "dem" | "raster"
+
+interface BaseLayer {
+  name: string;
+  description?: string;
+  type: LayerType;
+  url: string;
+}
+
 export interface MapState extends StoredMapState {
   actions: MapActions;
   layerPanelIsOpen: boolean;
+  baseLayers: BaseLayer[];
   selection: FeatureSelection | null;
   selectionAction: SelectionActionState<any> | null;
   selectionMode: SelectionMode;
@@ -139,6 +149,7 @@ function createMapStore(
       return {
         apiBaseURL: baseURL,
         layerPanelIsOpen: false,
+        baseLayers: [],
         selection: null,
         selectionAction: null,
         selectionFeatureMode: FeatureMode.Line,
@@ -345,7 +356,7 @@ function validateLocalStorageState(state: any): LocalStorageState | null {
   };
 }
 
-export function MapStateProvider({ children, baseURL }) {
+export function MapStateProvider({ children, baseURL, baseLayers }) {
   const storage = useRef(new LocalStorage<LocalStorageState>("map-state"));
   const storedState: Partial<LocalStorageState> =
     validateLocalStorageState(storage.current.get()) ?? {};
@@ -353,7 +364,7 @@ export function MapStateProvider({ children, baseURL }) {
   const params = parseQueryParameters();
 
   const [value] = useState(() =>
-    createMapStore(baseURL, { ...params, ...storedState })
+    createMapStore(baseURL, { baseLayers, ...params, ...storedState })
   );
 
   /** Subscriber to set some values to the query parameters */

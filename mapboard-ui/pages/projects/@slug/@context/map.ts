@@ -6,7 +6,7 @@ import {
   MapAreaContainer,
   MapMarker,
   MapView,
-  PanelCard,
+  PanelCard
 } from "@macrostrat/map-interface";
 import styles from "./map.module.scss";
 import { useMapActions, useMapState } from "./state";
@@ -16,24 +16,24 @@ import { useMapStyle } from "./style";
 import { BoxSelectionManager } from "./selection";
 import { MapReloadWatcher } from "./change-watcher";
 import { SelectionDrawer } from "./selection/control-panel";
-import { useCallback, useState } from "react";
+import { useMemo } from "react";
 import type { LngLat } from "mapbox-gl";
 
 const mercator = new SphericalMercator({
   size: 256,
-  antimeridian: true,
+  antimeridian: true
 });
 
 export const h = hyper.styled(styles);
 
 export function MapArea({
-  mapboxToken = null,
-  baseURL = null,
-  children,
-  bounds = null,
-  headerElement = null,
-  isMapView = true,
-}: {
+                          mapboxToken = null,
+                          baseURL = null,
+                          children,
+                          bounds = null,
+                          headerElement = null,
+                          isMapView = true
+                        }: {
   headerElement?: React.ReactElement;
   transformRequest?: mapboxgl.TransformRequestFunction;
   children?: React.ReactNode;
@@ -46,6 +46,9 @@ export function MapArea({
   const isOpen = useMapState((state) => state.layerPanelIsOpen);
   const onSelectPosition = useMapActions((a) => a.setInspectPosition);
   const inspectPosition = useMapState((state) => state.inspectPosition);
+
+
+  const transformRequest = useRequestTransformer();
 
   let projection = { name: "globe" };
   if (!isMapView) {
@@ -63,14 +66,14 @@ export function MapArea({
       navbar: h(FloatingNavbar, {
         headerElement,
         width: "fit-content",
-        height: "fit-content",
+        height: "fit-content"
       }),
       contextPanel: h(PanelCard, [children]),
       contextPanelOpen: isOpen,
       fitViewport: true,
       //detailPanel: h("div.right-elements", [toolsCard, h(InfoDrawer)]),
       detailPanel: h(SelectionDrawer),
-      className: "mapboard-map",
+      className: "mapboard-map"
     },
     [
       h(MapInner, {
@@ -82,25 +85,26 @@ export function MapArea({
         maxZoom: 22,
         baseURL,
         isMapView,
+        transformRequest
       }),
       h(BoxSelectionManager),
       h(MapMarker, {
         position: inspectPosition,
-        setPosition: onSelectPosition,
+        setPosition: onSelectPosition
       }),
-      h(MapReloadWatcher, { baseURL }),
-    ],
+      h(MapReloadWatcher, { baseURL })
+    ]
   );
 }
 
 function MapInner({
-  baseURL,
-  fitBounds,
-  bounds,
-  mapboxToken,
-  isMapView,
-  ...rest
-}) {
+                    baseURL,
+                    fitBounds,
+                    bounds,
+                    mapboxToken,
+                    isMapView,
+                    ...rest
+                  }) {
   let maxBounds: BBox | null = null;
 
   const mapRef = useMapRef();
@@ -110,7 +114,7 @@ function MapInner({
 
   const style = useMapStyle(baseURL, {
     isMapView,
-    mapboxToken,
+    mapboxToken
   });
   if (style == null) {
     return null;
@@ -144,7 +148,7 @@ function MapInner({
     mapboxToken,
     style,
     onMapMoved: setMapPosition,
-    ...rest,
+    ...rest
   });
 }
 
@@ -178,7 +182,44 @@ function expandBounds(bounds: BBox, aspectRatio = 1, margin = 0.1) {
     center[0] - dx / 2,
     center[1] - dy / 2,
     center[0] + dx / 2,
-    center[1] + dy / 2,
+    center[1] + dy / 2
   ];
   return mercator.convert(bbox2, "WGS84");
+}
+
+function useRequestTransformer() {
+  const baseLayers = useMapState((state) => state.baseLayers);
+  // Check if there's a DEM layer in the base layers
+  console.log(baseLayers);
+  return useMemo(() => {
+    const dem = baseLayers.find((layer) => layer.type === "dem");
+
+    if (dem == null) {
+      return null;
+    }
+    console.log("Using DEM layer for request transformation", dem);
+
+    return (url, resourceType) => {
+      /** Common API to use for transforming requests for caching or modifying */
+      const start = "https://api.mapbox.com/raster/v1/mapbox.mapbox-terrain-dem-v1";
+      if (resourceType !== "Tile" || !url.startsWith(start)) return;
+      // We want to send this request to our elevation tiling backend, preserving query args
+      const [baseURL, query, ...rest] = url.split("?");
+
+      if (rest.length > 0) {
+        console.warn("Unexpected URL format, expected no additional path segments after query string", rest);
+      }
+
+      // This depends on the "elevation-tiler" dependency
+      let newURL = "/dem-tiles/tiles" + baseURL.slice(start.length);
+      let queryArgs = new URLSearchParams(query);
+
+      queryArgs.set("x-overlay-layer", dem.url);
+      queryArgs.set("x-fallback-layer", start);
+
+      return {
+        url: newURL + "?" + queryArgs.toString()
+      };
+    };
+  }, [baseLayers]);
 }
