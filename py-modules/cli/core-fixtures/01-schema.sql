@@ -76,3 +76,23 @@ CREATE TRIGGER check_bounds_overlap
   ON mapboard.context
   FOR EACH ROW
 EXECUTE FUNCTION mapboard.check_bounds_overlap();
+
+/** Base layers
+ Table that defines standardized base layers for mapboard contexts.
+
+ Base layers of several types can be defined, including:
+ - DEMs
+ - Imagery
+
+ Base layers can either be tile service URLs or COGs that will be served as tiles.
+ */
+
+CREATE TABLE IF NOT EXISTS mapboard.base_layer (
+  id          serial PRIMARY KEY,
+  context_id  integer REFERENCES mapboard.context (id) ON DELETE CASCADE,
+  name        text NOT NULL,
+  description text,
+  type        text NOT NULL, -- e.g. 'dem', 'imagery'
+  url         text NOT NULL, -- URL to tile service or COG
+  created_at  timestamp DEFAULT current_timestamp
+);
