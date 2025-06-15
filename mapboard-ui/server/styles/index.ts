@@ -21,11 +21,18 @@ export const geologicPatternsBasePath = join(
 const geologicPatternsSVGPath = join(geologicPatternsBasePath, "svg");
 
 app.get("/pattern/:patternID.svg", async (req, res) => {
-  const { patternID } = req.params;
+  let { patternID } = req.params;
 
   // Validate patternID to prevent directory traversal attacks
   if (!/^[a-zA-Z0-9_-]+$/.test(patternID)) {
     return res.status(400).send("Invalid pattern ID");
+  }
+
+  const patternInt = parseInt(patternID, 10);
+  if (!isNaN(patternInt) && patternInt < 600) {
+    // We're working with a map pattern ID, which would have a suffix.
+    // We assume -K
+    patternID = `${patternInt}-K`;
   }
 
   const filePath = join(geologicPatternsSVGPath, `${patternID}.svg`);
@@ -35,17 +42,16 @@ app.get("/pattern/:patternID.svg", async (req, res) => {
   try {
     svgContent = await fs.readFile(filePath, "utf-8");
   } catch (error) {
-    console.error(`Pattern ${patternID} not found at path:`, filePath);
     return res.status(404).send("Pattern not found");
   }
 
   // Check if the request has query parameters for recoloring or rescaling
   const { color, scale } = req.query;
   const backgroundColor = req.query["background-color"];
-  if (color) {
+  if (color || backgroundColor || scale) {
     // Recolor the SVG if color is provided
     const recolorOptions = {
-      color: String(color),
+      color: color ? String(color) : undefined,
       backgroundColor: backgroundColor ? String(backgroundColor) : undefined,
       scale: scale ? Number(scale) : undefined,
     };
