@@ -1,6 +1,6 @@
 /** An express service for generating colored pattern images for map units */
 
-import { Router } from "express";
+import { Router, Request } from "express";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import fs from "node:fs/promises";
@@ -20,8 +20,15 @@ export const geologicPatternsBasePath = join(
 
 const geologicPatternsSVGPath = join(geologicPatternsBasePath, "svg");
 
-app.get("/pattern/:patternID.svg", async (req, res) => {
-  let { patternID } = req.params;
+app.get("/pattern/:patternID.:format", async (req, res) => {
+  let { patternID, format } = req.params;
+
+  // Only allow 'svg' and 'png' formats
+  if (format != "svg" && format != "png") {
+    return res
+      .status(400)
+      .send("Invalid format. Only 'svg' and 'png' are supported.");
+  }
 
   // Validate patternID to prevent directory traversal attacks
   if (!/^[a-zA-Z0-9_-]+$/.test(patternID)) {
@@ -46,22 +53,39 @@ app.get("/pattern/:patternID.svg", async (req, res) => {
   }
 
   // Check if the request has query parameters for recoloring or rescaling
-  const { color, scale } = req.query;
-  const backgroundColor = req.query["background-color"];
+  const backgroundColor = parseQueryParam(req, "background-color", String);
+  const color = parseQueryParam(req, "color", String);
+  const scale = parseQueryParam(req, "scale", Number);
+
   if (color || backgroundColor || scale) {
     // Recolor the SVG if color is provided
     const recolorOptions = {
-      color: color ? String(color) : undefined,
-      backgroundColor: backgroundColor ? String(backgroundColor) : undefined,
-      scale: scale ? Number(scale) : undefined,
+      color,
+      backgroundColor,
+      scale,
     };
-    console.log(`Recoloring SVG with options:`, recolorOptions);
     svgContent = refineSVG(svgContent, recolorOptions);
   }
 
-  res.setHeader("Content-Type", "image/svg+xml");
-  res.send(svgContent);
+  if (format === "png") {
+    // Convert SVG to PNG
+    const pngBuffer = await convertSVGToPNG(svgContent, backgroundColor);
+    res.setHeader("Content-Type", "image/png");
+    res.send(pngBuffer);
+  } else {
+    res.setHeader("Content-Type", "image/svg+xml");
+    res.send(svgContent);
+  }
 });
+
+function parseQueryParam(
+  req: Request,
+  key: string,
+  castType: typeof Number | typeof String,
+): any {
+  const value = req.query[key];
+  return value ? castType(value) : undefined;
+}
 
 type RefineOptions = {
   color?: string;
@@ -84,6 +108,7 @@ function refineSVG(svgContent: string, options: RefineOptions): string {
 
   if (backgroundColor) {
     // Set the background color if provided
+    svgElement.setAttribute("fill", backgroundColor);
     svgElement.setAttribute("style", `background-color: ${backgroundColor};`);
   }
 
@@ -143,6 +168,38 @@ function rescaleSVG(document: Document, scale: number) {
     svgElement.setAttribute("width", String(Number(width) * scale));
     svgElement.setAttribute("height", String(Number(height) * scale));
   }
+}
+
+async function convertSVGToPNG(
+  svgContent: string,
+  backgroundColor: string | null | undefined,
+): Promise<Buffer> {
+  // Convert SVG to PNG
+  const { createCanvas, loadImage } = await import("canvas");
+
+  // Load the SVG content as an image
+  const img = await loadImage(
+    `data:image/svg+xml;base64,${Buffer.from(svgContent).toString("base64")}`,
+  );
+  // Adjust canvas size based on the SVG dimensions
+  const width = img.width;
+  const height = img.height;
+
+  // We should maintain a pool of canvases to avoid creating a new one every time.
+  const canvas = createCanvas(width, height); // Create a canvas with default size
+  const ctx = canvas.getContext("2d");
+
+  // If background color is provided, fill the canvas with it
+  if (backgroundColor) {
+    ctx.fillStyle = backgroundColor;
+    ctx.fillRect(0, 0, width, height);
+  }
+
+  // Draw the image onto the canvas
+  ctx.drawImage(img, 0, 0);
+
+  // Set the response headers for PNG
+  return canvas.toBuffer("image/png");
 }
 
 export default app;
