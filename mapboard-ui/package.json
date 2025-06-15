@@ -56,5 +56,10 @@
     "mapbox-gl": "^3.8.0"
   },
   "type": "module",
-  "packageManager": "yarn@4.9.1"
+  "packageManager": "yarn@4.9.1",
+  "dependenciesMeta": {
+    "prettier@3.5.3": {
+      "unplugged": true
+    }
+  }
 }
