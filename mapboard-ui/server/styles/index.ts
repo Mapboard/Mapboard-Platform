@@ -39,35 +39,58 @@ app.get("/pattern/:patternID.svg", async (req, res) => {
     return res.status(404).send("Pattern not found");
   }
 
-  // Check if the request has query parameters for recoloring
-  const { color, backgroundColor } = req.query;
+  // Check if the request has query parameters for recoloring or rescaling
+  const { color, scale } = req.query;
+  const backgroundColor = req.query["background-color"];
   if (color) {
     // Recolor the SVG if color is provided
     const recolorOptions = {
       color: String(color),
       backgroundColor: backgroundColor ? String(backgroundColor) : undefined,
+      scale: scale ? Number(scale) : undefined,
     };
     console.log(`Recoloring SVG with options:`, recolorOptions);
-    svgContent = recolorSVG(svgContent, recolorOptions);
+    svgContent = refineSVG(svgContent, recolorOptions);
   }
 
   res.setHeader("Content-Type", "image/svg+xml");
   res.send(svgContent);
 });
 
-type RecolorOptions = {
-  color: string;
+type RefineOptions = {
+  color?: string;
   backgroundColor?: string;
+  scale?: number;
 };
 
-function recolorSVG(svgContent: string, options: RecolorOptions): string {
-  const { color, backgroundColor } = options;
+function refineSVG(svgContent: string, options: RefineOptions): string {
+  const { color, backgroundColor, scale } = options;
 
   // Use JSDOM to parse and manipulate the SVG content
   const dom = new JSDOM(svgContent, { contentType: "image/svg+xml" });
   const { document } = dom.window;
   const svgElement = document.documentElement;
 
+  if (color) {
+    // Recolor the SVG if color is provided
+    recolorSVG(document, color);
+  }
+
+  if (backgroundColor) {
+    // Set the background color if provided
+    svgElement.setAttribute("style", `background-color: ${backgroundColor};`);
+  }
+
+  if (scale) {
+    // Rescale the SVG if scale is provided
+    rescaleSVG(document, scale);
+  }
+
+  // Serialize the modified SVG back to a string
+  return dom.serialize();
+}
+
+function recolorSVG(document: Document, color: string) {
   // Find all elements that have fills or strokes
   const elements = document.querySelectorAll("[fill]");
   elements.forEach((el) => {
@@ -84,7 +107,6 @@ function recolorSVG(svgContent: string, options: RecolorOptions): string {
     let style = el.getAttribute("style");
     if (!style) continue; // Skip if no style attribute
 
-    console.log(style);
     // Find current fill colors if they exist
     const fillPattern = /fill:\s*([^;]+)/g;
     const fillMatch = fillPattern.exec(style);
@@ -102,14 +124,19 @@ function recolorSVG(svgContent: string, options: RecolorOptions): string {
     }
     el.setAttribute("style", style);
   }
+}
 
-  if (backgroundColor) {
-    // Set the background color if provided
-    svgElement.setAttribute("style", `background-color: ${backgroundColor};`);
+function rescaleSVG(document: Document, scale: number) {
+  const svgElement = document.documentElement;
+
+  // Set the width and height attributes based on the scale
+  const width = svgElement.getAttribute("width");
+  const height = svgElement.getAttribute("height");
+  console.log(width, height, svgElement);
+  if (width && height) {
+    svgElement.setAttribute("width", String(Number(width) * scale));
+    svgElement.setAttribute("height", String(Number(height) * scale));
   }
-
-  // Serialize the modified SVG back to a string
-  return dom.serialize();
 }
 
 export default app;
