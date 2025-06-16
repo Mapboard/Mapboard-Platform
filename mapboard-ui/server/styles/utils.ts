@@ -1,6 +1,6 @@
 import { JSDOM } from "jsdom";
 
-type RefineOptions = {
+export type RefineOptions = {
   color?: string;
   backgroundColor?: string;
   scale?: number;
@@ -76,7 +76,6 @@ function rescaleSVG(document: Document, scale: number) {
   // Set the width and height attributes based on the scale
   const width = svgElement.getAttribute("width");
   const height = svgElement.getAttribute("height");
-  console.log(width, height, svgElement);
   if (width && height) {
     svgElement.setAttribute("width", String(Number(width) * scale));
     svgElement.setAttribute("height", String(Number(height) * scale));

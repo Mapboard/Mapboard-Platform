@@ -4,17 +4,18 @@
   between different projects. We'll eventually move to a more unified schema.
  */
 
+DROP VIEW IF EXISTS mapboard_api.polygon_type;
 CREATE OR REPLACE VIEW mapboard_api.polygon_type AS
 WITH s1 AS (
   SELECT
-    p.id project_id,
+    p.id AS project_id,
     p.slug project_slug,
     c.data_schema,
-    array_agg(c.id) AS context_ids
+    c.id AS context_id,
+    c.slug AS context_slug
   FROM mapboard.project p
   JOIN mapboard.context c
     ON p.id = c.project_id
-  GROUP BY p.id, p.slug, c.data_schema
 )
 SELECT
   s1.*,
@@ -30,4 +31,4 @@ SELECT
 FROM naukluft_cross_sections.polygon_type pt2
 JOIN s1 ON
   s1.project_slug = 'naukluft'
-      AND s1.data_schema = 'cross_section';
+AND s1.data_schema = 'cross_section';
