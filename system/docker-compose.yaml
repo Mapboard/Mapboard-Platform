@@ -44,6 +44,8 @@ services:
     image: elevation-tiler:v0.1.0
     restart: unless-stopped
     command: [ "fastapi", "run", "--root-path", "/dem-tiles", "elevation_tiler" ]
+    volumes:
+      - ../data:/data
   mapboard_server:
     build: ${MAPBOARD_SERVER_SRC_DIR}
     image: mapboard-server

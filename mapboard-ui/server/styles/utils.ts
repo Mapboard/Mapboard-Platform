@@ -25,10 +25,7 @@ export function refineSVG(svgContent: string, options: RefineOptions): string {
     svgElement.setAttribute("style", `background-color: ${backgroundColor};`);
   }
 
-  if (scale) {
-    // Rescale the SVG if scale is provided
-    rescaleSVG(document, scale);
-  }
+  rescaleSVG(document, scale ?? 1);
 
   // Serialize the modified SVG back to a string
   return dom.serialize();
@@ -76,6 +73,12 @@ function rescaleSVG(document: Document, scale: number) {
   // Set the width and height attributes based on the scale
   const width = svgElement.getAttribute("width");
   const height = svgElement.getAttribute("height");
+
+  // If there isn't a viewBox, set it based on the width and height so that the SVG scales correctly
+  if (!svgElement.hasAttribute("viewBox") && width && height) {
+    svgElement.setAttribute("viewBox", `0 0 ${width} ${height}`);
+  }
+
   if (width && height) {
     svgElement.setAttribute("width", String(Number(width) * scale));
     svgElement.setAttribute("height", String(Number(height) * scale));
