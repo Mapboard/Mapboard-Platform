@@ -4,11 +4,7 @@ import { BasemapType, useMapState } from "../state";
 import { mergeStyles } from "@macrostrat/mapbox-utils";
 import { buildMapOverlayStyle, CrossSectionConfig } from "./overlay";
 import { buildSelectionLayers } from "../selection";
-import {
-  PolygonPatternConfig,
-  PolygonStyleIndex,
-  setupStyleImages,
-} from "./pattern-fills";
+import { PolygonPatternConfig, PolygonStyleIndex } from "./pattern-fills";
 import { useMapRef, useMapStatus } from "@macrostrat/mapbox-react";
 import { lineSymbols } from "./line-symbols";
 import { loadImage } from "./pattern-images";
@@ -58,7 +54,7 @@ export function useMapStyle(
 
   const [overlayStyle, setOverlayStyle] = useState(null);
 
-  const polygonSymbolIndex = useMapSymbols();
+  //const polygonSymbolIndex = useMapSymbols();
   const lineSymbolIndex = useLineSymbols();
 
   const crossSectionConfig: CrossSectionConfig = {
@@ -76,7 +72,7 @@ export function useMapStyle(
       sourceChangeTimestamps: changeTimestamps,
       enabledFeatureModes,
       showLineEndpoints,
-      polygonSymbolIndex,
+      //polygonSymbolIndex,
       lineSymbolIndex,
       crossSectionConfig,
       showFacesWithNoUnit,
@@ -89,7 +85,7 @@ export function useMapStyle(
     changeTimestamps,
     showLineEndpoints,
     enabledFeatureModes,
-    polygonSymbolIndex,
+    //polygonSymbolIndex,
     lineSymbolIndex,
     showCrossSectionLines,
     showFacesWithNoUnit,
@@ -105,8 +101,8 @@ export function useMapStyle(
     const mainStyle = {
       version: 8,
       name: "Mapboard",
-      sources: {},
-      layers: [],      sources: {
+      layers: [],
+      sources: {
         "mapbox-dem": {
           type: "raster-dem",
           url: "mapbox://mapbox.mapbox-terrain-dem-v1",
@@ -123,12 +119,14 @@ export function useMapStyle(
         {
           id: "basemap",
           url: baseStyleURL,
-        }
-      ]
-    }
+        },
+      ],
+      sprite: `https://mapboard.local/styles/sprite/naukluft/main`,
+    };
 
-    return mergeStyles(mainStyle, overlayStyle);
-
+    const styles = mergeStyles(overlayStyle, mainStyle);
+    console.log("styles", styles);
+    return styles;
   }, [baseStyleURL, overlayStyle, exaggeration]);
 }
 
@@ -157,10 +155,10 @@ export function useMapSymbols(): PolygonStyleIndex | null {
       })
       .filter((d) => d.symbol != null);
 
-    await setupLineSymbols(map.current);
+    return await setupLineSymbols(map.current);
 
-    const patternBaseURL = "/assets/geologic-patterns/svg";
-    return await setupStyleImages(map.current, symbols, { patternBaseURL });
+    //const patternBaseURL = "/assets/geologic-patterns/svg";
+    //return await setupStyleImages(map.current, symbols, { patternBaseURL });
   }, [polygonTypes, isInitialized]);
 }
 

@@ -26,19 +26,18 @@ interface MapOverlayOptions {
 
 export function buildMapOverlayStyle(
   baseURL: string,
-  options: MapOverlayOptions
+  options: MapOverlayOptions,
 ) {
   const {
     showLineEndpoints = true,
     selectedLayer,
     enabledFeatureModes = allFeatureModes,
     sourceChangeTimestamps,
-    polygonSymbolIndex,
     lineSymbolIndex,
     crossSectionConfig,
     useSymbols = true,
     showFacesWithNoUnit = false,
-    showTopologyPrimitives = false
+    showTopologyPrimitives = false,
   } = options ?? {};
 
   // Disable rivers and roads by default
@@ -72,8 +71,8 @@ export function buildMapOverlayStyle(
       type: "raster-dem",
       url: "mapbox://mapbox.mapbox-terrain-dem-v1",
       tileSize: 512,
-      maxzoom: 14
-    }
+      maxzoom: 14,
+    },
   };
 
   let layers: mapboxgl.Layer[] = [];
@@ -88,7 +87,9 @@ export function buildMapOverlayStyle(
     };
   }
 
-  const tilesetArray = Array.from(featureModes).map(tileLayerNameForFeatureMode);
+  const tilesetArray = Array.from(featureModes).map(
+    tileLayerNameForFeatureMode,
+  );
 
   if (showTopologyPrimitives) {
     tilesetArray.push("nodes");
@@ -106,29 +107,24 @@ export function buildMapOverlayStyle(
   /** Could also consider separate sources per layer */
   const suffix = getTileQueryParams({
     map_layer: selectedLayer,
-    changed
+    changed,
   });
 
   sources["mapboard"] = {
     type: "vector",
     tiles: [baseURL + `/tile/${compositeTileset}/{z}/{x}/{y}${suffix}`],
-    volatile: true
+    volatile: true,
   };
 
-  if ((polygonSymbolIndex == null || lineSymbolIndex == null) && useSymbols) {
+  if (lineSymbolIndex == null && useSymbols) {
     return {
       version: 8,
       sources,
-      layers: [...layers, ...overlayLayers]
+      layers: [...layers, ...overlayLayers],
     };
   }
 
   if (featureModes.has(FeatureMode.Fill)) {
-    let paint = {
-      "fill-color": ["get", "color"]
-      //"fill-opacity": selectedLayerOpacity(0.5, 0.3),
-    };
-
     let topoFilters = [filter];
 
     if (!showFacesWithNoUnit) {
@@ -136,40 +132,34 @@ export function buildMapOverlayStyle(
     }
 
     // Fill pattern layers
+    // layers.push({
+    //   id: "fills",
+    //   type: "fill",
+    //   source: "mapboard",
+    //   "source-layer": "fills",
+    //   paint: {
+    //     "fill-color": ["get", "color"],
+    //     "fill-opacity": selectedLayerOpacity(0.5, 0.3),
+    //   },
+    //   filter: ["all", ...topoFilters],
+    // });
+
     layers.push({
-      id: "fills",
+      id: "fill-patterns",
       type: "fill",
       source: "mapboard",
       "source-layer": "fills",
       paint: {
-        "fill-color": ["get", "color"],
-        "fill-opacity": selectedLayerOpacity(0.5, 0.3)
+        //"fill-color": ["get", "color"],
+        "fill-pattern": [
+          "coalesce",
+          ["image", "neauras-fill"],
+          ["image", "transparent"],
+        ],
+        "fill-opacity": selectedLayerOpacity(0.5, 0.3),
       },
-      filter: ["all", ...topoFilters]
+      filter: ["all", ...topoFilters],
     });
-
-    if (useSymbols) {
-      const ix = ["literal", polygonSymbolIndex];
-
-      const mapSymbolFilter: any[] = ["has", ["get", "type"], ix];
-
-      layers.push({
-        id: "fill-patterns",
-        type: "fill",
-        source: "mapboard",
-        "source-layer": "fills",
-        paint: {
-          "fill-color": ["get", "color"],
-          "fill-pattern": [
-            "coalesce",
-            ["image", ["get", ["get", "type"], ix]],
-            ["image", "transparent"]
-          ],
-          "fill-opacity": selectedLayerOpacity(0.5, 0.3)
-        },
-        filter: ["all", ...topoFilters, mapSymbolFilter]
-      });
-    }
   }
 
   if (featureModes.has(FeatureMode.Polygon)) {
@@ -180,9 +170,9 @@ export function buildMapOverlayStyle(
       "source-layer": "polygons",
       paint: {
         "fill-color": ["get", "color"],
-        "fill-opacity": selectedLayerOpacity(0.8, 0.4)
+        "fill-opacity": selectedLayerOpacity(0.8, 0.4),
       },
-      filter
+      filter,
     });
   }
 
@@ -193,10 +183,10 @@ export function buildMapOverlayStyle(
     [
       "in",
       ["get", "type"],
-      ["literal", ["thrust-fault", "normal-fault", "fault"]]
+      ["literal", ["thrust-fault", "normal-fault", "fault"]],
     ],
     "#000000",
-    ["get", "color"]
+    ["get", "color"],
   ];
 
   let lineWidth: any = 1;
@@ -205,10 +195,10 @@ export function buildMapOverlayStyle(
     [
       "in",
       ["get", "type"],
-      ["literal", ["thrust-fault", "normal-fault", "fault"]]
+      ["literal", ["thrust-fault", "normal-fault", "fault"]],
     ],
     1.5,
-    1
+    1,
   ];
 
   let lineFilter = filter;
@@ -226,9 +216,9 @@ export function buildMapOverlayStyle(
       paint: {
         "line-color": lineColor,
         "line-width": lineWidth,
-        "line-opacity": selectedLayerOpacity(1, 0.5)
+        "line-opacity": selectedLayerOpacity(1, 0.5),
       },
-      filter: lineFilter
+      filter: lineFilter,
     });
 
     if (lineSymbolIndex != null && useSymbols) {
@@ -247,23 +237,22 @@ export function buildMapOverlayStyle(
           "case",
           ["==", ["get", "color"], "none"],
           "#000000",
-          ["get", "color"]
+          ["get", "color"],
         ],
-        "circle-radius": 2
+        "circle-radius": 2,
       },
-      filter
+      filter,
     });
   }
 
   return {
     version: 8,
     sources,
-    layers: [...layers, ...overlayLayers]
+    layers: [...layers, ...overlayLayers],
   };
 }
 
 export function buildTopologyLayers() {
-
   return [
     // Edges
     {
@@ -272,15 +261,9 @@ export function buildTopologyLayers() {
       source: "mapboard",
       "source-layer": "edges",
       paint: {
-        "line-width": [
-          "interpolate",
-          ["linear"],
-          ["zoom"],
-          0, 0.5,
-          12, 2
-        ],
-        "line-color": "#4f11ab"
-      }
+        "line-width": ["interpolate", ["linear"], ["zoom"], 0, 0.5, 12, 2],
+        "line-color": "#4f11ab",
+      },
     },
     // Nodes
     {
@@ -290,30 +273,26 @@ export function buildTopologyLayers() {
       "source-layer": "nodes",
       "min-zoom": 4,
       layout: {
-        "circle-sort-key": ["get", "n_edges"]
+        "circle-sort-key": ["get", "n_edges"],
       },
       paint: {
         // Small radius when zoomed out and larger when zoomed in
-        "circle-radius": [
-          "interpolate",
-          ["linear"],
-          ["zoom"],
-          0, 0.5,
-          12, 3
-        ],
+        "circle-radius": ["interpolate", ["linear"], ["zoom"], 0, 0.5, 12, 3],
         "circle-color": [
           "interpolate",
           ["linear"],
           ["get", "n_edges"],
-          1, "#d20045",
-          2, "#4f11ab",
-          4, "#606ad9"
-        ]
-      }
-    }
+          1,
+          "#d20045",
+          2,
+          "#4f11ab",
+          4,
+          "#606ad9",
+        ],
+      },
+    },
   ];
 }
-
 
 function tileLayerNameForFeatureMode(mode: FeatureMode): string {
   switch (mode) {

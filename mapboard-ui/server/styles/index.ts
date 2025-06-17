@@ -20,7 +20,7 @@ app.get("/sprite/:projectSlug/:contextSlug.:format", async (req, res) => {
       .send("Invalid format. Only 'png' and 'json' are supported.");
   }
 
-  let scale = 5;
+  let scale = 1;
   if (contextSlug.endsWith("@2x")) {
     // Remove the @2x suffix for processing
     contextSlug = contextSlug.slice(0, -3);
