@@ -55,11 +55,6 @@ export function MapArea({
     projection = { name: "mercator" };
   }
 
-  // const toolsCard = h(PanelCard, { className: "tools-panel" }, [
-  //   h("h4", "Tools"),
-  //   h(Button, { icon: "selection", small: true }, "Select"),
-  // ]);
-
   return h(
     MapAreaContainer,
     {
@@ -138,8 +133,6 @@ function MapInner({
   } else {
     _mapPosition = mapPosition;
   }
-
-  console.log("Map position", _mapPosition, _bounds);
 
   return h(MapView, {
     maxBounds,

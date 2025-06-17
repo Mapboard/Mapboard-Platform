@@ -1,24 +1,51 @@
 /** An express service for generating colored pattern images for map units */
 
 import { Request, Response, Router } from "express";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
-import fs from "node:fs/promises";
-import { convertSVGToPNG, RefineOptions, refineSVG } from "./utils";
+
+import { createPatternSVG, convertSVGToPNG } from "./utils";
 import { postgrest } from "~/utils/api-client";
+import { buildSpriteSheet, SpritesResult } from "./sprite-generator";
 
 // Create a set of express routes
 
 const app = Router();
 
-// Assets and static files
-// Serve FGDC assets
-export const geologicPatternsBasePath = join(
-  dirname(fileURLToPath(import.meta.resolve("geologic-patterns"))),
-  "assets",
-);
+app.get("/sprite/:projectSlug/:contextSlug.:format", async (req, res) => {
+  const { projectSlug, format } = req.params;
+  let { contextSlug } = req.params;
+  const validFormats = ["png", "json"];
+  if (!validFormats.includes(format)) {
+    return res
+      .status(400)
+      .send("Invalid format. Only 'png' and 'json' are supported.");
+  }
 
-const geologicPatternsSVGPath = join(geologicPatternsBasePath, "svg");
+  let scale = 5;
+  if (contextSlug.endsWith("@2x")) {
+    // Remove the @2x suffix for processing
+    contextSlug = contextSlug.slice(0, -3);
+    scale *= 2; // Set scale to 2 for @2x contexts
+  }
+  try {
+    let spriteData = await buildSpriteSheet({
+      projectSlug,
+      contextSlug,
+      scale,
+    });
+
+    // Respond with the sprite sheet in the requested format
+    if (format === "png") {
+      res.setHeader("Content-Type", "image/png");
+      res.send(spriteData.image);
+    } else if (format === "json") {
+      res.json(spriteData.data);
+    }
+  } catch (error) {
+    return res
+      .status(500)
+      .send(`Error generating sprite sheet: ${error.message}`);
+  }
+});
 
 app.get("/pattern/:patternID.:format", async (req, res) => {
   let { patternID, format } = req.params;
@@ -67,13 +94,8 @@ app.get(
   },
 );
 
-interface PatternArgs extends RefineOptions {
-  patternID: string;
-  format: string;
-}
-
 async function sendPatternResponse(res: Response<any, any>, args: PatternArgs) {
-  const { format, color, backgroundColor, scale } = args;
+  const { format, backgroundColor } = args;
   let { patternID } = args;
   // Only allow 'svg' and 'png' formats
   if (format != "svg" && format != "png") {
@@ -87,41 +109,16 @@ async function sendPatternResponse(res: Response<any, any>, args: PatternArgs) {
     return res.status(400).send("Invalid pattern ID");
   }
 
-  const patternInt = parseInt(patternID, 10);
-  if (!isNaN(patternInt) && patternInt < 600) {
-    // We're working with a map pattern ID, which would have a suffix.
-    // We assume -K
-    patternID = `${patternInt}-K`;
-  }
-
-  const filePath = join(geologicPatternsSVGPath, `${patternID}.svg`);
-
-  let svgContent: string | null = null;
-  // Check if the file exists
-  try {
-    svgContent = await fs.readFile(filePath, "utf-8");
-  } catch (error) {
-    return res.status(404).send("Pattern not found");
-  }
-
-  if (color || backgroundColor || scale) {
-    // Recolor the SVG if color is provided
-    const recolorOptions = {
-      color,
-      backgroundColor,
-      scale,
-    };
-    svgContent = refineSVG(svgContent, recolorOptions);
-  }
+  const svgResult = await createPatternSVG(args);
 
   if (format === "png") {
     // Convert SVG to PNG
-    const pngBuffer = await convertSVGToPNG(svgContent, backgroundColor);
+    const result = await convertSVGToPNG(svgResult.svg, backgroundColor);
     res.setHeader("Content-Type", "image/png");
-    res.send(pngBuffer);
+    res.send(result.buffer);
   } else {
     res.setHeader("Content-Type", "image/svg+xml");
-    res.send(svgContent);
+    res.send(svgResult.svg);
   }
 }
 

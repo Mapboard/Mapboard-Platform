@@ -6,7 +6,8 @@ import { vikeHandler } from "./vike-handler";
 import { createHandler } from "@universal-middleware/express";
 import express from "express";
 import { createDevMiddleware } from "vike/server";
-import stylesRouter, { geologicPatternsBasePath } from "./styles/index";
+import stylesRouter from "./styles/index";
+import { geologicPatternsBasePath } from "./styles/utils";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);

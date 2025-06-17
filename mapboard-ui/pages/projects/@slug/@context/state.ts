@@ -113,7 +113,6 @@ export interface MapState extends StoredMapState {
   terrainExaggeration: number;
   mapLayers: MapLayer[] | null;
   mapLayerIDMap: Map<number, MapLayer>;
-  terrainSource: string;
   apiBaseURL: string;
   // Time that we last updated the map elements
   lastChangeTime: SourceChangeTimestamps;
@@ -163,7 +162,6 @@ function createMapStore(
         showFacesWithNoUnit: false,
         showTopologyPrimitives: false,
         terrainExaggeration: 1,
-        terrainSource: "mapbox://mapbox.terrain-rgb",
         lastChangeTime: {
           line: null,
           polygon: null,
