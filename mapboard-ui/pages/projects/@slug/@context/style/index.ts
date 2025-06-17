@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAsyncEffect, useInDarkMode } from "@macrostrat/ui-components";
 import { BasemapType, useMapState } from "../state";
-import { getMapboxStyle, mergeStyles } from "@macrostrat/mapbox-utils";
+import { mergeStyles } from "@macrostrat/mapbox-utils";
 import { buildMapOverlayStyle, CrossSectionConfig } from "./overlay";
 import { buildSelectionLayers } from "../selection";
 import {
@@ -17,6 +17,7 @@ export { buildMapOverlayStyle };
 
 function useBaseMapStyle(basemapType: BasemapType) {
   const isEnabled = useInDarkMode();
+
   let baseStyle = isEnabled
     ? "mapbox://styles/mapbox/dark-v10"
     : "mapbox://styles/mapbox/light-v10";
@@ -55,7 +56,6 @@ export function useMapStyle(
 
   const baseStyleURL = useBaseMapStyle(basemapType);
 
-  const [baseStyle, setBaseStyle] = useState(null);
   const [overlayStyle, setOverlayStyle] = useState(null);
 
   const polygonSymbolIndex = useMapSymbols();
@@ -65,16 +65,6 @@ export function useMapStyle(
     layerID: crossSectionLayerID,
     enabled: showCrossSectionLines,
   };
-
-  useEffect(() => {
-    if (!isMapView) {
-      setBaseStyle(null);
-      return;
-    }
-    getMapboxStyle(baseStyleURL, {
-      access_token: mapboxToken,
-    }).then(setBaseStyle);
-  }, [baseStyleURL, mapboxToken, isMapView]);
 
   useAsyncEffect(async () => {
     if (!showOverlay) {
@@ -108,12 +98,15 @@ export function useMapStyle(
   ]);
 
   return useMemo(() => {
-    if (baseStyle == null && overlayStyle == null) {
+    if (baseStyleURL == null && overlayStyle == null) {
       return null;
     }
 
-    const terrainSources = {
-      sources: {
+    const mainStyle = {
+      version: 8,
+      name: "Mapboard",
+      sources: {},
+      layers: [],      sources: {
         "mapbox-dem": {
           type: "raster-dem",
           url: "mapbox://mapbox.mapbox-terrain-dem-v1",
@@ -124,41 +117,19 @@ export function useMapStyle(
         source: "mapbox-dem",
         exaggeration,
       },
-    };
-
-    let style = mergeStyles(baseStyle, overlayStyle, terrainSources);
-
-    return replaceRasterDEM(style, "mapbox-dem");
-  }, [baseStyle, overlayStyle, exaggeration]);
-}
-
-function replaceRasterDEM(style, sourceName) {
-  /** Replace all raster DEM sources with a single source */
-  let removedSources = [];
-  let newSources: any = {};
-  for (const [key, source] of Object.entries(style.sources)) {
-    if (source.type == "raster-dem" && key != sourceName) {
-      removedSources.push(key);
-    } else {
-      newSources[key] = source;
+      // Use the new imports syntax for basemap styles.
+      // This allows us to provide our own sprites
+      imports: [
+        {
+          id: "basemap",
+          url: baseStyleURL,
+        }
+      ]
     }
-  }
 
-  const newLayers = style.layers.map((layer) => {
-    if (removedSources.includes(layer.source)) {
-      return {
-        ...layer,
-        source: sourceName,
-      };
-    }
-    return layer;
-  });
-  let terrain = undefined;
-  if (style.terrain != null) {
-    terrain = { ...style.terrain, source: sourceName };
-  }
+    return mergeStyles(mainStyle, overlayStyle);
 
-  return { ...style, sources: newSources, layers: newLayers, terrain };
+  }, [baseStyleURL, overlayStyle, exaggeration]);
 }
 
 const color = "#e350a3";
