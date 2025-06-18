@@ -9,6 +9,8 @@ import { useMapRef, useMapStatus } from "@macrostrat/mapbox-react";
 import { lineSymbols } from "./line-symbols";
 import { loadImage } from "./pattern-images";
 
+export * from "./pattern-manager"
+
 export { buildMapOverlayStyle };
 
 function useBaseMapStyle(basemapType: BasemapType) {
@@ -121,12 +123,10 @@ export function useMapStyle(
           url: baseStyleURL,
         },
       ],
-      sprite: `https://mapboard.local/styles/sprite/naukluft/main`,
+      //sprite: `https://mapboard.local/styles/sprite/naukluft/main`,
     };
 
-    const styles = mergeStyles(overlayStyle, mainStyle);
-    console.log("styles", styles);
-    return styles;
+    return mergeStyles(overlayStyle, mainStyle);
   }, [baseStyleURL, overlayStyle, exaggeration]);
 }
 

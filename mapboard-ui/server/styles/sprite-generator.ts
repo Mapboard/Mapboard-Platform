@@ -157,7 +157,7 @@ async function generateSprites(patterns: Array<SpriteData>): SpritesResult {
   let sprites: Record<string, any> = {};
   for (const res of patternsWithNodes) {
     const { node, unitID } = res;
-    sprites[unitID + "-fill"] = {
+    sprites[unitID] = {
       x: node.left,
       y: node.top,
       width: node.width,

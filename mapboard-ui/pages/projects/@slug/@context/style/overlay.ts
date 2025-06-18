@@ -128,7 +128,7 @@ export function buildMapOverlayStyle(
     let topoFilters = [filter];
 
     if (!showFacesWithNoUnit) {
-      topoFilters.push(["has", "type"]);
+      topoFilters.push(["has", "unit"]);
     }
 
     // Fill pattern layers
@@ -150,15 +150,10 @@ export function buildMapOverlayStyle(
       source: "mapboard",
       "source-layer": "fills",
       paint: {
-        //"fill-color": ["get", "color"],
-        "fill-pattern": [
-          "coalesce",
-          ["image", "neauras-fill"],
-          ["image", "transparent"],
-        ],
+        "fill-pattern": ["image", ["concat", ["get", "symbol"],":", ["get", "symbol_color"]]],
         "fill-opacity": selectedLayerOpacity(0.5, 0.3),
       },
-      filter: ["all", ...topoFilters],
+      filter: ["all", ["has", "symbol"], ...topoFilters],
     });
   }
 
