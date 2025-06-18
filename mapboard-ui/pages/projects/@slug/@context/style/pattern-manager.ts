@@ -13,9 +13,9 @@ export function MapPolygonPatternManager() {
       return;
     }
 
-    console.log(name, color)
+    const _color = color.replace(/#/g, '%23')
 
-    const url = `/styles/pattern/${name}.png?scale=4&color=${color}`;
+    const url = `/styles/pattern/${name}.png?scale=4&color=${_color}`;
 
     map.loadImage(url, (error, image) => {
       if (error) {

@@ -132,17 +132,17 @@ export function buildMapOverlayStyle(
     }
 
     // Fill pattern layers
-    // layers.push({
-    //   id: "fills",
-    //   type: "fill",
-    //   source: "mapboard",
-    //   "source-layer": "fills",
-    //   paint: {
-    //     "fill-color": ["get", "color"],
-    //     "fill-opacity": selectedLayerOpacity(0.5, 0.3),
-    //   },
-    //   filter: ["all", ...topoFilters],
-    // });
+    layers.push({
+      id: "fills",
+      type: "fill",
+      source: "mapboard",
+      "source-layer": "fills",
+      paint: {
+        "fill-color": ["get", "color"],
+        "fill-opacity": selectedLayerOpacity(0.5, 0.3),
+      },
+      filter: ["all", ...topoFilters],
+    });
 
     layers.push({
       id: "fill-patterns",
@@ -150,7 +150,10 @@ export function buildMapOverlayStyle(
       source: "mapboard",
       "source-layer": "fills",
       paint: {
-        "fill-pattern": ["image", ["concat", ["get", "symbol"],":", ["get", "symbol_color"]]],
+        "fill-pattern": [
+          "image",
+          ["concat", ["get", "symbol"], ":", ["get", "symbol_color"]],
+        ],
         "fill-opacity": selectedLayerOpacity(0.5, 0.3),
       },
       filter: ["all", ["has", "symbol"], ...topoFilters],

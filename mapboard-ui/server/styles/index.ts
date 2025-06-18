@@ -2,50 +2,11 @@
 
 import { Request, Response, Router } from "express";
 
-import { createPatternSVG, convertSVGToPNG } from "./utils";
-import { postgrest } from "~/utils/api-client";
-import { buildSpriteSheet, SpritesResult } from "./sprite-generator";
+import { createPatternSVG, convertSVGToPNG,  PatternArgss } from "./utils";
 
 // Create a set of express routes
 
 const app = Router();
-
-app.get("/sprite/:projectSlug/:contextSlug.:format", async (req, res) => {
-  const { projectSlug, format } = req.params;
-  let { contextSlug } = req.params;
-  const validFormats = ["png", "json"];
-  if (!validFormats.includes(format)) {
-    return res
-      .status(400)
-      .send("Invalid format. Only 'png' and 'json' are supported.");
-  }
-
-  let scale = 1;
-  if (contextSlug.endsWith("@2x")) {
-    // Remove the @2x suffix for processing
-    contextSlug = contextSlug.slice(0, -3);
-    scale *= 2; // Set scale to 2 for @2x contexts
-  }
-  try {
-    let spriteData = await buildSpriteSheet({
-      projectSlug,
-      contextSlug,
-      scale,
-    });
-
-    // Respond with the sprite sheet in the requested format
-    if (format === "png") {
-      res.setHeader("Content-Type", "image/png");
-      res.send(spriteData.image);
-    } else if (format === "json") {
-      res.json(spriteData.data);
-    }
-  } catch (error) {
-    return res
-      .status(500)
-      .send(`Error generating sprite sheet: ${error.message}`);
-  }
-});
 
 app.get("/pattern/:patternID.:format", async (req, res) => {
   let { patternID, format } = req.params;
@@ -63,39 +24,8 @@ app.get("/pattern/:patternID.:format", async (req, res) => {
   });
 });
 
-app.get(
-  "/project/:projectSlug/:contextSlug/pattern/:unitID.:format",
-  async (req, res) => {
-    // Get information from the API
-    const { projectSlug, contextSlug, unitID, format } = req.params;
-
-    const meta = await postgrest
-      .from("polygon_type")
-      .select("color,symbol,symbol_color")
-      .eq("id", unitID)
-      .eq("project_slug", projectSlug)
-      .eq("context_slug", contextSlug);
-    if (meta.error) {
-      return res.status(meta.status).send(meta.error);
-    }
-    const data = meta.data[0];
-    if (!data) {
-      return res.status(404).send("Pattern not found");
-    }
-    const { color, symbol, symbol_color } = data;
-
-    return sendPatternResponse(res, {
-      patternID: symbol,
-      format,
-      color: symbol_color,
-      backgroundColor: color,
-      scale: parseQueryParam(req, "scale", Number),
-    });
-  },
-);
-
 async function sendPatternResponse(res: Response<any, any>, args: PatternArgs) {
-  const { format, backgroundColor } = args;
+  const { format, color, backgroundColor, scale } = args;
   let { patternID } = args;
   // Only allow 'svg' and 'png' formats
   if (format != "svg" && format != "png") {
@@ -109,14 +39,14 @@ async function sendPatternResponse(res: Response<any, any>, args: PatternArgs) {
     return res.status(400).send("Invalid pattern ID");
   }
 
-  const svgResult = await createPatternSVG(args);
-
   if (format === "png") {
     // Convert SVG to PNG
-    const result = await convertSVGToPNG(svgResult.svg, backgroundColor);
+    const svgResult = await createPatternSVG({patternID, scale, format});
+    const result = await convertSVGToPNG(svgResult.svg, {color, backgroundColor});
     res.setHeader("Content-Type", "image/png");
     res.send(result.buffer);
   } else {
+    const svgResult = await createPatternSVG(args);
     res.setHeader("Content-Type", "image/svg+xml");
     res.send(svgResult.svg);
   }

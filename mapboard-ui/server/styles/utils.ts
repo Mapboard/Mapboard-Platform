@@ -25,7 +25,7 @@ export type SVGData = {
   patternID?: string;
 };
 
-interface PatternArgs extends RefineOptions {
+export interface PatternArgs extends RefineOptions {
   patternID: string;
   format: string;
 }
@@ -187,7 +187,7 @@ interface ImageConversionResult {
 
 export async function convertSVGToPNG(
   svgContent: string,
-  backgroundColor: string | null | undefined,
+  options: RefineOptions,
 ): Promise<ImageConversionResult> {
   // Convert SVG to PNG
   const { createCanvas, loadImage } = await import("canvas");
@@ -203,15 +203,33 @@ export async function convertSVGToPNG(
   // We should maintain a pool of canvases to avoid creating a new one every time.
   const canvas = createCanvas(width, height); // Create a canvas with default size
   const ctx = canvas.getContext("2d");
+  ctx.globalAlpha = 1;
+
+  const { color, backgroundColor, scale = 1 } = options;
 
   // If background color is provided, fill the canvas with it
-  if (backgroundColor) {
-    ctx.fillStyle = backgroundColor;
-    ctx.fillRect(0, 0, width, height);
+
+  ctx.drawImage(img, 0, 0, img.width, img.height);
+
+  //ctx.fillStyle = imgColor;
+  //ctx.fillRect(0, 0, 40, 40);
+
+  // overlay using source-atop to follow transparency
+  if (color != null) {
+    // Fill the pixels already in the image with the specified color
+    ctx.globalCompositeOperation = "source-in";
+    ctx.fillStyle = color;
+    ctx.fillRect(0, 0, img.width, img.height);
   }
 
-  // Draw the image onto the canvas
-  ctx.drawImage(img, 0, 0);
+  if (backgroundColor != null) {
+    ctx.globalCompositeOperation = "destination-over";
+
+    //const map = ctx.getImageData(0, 0, img.width, img.height);
+
+    ctx.fillStyle = backgroundColor;
+    ctx.fillRect(0, 0, img.width * scale, img.height * scale);
+  }
 
   // Set the response headers for PNG
   return {
