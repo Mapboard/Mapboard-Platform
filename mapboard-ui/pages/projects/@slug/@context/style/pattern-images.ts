@@ -82,7 +82,7 @@ export function createTransparentImage() {
   return ctx.getImageData(0, 0, 40, 40);
 }
 
-function createSolidColorImage(imgColor) {
+export function createSolidColorImage(imgColor) {
   var canvas = document.createElement("canvas");
   var ctx = canvas.getContext("2d");
   canvas.width = 40;
