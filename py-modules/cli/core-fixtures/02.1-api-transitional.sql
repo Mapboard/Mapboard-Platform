@@ -1,3 +1,31 @@
+/** Foreign data wrappers and transitional schemas
+  * These are used to import data from the naukluft database into the mapboard database.
+  * The schemas are transitional and will eventually be merged into the main mapboard database.
+ */
+CREATE EXTENSION IF NOT EXISTS postgres_fdw;
+
+CREATE SERVER IF NOT EXISTS naukluft
+  FOREIGN DATA WRAPPER postgres_fdw
+  OPTIONS (host 'localhost', dbname 'naukluft');
+
+CREATE USER MAPPING IF NOT EXISTS FOR CURRENT_USER
+  SERVER naukluft
+  OPTIONS (user 'mapboard_admin');
+
+/* Mirror the 'cross_section' schemas to the mapboard database */
+DROP SCHEMA IF EXISTS naukluft_cross_sections CASCADE;
+CREATE SCHEMA IF NOT EXISTS naukluft_cross_sections;
+IMPORT FOREIGN SCHEMA cross_section
+  FROM SERVER naukluft
+  INTO naukluft_cross_sections;
+
+DROP SCHEMA IF EXISTS naukluft_map_data CASCADE;
+CREATE SCHEMA IF NOT EXISTS naukluft_map_data;
+IMPORT FOREIGN SCHEMA map_digitizer
+  FROM SERVER naukluft
+  INTO naukluft_map_data;
+
+
 /** TRANSITIONAL APIs
   * Here we define API schemas that are used to support common features that will eventually
   be merged between projects. For now, they just unify tables by UNIONing the same structure

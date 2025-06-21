@@ -68,7 +68,7 @@ def psql(ctx: Context, database: Optional[str] = None):
 def run_procedure(project: str, name: Optional[str] = Argument(None)):
     """Run a predefined stored procedure in a project database.
     If no name is provided, list available procedures."""
-    proc_dir = Path(__file__).parent.parent.parent.parent / "migrations"
+    proc_dir = Path(__file__).parent.parent.parent.parent.parent / "migrations"
     if name is None:
         console.print("[bold]Available procedures:")
         for proc in proc_dir.glob("*.sql"):
@@ -154,10 +154,7 @@ def disconnect(project: Optional[str] = None):
 
 
 @db_app.command()
-def dump(
-    project: str,
-    dumpfile: Optional[Path] = None
-):
+def dump(project: str, dumpfile: Optional[Path] = None):
     """Dump a Mapboard project database to a file"""
     if project == "mapboard" or project == "-":
         project = "mapboard"
