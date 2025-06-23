@@ -16,6 +16,7 @@ export function Page() {
     h("p", ["Created on ", strDate]),
     h("p", ["SRID: ", srid]),
     h(Contexts, { contexts }),
+    h("a", { href: `./${slug}/legend-items` }, "View legend items"),
   ]);
 }
 

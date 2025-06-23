@@ -20,6 +20,7 @@ export default defineConfig({
        * should be listed here.
        */
       "@macrostrat/ui-components",
+      "@macrostrat/data-sheet",
     ],
   },
   server: {

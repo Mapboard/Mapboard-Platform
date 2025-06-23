@@ -253,6 +253,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@blueprintjs/colors@npm:^5.1.8":
+  version: 5.1.8
+  resolution: "@blueprintjs/colors@npm:5.1.8"
+  dependencies:
+    tslib: "npm:~2.6.2"
+  checksum: 10c0/d0a3d500628f60415f830df872244370efb0268f43b03a5c7c27d473ea1be5b8c9fb35fbc47330d7c022f3ddecd7afefb6ee4ef94789fe98feb2be95b15753ac
+  languageName: node
+  linkType: hard
+
 "@blueprintjs/core@npm:^5.0.0, @blueprintjs/core@npm:^5.10.2, @blueprintjs/core@npm:^5.16.6":
   version: 5.16.6
   resolution: "@blueprintjs/core@npm:5.16.6"
@@ -278,6 +287,34 @@ __metadata:
     upgrade-blueprint-2.0.0-rename: scripts/upgrade-blueprint-2.0.0-rename.sh
     upgrade-blueprint-3.0.0-rename: scripts/upgrade-blueprint-3.0.0-rename.sh
   checksum: 10c0/04bded5d03e260544641b29c92ed110f8d69c60fa2099041d94ab5a00024f732b07323d229ff877b007086d326fb455f08fcdabdd15d7bd534d1edce47401363
+  languageName: node
+  linkType: hard
+
+"@blueprintjs/core@npm:^5.19.0":
+  version: 5.19.0
+  resolution: "@blueprintjs/core@npm:5.19.0"
+  dependencies:
+    "@blueprintjs/colors": "npm:^5.1.8"
+    "@blueprintjs/icons": "npm:^5.22.0"
+    "@popperjs/core": "npm:^2.11.8"
+    classnames: "npm:^2.3.1"
+    normalize.css: "npm:^8.0.1"
+    react-popper: "npm:^2.3.0"
+    react-transition-group: "npm:^4.4.5"
+    react-uid: "npm:^2.3.3"
+    tslib: "npm:~2.6.2"
+    use-sync-external-store: "npm:^1.2.0"
+  peerDependencies:
+    "@types/react": ^16.14.41 || 17 || 18
+    react: ^16.8 || 17 || 18
+    react-dom: ^16.8 || 17 || 18
+  peerDependenciesMeta:
+    "@types/react":
+      optional: true
+  bin:
+    upgrade-blueprint-2.0.0-rename: scripts/upgrade-blueprint-2.0.0-rename.sh
+    upgrade-blueprint-3.0.0-rename: scripts/upgrade-blueprint-3.0.0-rename.sh
+  checksum: 10c0/62df77ca0295c6d09afd4f7cb045123ff69ec20b47419ffa78d262b96da910ea485bfee4cb487e6951cb1dff277000574b7406b2586fac509e864b4ced347d70
   languageName: node
   linkType: hard
 
@@ -345,6 +382,24 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@blueprintjs/icons@npm:^5.22.0":
+  version: 5.22.0
+  resolution: "@blueprintjs/icons@npm:5.22.0"
+  dependencies:
+    change-case: "npm:^4.1.2"
+    classnames: "npm:^2.3.1"
+    tslib: "npm:~2.6.2"
+  peerDependencies:
+    "@types/react": ^16.14.41 || 17 || 18
+    react: ^16.8 || 17 || 18
+    react-dom: ^16.8 || 17 || 18
+  peerDependenciesMeta:
+    "@types/react":
+      optional: true
+  checksum: 10c0/9424350db904fa79b1ec923d57488e9deea7746dd88542bea6bedca85df7818fd3c2418822cf512a7822fb307402e511815b10760b483667a470263ed01d4852
+  languageName: node
+  linkType: hard
+
 "@blueprintjs/select@npm:^5.3.10, @blueprintjs/select@npm:^5.3.11":
   version: 5.3.11
   resolution: "@blueprintjs/select@npm:5.3.11"
@@ -361,6 +416,25 @@ __metadata:
     "@types/react":
       optional: true
   checksum: 10c0/eede50fc89d992f608a7619dedfd9c40d7d0df05b5fa60335bc22d517869437390f91685d965cccc5d3afe722b915497917f0aff9c333b02be0e049731598389
+  languageName: node
+  linkType: hard
+
+"@blueprintjs/table@npm:^5.1.4":
+  version: 5.3.14
+  resolution: "@blueprintjs/table@npm:5.3.14"
+  dependencies:
+    "@blueprintjs/core": "npm:^5.19.0"
+    classnames: "npm:^2.3.1"
+    react-innertext: "npm:^1.1.5"
+    tslib: "npm:~2.6.2"
+  peerDependencies:
+    "@types/react": ^16.14.41 || 17 || 18
+    react: ^16.8 || 17 || 18
+    react-dom: ^16.8 || 17 || 18
+  peerDependenciesMeta:
+    "@types/react":
+      optional: true
+  checksum: 10c0/aa6b77e1e7dc076d15c3b8548b4014fb631a04c60c988b6cd3507a681b5501f7d45c624464ccb66ed49945775caf96668216b6638fba137fa338ded5690b7f91
   languageName: node
   linkType: hard
 
@@ -1099,6 +1173,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@macrostrat/color-utils@npm:^1.1.0":
+  version: 1.1.0
+  resolution: "@macrostrat/color-utils@npm:1.1.0"
+  dependencies:
+    "@types/chroma-js": "npm:^3.1.1"
+    chroma-js: "npm:^3.0.0"
+  checksum: 10c0/46c90794cd729301863b7b50e9441e24e35866b7b0055d0be4311fe811946f930511cc62049ba0c4eae23e6c68eaeba9a87218141e2bec0b8dbb429844176672
+  languageName: node
+  linkType: hard
+
 "@macrostrat/data-components@npm:^0.0.6":
   version: 0.0.6
   resolution: "@macrostrat/data-components@npm:0.0.6"
@@ -1118,6 +1202,28 @@ __metadata:
     "@blueprintjs/core": ^5.10.2
     react: ^16.8.6||^17.0.2||^18
   checksum: 10c0/283f751a6acf623b9a4ea00e4af6a80531818c643df571d37dd2179d8d4ab5d647c3a6543b5f2b1d9143de64a5e8910edf431eb08b1820b2e75b6b16491dc89f
+  languageName: node
+  linkType: hard
+
+"@macrostrat/data-sheet@npm:^2.0.2":
+  version: 2.0.2
+  resolution: "@macrostrat/data-sheet@npm:2.0.2"
+  dependencies:
+    "@blueprintjs/core": "npm:^5.10.2"
+    "@blueprintjs/table": "npm:^5.1.4"
+    "@macrostrat/color-utils": "npm:^1.1.0"
+    "@macrostrat/hyper": "npm:^3.0.6"
+    "@macrostrat/ui-components": "npm:^4.2.0"
+    "@supabase/postgrest-js": "npm:^1.17.7"
+    chroma-js: "npm:^2.4.2"
+    classnames: "npm:^2.3.1"
+    immutability-helper: "npm:^3.1.1"
+    react: "npm:^17.0.2||^18"
+    react-color: "npm:^2.19.3"
+    react-colorful: "npm:^5.6.1"
+    underscore: "npm:^1.13.7"
+    zustand: "npm:^5.0.2"
+  checksum: 10c0/ed206cbceb7442cc34cd94598981d8f915dff587fbae08ab9af6b61395e13fe1bba0eb661d8307ce6957d99f0167ee0fd0e0c4642fca936e9370cbb4bd99644d
   languageName: node
   linkType: hard
 
@@ -1278,6 +1384,37 @@ __metadata:
     react: ^16.8.6 || ^17 || ^18
     react-dom: ^16.8.6 || ^17 || ^18
   checksum: 10c0/628f0d40f591bbf1e377ef04e4384a0e58366eb866b20670a22e5c62b5b722af440089b3d7d0b0b26c95b960069c8ec1de5428728a4d47001df3d1a0ea96264a
+  languageName: node
+  linkType: hard
+
+"@macrostrat/ui-components@npm:^4.2.0":
+  version: 4.2.0
+  resolution: "@macrostrat/ui-components@npm:4.2.0"
+  dependencies:
+    "@blueprintjs/core": "npm:^5.10.2"
+    "@blueprintjs/datetime2": "npm:^2.3.11"
+    "@macrostrat/hyper": "npm:^3.0.6"
+    "@types/react": "npm:^16.14.41 || 17 || 18"
+    "@types/react-dom": "npm:^17 || ^18"
+    axios: "npm:^1.7.9"
+    chroma-js: "npm:^2.4.2||^3.0.0"
+    classnames: "npm:^2.3.0"
+    d3-array: "npm:^3.2.4"
+    immutability-helper: "npm:^3.1.1"
+    query-string: "npm:^9.0.0"
+    react-color: "npm:^2.19.3"
+    react-dropzone: "npm:^11.4.2"
+    react-intersection-observer: "npm:^8.32.1"
+    react-json-tree: "npm:^0.19.0"
+    ui-box: "npm:^5.4.1"
+    underscore: "npm:^1.13.1"
+    use-async-effect: "npm:^2.2.1"
+    use-element-dimensions: "npm:^2.1.3"
+    zustand: "npm:^5.0.3"
+  peerDependencies:
+    react: ^16.8.6 || ^17 || ^18
+    react-dom: ^16.8.6 || ^17 || ^18
+  checksum: 10c0/fbaf77934e1dee778e1a342c34e612074c59169d22553acb54eb3c7069b8fd2e49962d3b087d7fec84c2d71d28835e6dba2da4b9d225ca401b912a08c6bb2583
   languageName: node
   linkType: hard
 
@@ -1972,6 +2109,15 @@ __metadata:
   dependencies:
     whatwg-url: "npm:^5.0.0"
   checksum: 10c0/98d25cab2eba53c93c59e730d52d50065b1a7fe216c65224471e83e2064ebd45ae51ad09cb39ec263c3cb59e3d41870fc2e789ea2e9587480d7ba212b85daf38
+  languageName: node
+  linkType: hard
+
+"@supabase/postgrest-js@npm:^1.17.7":
+  version: 1.19.4
+  resolution: "@supabase/postgrest-js@npm:1.19.4"
+  dependencies:
+    "@supabase/node-fetch": "npm:^2.6.14"
+  checksum: 10c0/1d14adc841f720e0035045f8b06cf2cb9f3b0a83ac903e268d5afb80b64d240ae64cb24372e0e9c857420b07010bfdb9a806f024fe60ac13468fd791ada2eb7f
   languageName: node
   linkType: hard
 
@@ -3882,6 +4028,13 @@ __metadata:
   version: 3.0.0
   resolution: "chownr@npm:3.0.0"
   checksum: 10c0/43925b87700f7e3893296c8e9c56cc58f926411cce3a6e5898136daaf08f08b9a8eb76d37d3267e707d0dcc17aed2e2ebdf5848c0c3ce95cf910a919935c1b10
+  languageName: node
+  linkType: hard
+
+"chroma-js@npm:^2.4.2":
+  version: 2.6.0
+  resolution: "chroma-js@npm:2.6.0"
+  checksum: 10c0/6e17f43246f9b3eba8a9db67f5ee9a2d0ef1360077211887da09ec1f0934bb98a358eefaf021003c0bd47cbab540f573a373f362d6b2ba04d0e80ab7677e1640
   languageName: node
   linkType: hard
 
@@ -7280,12 +7433,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"prettier@npm:^3.5.3":
-  version: 3.5.3
-  resolution: "prettier@npm:3.5.3"
+"prettier@npm:^3.6.0":
+  version: 3.6.0
+  resolution: "prettier@npm:3.6.0"
   bin:
     prettier: bin/prettier.cjs
-  checksum: 10c0/3880cb90b9dc0635819ab52ff571518c35bd7f15a6e80a2054c05dbc8a3aa6e74f135519e91197de63705bcb38388ded7e7230e2178432a1468005406238b877
+  checksum: 10c0/636897c8084b71ef1f740a46199df0d8f6ed896aa497212cc8cc229d3026b9dca82fa92f61e55924c4708cea11e39a88478e2d93c4818741c55b7408a9ac6d91
   languageName: node
   linkType: hard
 
@@ -7537,6 +7690,16 @@ __metadata:
   peerDependencies:
     react: "*"
   checksum: 10c0/6f9fce9ff3014926d960abccd5d79ecb391a41f835a4b85663fd48ff933554391222f40ed8cfc5417305d47b1e480023981ec22e13c3b16b0d8d718270fa815e
+  languageName: node
+  linkType: hard
+
+"react-colorful@npm:^5.6.1":
+  version: 5.6.1
+  resolution: "react-colorful@npm:5.6.1"
+  peerDependencies:
+    react: ">=16.8.0"
+    react-dom: ">=16.8.0"
+  checksum: 10c0/48eb73cf71e10841c2a61b6b06ab81da9fffa9876134c239bfdebcf348ce2a47e56b146338e35dfb03512c85966bfc9a53844fc56bc50154e71f8daee59ff6f0
   languageName: node
   linkType: hard
 
@@ -7808,7 +7971,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react@npm:^18.0.0":
+"react@npm:^17.0.2||^18, react@npm:^18.0.0":
   version: 18.3.1
   resolution: "react@npm:18.3.1"
   dependencies:
@@ -8182,6 +8345,7 @@ __metadata:
     "@blueprintjs/core": "npm:^5.16.6"
     "@blueprintjs/select": "npm:^5.3.11"
     "@macrostrat/data-components": "npm:^0.0.6"
+    "@macrostrat/data-sheet": "npm:^2.0.2"
     "@macrostrat/form-components": "npm:^0.2.1"
     "@macrostrat/hyper": "npm:^3.0.6"
     "@macrostrat/map-interface": "npm:^1.2.3"
@@ -8217,7 +8381,7 @@ __metadata:
     openapi-typescript: "npm:^5.4.2"
     postcss: "npm:^8.5.3"
     postcss-nesting: "npm:^13.0.1"
-    prettier: "npm:^3.5.3"
+    prettier: "npm:^3.6.0"
     react: "npm:^18.0.0"
     react-dom: "npm:^18.0.0"
     react-use-websocket: "npm:^4.13.0"
@@ -9146,7 +9310,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"underscore@npm:^1.13.1, underscore@npm:^1.13.6":
+"underscore@npm:^1.13.1, underscore@npm:^1.13.6, underscore@npm:^1.13.7":
   version: 1.13.7
   resolution: "underscore@npm:1.13.7"
   checksum: 10c0/fad2b4aac48847674aaf3c30558f383399d4fdafad6dd02dd60e4e1b8103b52c5a9e5937e0cc05dacfd26d6a0132ed0410ab4258241240757e4a4424507471cd
@@ -9807,6 +9971,27 @@ __metadata:
     use-sync-external-store:
       optional: true
   checksum: 10c0/dad96c6c123fda088c583d5df6692e9245cd207583078dc15f93d255a67b0f346bad4535545c98852ecde93d254812a0c799579dfde2ab595016b99fbe20e4d5
+  languageName: node
+  linkType: hard
+
+"zustand@npm:^5.0.2, zustand@npm:^5.0.3":
+  version: 5.0.5
+  resolution: "zustand@npm:5.0.5"
+  peerDependencies:
+    "@types/react": ">=18.0.0"
+    immer: ">=9.0.6"
+    react: ">=18.0.0"
+    use-sync-external-store: ">=1.2.0"
+  peerDependenciesMeta:
+    "@types/react":
+      optional: true
+    immer:
+      optional: true
+    react:
+      optional: true
+    use-sync-external-store:
+      optional: true
+  checksum: 10c0/76228022ad589c8ef29227f184d8852277509f88c80afd537de0506a6ded2e7ecc01d21bb79f426867560e4d59553c526e88d01abc46bd32b133d97ff337e19b
   languageName: node
   linkType: hard
 
