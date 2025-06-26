@@ -25,6 +25,7 @@ function LegendItemsTable({ slug }) {
     h(PostgRESTTableView, {
       endpoint: "https://mapboard.local/pg-api",
       table: "polygon_type",
+      columns: ["id", "name", "color", "symbol", "symbol_color"],
     }),
   );
 }
