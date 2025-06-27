@@ -42,7 +42,10 @@ BEGIN
              lt.name,
              lt.color,
              ml.name,
-             ml.topological
+             ml.topological,
+             l.source_id,
+             l.source_layer,
+             l.covered
            FROM
              map_digitizer.linework l
              JOIN map_digitizer.linework_type lt

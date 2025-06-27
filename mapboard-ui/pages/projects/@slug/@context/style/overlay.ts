@@ -198,9 +198,10 @@ export function buildMapOverlayStyle(
     1,
   ];
 
-  let lineFilter = filter;
+  let lineFilter = ["all", filter,  ["!", ["get", "covered"]]];
+
   if (selectedLayer == null) {
-    lineFilter = ["all", filter, ["!=", ["get", "layer"], "none"]];
+    lineFilter.push(["!=", ["get", "layer"], "none"])
   }
 
   if (featureModes.has(FeatureMode.Line)) {
@@ -217,6 +218,8 @@ export function buildMapOverlayStyle(
       },
       filter: lineFilter,
     });
+
+    console.log("Line symbol index", lineSymbolIndex);
 
     if (lineSymbolIndex != null && useSymbols) {
       layers.push(...createLineSymbolLayers(lineSymbolIndex, lineFilter));

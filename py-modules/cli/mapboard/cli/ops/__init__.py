@@ -10,9 +10,11 @@ from mapboard.core.database import setup_database
 from sys import stderr
 from shapely.geometry import MultiLineString
 from .dangling_edges import remove_dangling_edges
+from .composite_layers import update_composite_layers
 
 app = Typer(name="ops", no_args_is_help=True)
 
+app.command(name="update-composite-layers")(update_composite_layers)
 app.command("remove-dangling-edges")(remove_dangling_edges)
 
 
