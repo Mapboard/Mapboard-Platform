@@ -1,6 +1,6 @@
 import { allFeatureModes, FeatureMode } from "../state";
 import { PolygonStyleIndex } from "./pattern-fills";
-import { createLineSymbolLayers, LineSymbolIndex } from "./line-symbols";
+import { createLineSymbolLayers,  } from "./line-symbols";
 
 export interface SourceChangeTimestamps {
   [key: FeatureMode]: number | null;
@@ -33,7 +33,6 @@ export function buildMapOverlayStyle(
     selectedLayer,
     enabledFeatureModes = allFeatureModes,
     sourceChangeTimestamps,
-    lineSymbolIndex,
     crossSectionConfig,
     useSymbols = true,
     showFacesWithNoUnit = false,
@@ -115,14 +114,6 @@ export function buildMapOverlayStyle(
     tiles: [baseURL + `/tile/${compositeTileset}/{z}/{x}/{y}${suffix}`],
     volatile: true,
   };
-
-  if (lineSymbolIndex == null && useSymbols) {
-    return {
-      version: 8,
-      sources,
-      layers: [...layers, ...overlayLayers],
-    };
-  }
 
   if (featureModes.has(FeatureMode.Fill)) {
     let topoFilters = [filter];
@@ -219,10 +210,8 @@ export function buildMapOverlayStyle(
       filter: lineFilter,
     });
 
-    console.log("Line symbol index", lineSymbolIndex);
-
-    if (lineSymbolIndex != null && useSymbols) {
-      layers.push(...createLineSymbolLayers(lineSymbolIndex, lineFilter));
+    if (useSymbols) {
+      layers.push(...createLineSymbolLayers(lineFilter));
     }
   }
 

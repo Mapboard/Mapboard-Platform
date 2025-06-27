@@ -1,32 +1,51 @@
-import { useMapStyleOperator, useMapRef } from "@macrostrat/mapbox-react";
-import { useCallback } from "react";
+import { useEffect } from "react";
 import { createSolidColorImage, loadImage } from "./pattern-images";
 
-export function MapPolygonPatternManager() {
-  const mapRef = useMapRef();
-  const styleImageMissing = useCallback((e) => {
+export function useStyleImageManager(mapRef) {
+  useEffect(() => {
     const map = mapRef.current;
-    loadPatternImage(map, e.id)
-      .catch((err) => {
-        console.error(`Failed to load pattern image for ${id}:`, err);
-      })
-      .then(() => {});
-  }, []);
+    if (map == null) return;
 
-  useMapStyleOperator(
-    (map) => {
-      map.on("styleimagemissing", styleImageMissing);
-      return () => {
-        map.off("styleimagemissing", styleImageMissing);
-      };
-    },
-    [styleImageMissing],
-  );
+    const styleImageMissing = (e) => {
+      loadStyleImage(map, e.id)
+        .catch((err) => {
+          console.error(`Failed to load pattern image for ${id}:`, err);
+        })
+        .then(() => {});
+    };
 
-  return null;
+    // Register the event listener for missing images
+    map.on("styleimagemissing", styleImageMissing);
+    return () => {
+      // Clean up the event listener when the component unmounts
+      map.off("styleimagemissing", styleImageMissing);
+    };
+  }, [mapRef.current]);
+}
+
+async function loadStyleImage(map: mapboxgl.Map, id: string) {
+  const [prefix, name, ...rest] = id.split(":");
+  if (prefix == "line-symbol") {
+    // Load line symbol image
+    await loadLineSymbolImage(map, id);
+  } else {
+    // Load pattern image
+    await loadPatternImage(map, id);
+  }
+}
+
+async function loadLineSymbolImage(map: mapboxgl.Map, id: string) {
+  const [prefix, name, ...rest] = id.split(":");
+  const vizBaseURL = "//visualization-assets.s3.amazonaws.com";
+  const lineSymbolsURL = vizBaseURL + "/geologic-line-symbols/png";
+  if (map.hasImage(id)) return;
+  const image = await loadImage(lineSymbolsURL + `/${name}.png`);
+  if (map.hasImage(id) || image == null) return;
+  map.addImage(id, image, { sdf: true, pixelRatio: 3 });
 }
 
 async function loadPatternImage(map: mapboxgl.Map, patternSpec: string) {
+  if (map.hasImage(patternSpec)) return;
   const image = await buildPatternImage(patternSpec);
   if (map.hasImage(patternSpec) || image == null) return;
 

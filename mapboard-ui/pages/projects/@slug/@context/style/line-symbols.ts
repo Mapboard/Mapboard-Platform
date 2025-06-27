@@ -12,7 +12,12 @@ export const lineSymbols = [
   "thrust-fault",
 ];
 
-function createLineSymbolLayers(symbolIndex: LineSymbolIndex, filter) {
+export function createLineSymbolLayers(filter) {
+  let symbolIndex: LineSymbolIndex = {};
+  for (const symbol of lineSymbols) {
+    symbolIndex[symbol] = `line-symbol:${symbol}`;
+  }
+
   const builder = new SymbolLayerBuilder(symbolIndex, filter);
 
   return [
@@ -77,6 +82,8 @@ class SymbolLayerBuilder {
       "normal-fault": "#000000",
     };
 
+    console.log(this.index);
+
     return {
       type: "symbol",
       id,
@@ -126,5 +133,3 @@ function matchStatement(value, valueMap, defaultVal) {
     defaultVal,
   ];
 }
-
-export { createLineSymbolLayers };

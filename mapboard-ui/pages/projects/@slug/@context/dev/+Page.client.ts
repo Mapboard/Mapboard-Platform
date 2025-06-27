@@ -59,6 +59,5 @@ function MapStyleLoader({ baseURL, setStyle, isMapContext }: any) {
   useEffect(() => {
     setStyle(style);
   }, [style]);
-  useMapSymbols();
   return null;
 }

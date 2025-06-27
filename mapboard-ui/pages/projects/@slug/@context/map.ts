@@ -10,13 +10,13 @@ import {
 import styles from "./map.module.scss";
 import { useMapActions, useMapState } from "./state";
 import { SphericalMercator } from "@mapbox/sphericalmercator";
-import { useMapRef, } from "@macrostrat/mapbox-react";
+import { useMapRef } from "@macrostrat/mapbox-react";
 import { useMapStyle } from "./style";
+import { useStyleImageManager } from "./style/pattern-manager";
 import { BoxSelectionManager } from "./selection";
 import { MapReloadWatcher } from "./change-watcher";
 import { SelectionDrawer } from "./selection/control-panel";
 import { useMemo } from "react";
-import { MapPolygonPatternManager } from "./style";
 
 const mercator = new SphericalMercator({
   size: 256,
@@ -86,7 +86,6 @@ export function MapArea({
         setPosition: onSelectPosition,
       }),
       h(MapReloadWatcher, { baseURL }),
-      h(MapPolygonPatternManager),
     ],
   );
 }
@@ -105,6 +104,8 @@ function MapInner({
 
   const setMapPosition = useMapActions((a) => a.setMapPosition);
   const mapPosition = useMapState((state) => state.mapPosition);
+
+  useStyleImageManager(mapRef);
 
   const style = useMapStyle(baseURL, {
     isMapView,

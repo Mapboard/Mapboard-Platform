@@ -35,8 +35,6 @@ export function Page() {
   let domain = document.location.origin;
   const baseURL = `${domain}/api/project/${ctx.project_slug}/context/${ctx.slug}`;
 
-  console.log(ctx);
-
   return h(
     ToasterContext,
     h(

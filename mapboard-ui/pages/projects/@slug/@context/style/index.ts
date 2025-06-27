@@ -1,15 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useAsyncEffect, useInDarkMode } from "@macrostrat/ui-components";
 import { BasemapType, useMapState } from "../state";
 import { mergeStyles } from "@macrostrat/mapbox-utils";
 import { buildMapOverlayStyle, CrossSectionConfig } from "./overlay";
 import { buildSelectionLayers } from "../selection";
-import { PolygonPatternConfig, PolygonStyleIndex } from "./pattern-fills";
-import { useMapRef, useMapStatus } from "@macrostrat/mapbox-react";
-import { lineSymbols } from "./line-symbols";
-import { loadImage } from "./pattern-images";
-
-export * from "./pattern-manager"
 
 export { buildMapOverlayStyle };
 
@@ -56,9 +50,6 @@ export function useMapStyle(
 
   const [overlayStyle, setOverlayStyle] = useState(null);
 
-  //const polygonSymbolIndex = useMapSymbols();
-  const lineSymbolIndex = useLineSymbols();
-
   const crossSectionConfig: CrossSectionConfig = {
     layerID: crossSectionLayerID,
     enabled: showCrossSectionLines,
@@ -74,8 +65,6 @@ export function useMapStyle(
       sourceChangeTimestamps: changeTimestamps,
       enabledFeatureModes,
       showLineEndpoints,
-      //polygonSymbolIndex,
-      lineSymbolIndex,
       crossSectionConfig,
       showFacesWithNoUnit,
       showTopologyPrimitives,
@@ -87,8 +76,6 @@ export function useMapStyle(
     changeTimestamps,
     showLineEndpoints,
     enabledFeatureModes,
-    //polygonSymbolIndex,
-    lineSymbolIndex,
     showCrossSectionLines,
     showFacesWithNoUnit,
     showOverlay,
@@ -96,7 +83,7 @@ export function useMapStyle(
   ]);
 
   return useMemo(() => {
-    if (baseStyleURL == null && overlayStyle == null) {
+    if (baseStyleURL == null || overlayStyle == null) {
       return null;
     }
 
@@ -126,82 +113,10 @@ export function useMapStyle(
       //sprite: `https://mapboard.local/styles/sprite/naukluft/main`,
     };
 
-    return mergeStyles(overlayStyle, mainStyle);
+    let style = mergeStyles(overlayStyle, mainStyle);
+    console.log("Updated map style", style);
+    return style;
   }, [baseStyleURL, overlayStyle, exaggeration]);
 }
 
 const color = "#e350a3";
-
-export function useMapSymbols(): PolygonStyleIndex | null {
-  const polygonTypes = useMapState((state) => state.dataTypes.polygon);
-
-  const map = useMapRef();
-  const isInitialized = useMapStatus((state) => state.isInitialized);
-
-  return useAsyncMemo(async () => {
-    if (map.current == null || polygonTypes == null) {
-      return null;
-    }
-
-    const symbols: PolygonPatternConfig[] = polygonTypes
-      ?.map((d) => {
-        const sym = d.symbology;
-        return {
-          color: d.color,
-          id: d.id,
-          symbol: sym?.name,
-          symbolColor: sym?.color,
-        };
-      })
-      .filter((d) => d.symbol != null);
-
-    return await setupLineSymbols(map.current);
-
-    //const patternBaseURL = "/assets/geologic-patterns/svg";
-    //return await setupStyleImages(map.current, symbols, { patternBaseURL });
-  }, [polygonTypes, isInitialized]);
-}
-
-type LineStyleIndex = { [key: string]: string };
-
-export function useLineSymbols(): LineStyleIndex | null {
-  const map = useMapRef();
-  const isInitialized = useMapStatus((state) => state.isInitialized);
-
-  return useAsyncMemo(async () => {
-    if (map.current == null) {
-      return null;
-    }
-    return await setupLineSymbols(map.current);
-  }, [isInitialized]);
-}
-
-function useAsyncMemo<T>(fn: () => Promise<T>, deps: any[]): T | null {
-  const [value, setValue] = useState<T | null>(null);
-  useEffect(() => {
-    fn().then(setValue);
-  }, deps);
-  return value;
-}
-
-const vizBaseURL = "//visualization-assets.s3.amazonaws.com";
-const lineSymbolsURL = vizBaseURL + "/geologic-line-symbols/png";
-
-async function setupLineSymbols(map) {
-  const symbols = await Promise.all(
-    lineSymbols.map(async function (symbol) {
-      if (map.hasImage(symbol)) return symbol;
-      const image = await loadImage(lineSymbolsURL + `/${symbol}.png`);
-      if (map.hasImage(symbol)) return symbol;
-      map.addImage(symbol, image, { sdf: true, pixelRatio: 3 });
-      return symbol;
-    }),
-  );
-
-  return symbols
-    .filter((d) => d != null)
-    .reduce((acc: LineStyleIndex, d) => {
-      acc[d] = d;
-      return acc;
-    }, {});
-}
