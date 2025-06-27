@@ -72,6 +72,8 @@ def remove_dangling_edges(
         return
 
     # Remove the dangling edges
+    # TODO: we could probably make this significantly more efficient by handling the topology
+    # change directly, rather than letting edges be recalculated from the linework.
     with db.transaction():
         for edge in edges:
             print(

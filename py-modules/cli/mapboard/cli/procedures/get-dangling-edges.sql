@@ -13,6 +13,9 @@ JOIN {topo_schema}.__edge_relation er
 JOIN {data_schema}.linework l
   ON l.id = er.line_id
  AND l.map_layer = er.map_layer
+JOIN {data_schema}.map_layer ml
+  ON ml.id = l.map_layer
 WHERE (snm.n_edges = 1 OR enm.n_edges = 1)
+ AND ml.composited_from IS NULL
  AND {filters}
 
