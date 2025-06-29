@@ -183,9 +183,8 @@ function expandBounds(bounds: BBox, aspectRatio = 1, margin = 0.1) {
 function useRequestTransformer() {
   const baseLayers = useMapState((state) => state.baseLayers);
   // Check if there's a DEM layer in the base layers
-  console.log(baseLayers);
   return useMemo(() => {
-    const dem = baseLayers.find((layer) => layer.type === "dem");
+    const dem = baseLayers?.find((layer) => layer.type === "dem");
 
     if (dem == null) {
       return null;
