@@ -3,6 +3,7 @@
   * The schemas are transitional and will eventually be merged into the main mapboard database.
  */
 CREATE EXTENSION IF NOT EXISTS postgres_fdw;
+CREATE EXTENSION IF NOT EXISTS postgis_topology;
 
 CREATE SERVER IF NOT EXISTS naukluft
   FOREIGN DATA WRAPPER postgres_fdw
@@ -51,12 +52,4 @@ SELECT
 FROM naukluft_map_data.polygon_type pt
 JOIN s1 ON
      s1.project_slug = 'naukluft'
-      AND s1.data_schema = 'map_digitizer'
-UNION ALL
-SELECT
-  s1.*,
-  pt2.*
-FROM naukluft_cross_sections.polygon_type pt2
-JOIN s1 ON
-  s1.project_slug = 'naukluft'
-AND s1.data_schema = 'cross_section';
+      AND s1.data_schema = 'map_digitizer';
