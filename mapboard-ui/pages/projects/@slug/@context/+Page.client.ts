@@ -22,7 +22,6 @@ import { MapLoadingButton } from "@macrostrat/map-interface";
 import { MapArea } from "./map";
 import { ToasterContext } from "@macrostrat/ui-components";
 import { ItemSelect } from "@macrostrat/form-components";
-import { ReactNode } from "react";
 import { FeatureMode, MapLayer } from "./types";
 
 const h = hyper.styled(styles);
@@ -38,7 +37,7 @@ export function Page() {
     ToasterContext,
     h(
       MapStateProvider,
-      { baseURL, baseLayers: ctx.layers, activeLayer: 22 },
+      { baseURL, baseLayers: ctx.layers, defaultLayer: 22 },
       h(PageInner, { baseURL, context: ctx }),
     ),
   );
@@ -106,18 +105,18 @@ function BackButton({ href, children, className }) {
 function LayerControlPanel() {
   const selectedLayer = useMapState((state) => state.activeLayer);
 
-  let opts: ReactNode;
-
   if (selectedLayer == null) {
-    opts = h(MultiLayerViewOptions);
-  } else {
-    opts = h(SingleLayerViewOptions);
+    return h(NonIdealState, {
+      icon: "layers",
+      title: "No layer selected",
+      description: "Select a layer to view its options.",
+    });
   }
 
   return h("div.layer-control-panel.bp5-form", [
     h(OverlayHeader),
     h(LayerList),
-    opts,
+    h(SingleLayerViewOptions),
     h(Divider),
     h(BasemapList),
     h(TerrainExaggeration),
