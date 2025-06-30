@@ -4,15 +4,14 @@ import { postgrest } from "~/utils/api-client";
 
 const h = hyper.styled(styles);
 
-export function CrossSectionPanel() {
-  return h(
-    "div.cross-section-panel",
-    h("h2", "Cross Section"),
+export function CrossSectionPanel({ id }: { id: number }) {
+  return h("div.cross-section-panel", [
+    h("h2", `Cross Section ${id}`),
     h(
       "p",
       "Cross sections are not yet implemented. This feature will be available in a future release.",
     ),
-  );
+  ]);
 }
 
 export async function fetchCrossSections(contextID: number): Promise<any[]> {

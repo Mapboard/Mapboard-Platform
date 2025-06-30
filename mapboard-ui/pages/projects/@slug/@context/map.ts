@@ -46,6 +46,15 @@ export function MapArea({
   const onSelectPosition = useMapActions((a) => a.setInspectPosition);
   const inspectPosition = useMapState((state) => state.inspectPosition);
 
+  const activeCrossSection = useMapState((state) => state.activeCrossSection);
+
+  let bottomPanel = null;
+  if (activeCrossSection != null) {
+    bottomPanel = h("div.bottom-panel", [
+      h(CrossSectionPanel, { id: activeCrossSection }),
+    ]);
+  }
+
   const transformRequest = useRequestTransformer();
 
   let projection = { name: "globe" };
@@ -67,6 +76,7 @@ export function MapArea({
       //detailPanel: h("div.right-elements", [toolsCard, h(InfoDrawer)]),
       detailPanel: h(SelectionDrawer),
       className: "mapboard-map",
+      bottomPanel,
     },
     [
       h(MapInner, {
@@ -93,6 +103,7 @@ export function MapArea({
 
 import GeoJSON from "geojson";
 import { GeoJSONSource } from "mapbox-gl";
+import { CrossSectionPanel } from "./cross-sections";
 
 function CrossSectionsLayer() {
   const crossSections = useMapState((state) => state.crossSectionLines);
@@ -126,29 +137,39 @@ function CrossSectionsLayer() {
   // Click handling for cross-section lines
   useMapStyleOperator(
     (map) => {
-      map.on("click", "crossSectionLine", (e) => {
-        if (e.features == null || e.features.length === 0) return;
-        const feature = e.features[0] as GeoJSON.Feature;
-        if (feature == null) return;
+      map.removeInteraction("cross-section-click");
+      map.addInteraction("cross-section-click", {
+        filter: ["==", "$type", "LineString"],
+        target: { layerId: "crossSectionLine" },
+        type: "click",
+        handler: (e) => {
+          if (e.feature == null) return;
 
-        const id = feature.properties?.id;
-        if (id == null) return;
+          const id = e.feature.properties?.id;
+          if (id == null) return;
 
-        console.log(id);
+          console.log(id);
 
-        setActiveSection(id);
-        // prevent default click behavior
-        e.preventDefault();
+          setActiveSection(id);
+          // prevent default click behavior
+          e.preventDefault();
+        },
       });
+
+      const onMouseEnter = () => {
+        map.getCanvas().style.cursor = "pointer";
+      };
+
+      const onMouseLeave = () => {
+        map.getCanvas().style.cursor = "";
+      };
 
       // could probably set classes instead of using mouseenter/mouseleave
-      map.on("mouseenter", "crossSectionLine", () => {
-        map.getCanvas().style.cursor = "pointer";
-      });
+      map.on("mouseenter", "crossSectionLine", onMouseEnter);
 
-      map.on("mouseleave", "crossSectionLine", () => {
-        map.getCanvas().style.cursor = "";
-      });
+      map.on("mouseleave", "crossSectionLine", onMouseLeave);
+
+      // TODO: upstream add cleanup functions
     },
     [setActiveSection],
   );

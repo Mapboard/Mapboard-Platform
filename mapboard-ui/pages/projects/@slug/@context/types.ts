@@ -9,6 +9,7 @@ export interface RecoverableMapState {
   activeLayer: number | null;
   baseMap: BasemapType;
   mapPosition: MapPosition | null;
+  activeCrossSection: number | null;
 }
 
 interface MapActions {

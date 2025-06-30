@@ -1,7 +1,7 @@
-import {LatLng, MapPosition} from "@macrostrat/mapbox-utils";
-import {applyMapPositionToHash} from "@macrostrat/map-interface";
-import {BasemapType} from "./state";
-import {RecoverableMapState} from "./types";
+import { LatLng, MapPosition } from "@macrostrat/mapbox-utils";
+import { applyMapPositionToHash } from "@macrostrat/map-interface";
+import { BasemapType } from "./state";
+import { RecoverableMapState } from "./types";
 
 export function getMapPositionForHash(
   hashData: URLSearchParams,
@@ -64,7 +64,9 @@ function _fmt(num: string | number | string[]) {
   return parseFloat(num.toString());
 }
 
-export function parseQueryParameters(): RecoverableMapState {
+export function parseQueryParameters(): RecoverableMapState & {
+  showCrossSectionLines: boolean;
+} {
   const params = new URLSearchParams(window.location.search);
   let lyr = params.get("layer");
   const activeLayer = lyr == null ? null : parseInt(lyr);
@@ -79,13 +81,23 @@ export function parseQueryParameters(): RecoverableMapState {
     baseMap = BasemapType.Basic;
   }
 
+  let crossSection: string | null = params.get("cross-section");
+  const activeCrossSection =
+    crossSection == null ? null : parseInt(crossSection);
+
   const mapPosition = getMapPositionForHash(params, null);
 
-  return { activeLayer, baseMap, mapPosition };
+  return {
+    activeLayer,
+    baseMap,
+    mapPosition,
+    activeCrossSection,
+    showCrossSectionLines: activeCrossSection != null,
+  };
 }
 
 export function setQueryParameters(params: RecoverableMapState) {
-  const { activeLayer, baseMap, mapPosition } = params;
+  const { activeLayer, baseMap, mapPosition, activeCrossSection } = params;
   if (mapPosition == null) return;
   const searchParams = new URLSearchParams();
   if (baseMap != BasemapType.Basic) {
@@ -103,6 +115,10 @@ export function setQueryParameters(params: RecoverableMapState) {
     }
   }
 
+  if (activeCrossSection != null) {
+    searchParams.set("cross-section", activeCrossSection.toString());
+  }
+
   let paramsString = searchParams.toString();
   if (paramsString.length > 0) {
     paramsString = `?${paramsString}`;
@@ -111,4 +127,3 @@ export function setQueryParameters(params: RecoverableMapState) {
   const newUrl = `${window.location.pathname}${paramsString}`;
   window.history.replaceState({}, "", newUrl);
 }
-

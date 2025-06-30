@@ -90,8 +90,8 @@ function createMapStore(baseURL: string, initialState: InitialMapState) {
         },
         mapLayerIDMap: new Map(),
         polygonPatternIndex: null,
-        ...initialState,
         ...createCrossSectionsSlice(set, get),
+        ...initialState,
         actions: {
           setBaseMap: (baseMap: BasemapType) => set({ baseMap }),
           setMapPosition: (mapPosition: MapPosition) => {
@@ -300,16 +300,22 @@ export function MapStateProvider({
   /** Subscriber to set some values to the query parameters */
   useEffect(() => {
     return value.subscribe((state, prevState) => {
-      const { activeLayer, baseMap, mapPosition } = state;
+      const { activeLayer, baseMap, mapPosition, activeCrossSection } = state;
       if (
         activeLayer == prevState.activeLayer &&
         baseMap == prevState.baseMap &&
-        mapPosition == prevState.mapPosition
+        mapPosition == prevState.mapPosition &&
+        activeCrossSection == prevState.activeCrossSection
       ) {
         return;
       }
 
-      setQueryParameters({ activeLayer, baseMap, mapPosition });
+      setQueryParameters({
+        activeLayer,
+        baseMap,
+        mapPosition,
+        activeCrossSection,
+      });
     });
   }, []);
 
