@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAsyncEffect, useInDarkMode } from "@macrostrat/ui-components";
 import { BasemapType, useMapState } from "../state";
 import { buildGeoJSONSource, mergeStyles } from "@macrostrat/mapbox-utils";
@@ -39,9 +39,7 @@ export function useMapStyle(
   const changeTimestamps = useMapState((state) => state.lastChangeTime);
   const showLineEndpoints = useMapState((state) => state.showLineEndpoints);
   const enabledFeatureModes = useMapState((state) => state.enabledFeatureModes);
-  // const crossSectionLayerID: number | null = useMapState(
-  //   (state) => state.mapLayers?.find((d) => d.name == "Sections")?.id,
-  // );
+
   const showCrossSectionLines = useMapState((d) => d.showCrossSectionLines);
   const showFacesWithNoUnit = useMapState((d) => d.showFacesWithNoUnit);
   const showOverlay = useMapState((d) => d.showOverlay);
@@ -53,12 +51,7 @@ export function useMapStyle(
 
   const [overlayStyle, setOverlayStyle] = useState(null);
 
-  // const crossSectionConfig: CrossSectionConfig = {
-  //   layerID: crossSectionLayerID,
-  //   enabled: showCrossSectionLines,
-  // };
-
-  useAsyncEffect(async () => {
+  useEffect(() => {
     if (!showOverlay) {
       setOverlayStyle(null);
       return;
@@ -102,7 +95,18 @@ export function useMapStyle(
     const mainStyle: mapboxgl.StyleSpecification = {
       version: 8,
       name: "Mapboard",
-      layers: [],
+      layers: [
+        // We need to add this so that the style doesn't randomly reload
+        {
+          id: "sky",
+          type: "sky",
+          paint: {
+            "sky-type": "atmosphere",
+            "sky-atmosphere-sun": [0.0, 0.0],
+            "sky-atmosphere-sun-intensity": 15,
+          },
+        },
+      ],
       sources: {
         "mapbox-dem": {
           type: "raster-dem",
@@ -124,7 +128,9 @@ export function useMapStyle(
       ],
     };
 
-    return mergeStyles(overlayStyle, mainStyle);
+    const style = mergeStyles(overlayStyle, mainStyle);
+    console.log("Setting style", style);
+    return style;
   }, [baseStyleURL, overlayStyle, exaggeration]);
 }
 

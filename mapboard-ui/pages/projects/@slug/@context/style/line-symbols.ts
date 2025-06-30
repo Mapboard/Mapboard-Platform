@@ -82,8 +82,6 @@ class SymbolLayerBuilder {
       "normal-fault": "#000000",
     };
 
-    console.log(this.index);
-
     return {
       type: "symbol",
       id,
