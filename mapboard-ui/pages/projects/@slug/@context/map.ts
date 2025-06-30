@@ -10,7 +10,7 @@ import {
 import styles from "./map.module.scss";
 import { useMapActions, useMapState } from "./state";
 import { SphericalMercator } from "@mapbox/sphericalmercator";
-import { useMapRef } from "@macrostrat/mapbox-react";
+import { useMapRef, useMapStyleOperator } from "@macrostrat/mapbox-react";
 import { useMapStyle } from "./style";
 import { useStyleImageManager } from "./style/pattern-manager";
 import { BoxSelectionManager } from "./selection";
@@ -86,8 +86,38 @@ export function MapArea({
         setPosition: onSelectPosition,
       }),
       h(MapReloadWatcher, { baseURL }),
+      h(CrossSectionsLayer),
     ],
   );
+}
+
+import GeoJSON from "geojson";
+import { GeoJSONSource } from "mapbox-gl";
+
+function CrossSectionsLayer() {
+  const crossSections = useMapState((state) => state.crossSectionLines);
+
+  useMapStyleOperator(
+    (map) => {
+      const id = "crossSectionLine";
+      const data: GeoJSON.FeatureCollection = {
+        type: "FeatureCollection",
+        features: crossSections,
+      };
+      const source = map.getSource(id) as GeoJSONSource | null;
+      if (source == null) {
+        map.addSource(id, {
+          type: "geojson",
+          data,
+        });
+      } else {
+        source.setData(data);
+      }
+    },
+    [crossSections],
+  );
+
+  return null;
 }
 
 function MapInner({

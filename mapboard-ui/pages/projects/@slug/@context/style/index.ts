@@ -1,9 +1,11 @@
 import { useMemo, useState } from "react";
 import { useAsyncEffect, useInDarkMode } from "@macrostrat/ui-components";
 import { BasemapType, useMapState } from "../state";
-import { mergeStyles } from "@macrostrat/mapbox-utils";
+import { buildGeoJSONSource, mergeStyles } from "@macrostrat/mapbox-utils";
 import { buildMapOverlayStyle, CrossSectionConfig } from "./overlay";
 import { buildSelectionLayers } from "../selection";
+import { buildCrossSectionLayers } from "@macrostrat/map-styles";
+import { GeoJSONFeature, GeoJSONSource } from "mapbox-gl";
 
 export { buildMapOverlayStyle };
 
@@ -45,6 +47,7 @@ export function useMapStyle(
   const showOverlay = useMapState((d) => d.showOverlay);
   const exaggeration = useMapState((d) => d.terrainExaggeration);
   const showTopologyPrimitives = useMapState((d) => d.showTopologyPrimitives);
+  const showCrossSections = useMapState((d) => d.showCrossSectionLines);
 
   const baseStyleURL = useBaseMapStyle(basemapType);
 
@@ -69,7 +72,16 @@ export function useMapStyle(
       showTopologyPrimitives,
     });
     const selectionStyle: any = { layers: buildSelectionLayers() };
-    setOverlayStyle(mergeStyles(style, selectionStyle));
+
+    let crossSectionStyle: any = null;
+    if (showCrossSections) {
+      const sections: GeoJSONFeature[] = [];
+      // Fetch cross sections from the server or state
+      // sections = await fetchCrossSections(contextID);
+      crossSectionStyle = createCrossSectionsStyle(sections);
+    }
+
+    setOverlayStyle(mergeStyles(style, selectionStyle, crossSectionStyle));
   }, [
     activeLayer,
     changeTimestamps,
@@ -79,6 +91,7 @@ export function useMapStyle(
     showFacesWithNoUnit,
     showOverlay,
     showTopologyPrimitives,
+    showCrossSections,
   ]);
 
   return useMemo(() => {
@@ -109,11 +122,22 @@ export function useMapStyle(
           url: baseStyleURL,
         },
       ],
-      //sprite: `https://mapboard.local/styles/sprite/naukluft/main`,
     };
 
     return mergeStyles(overlayStyle, mainStyle);
   }, [baseStyleURL, overlayStyle, exaggeration]);
+}
+
+export function createCrossSectionsStyle(sections: GeoJSONFeature[]) {
+  return {
+    version: 8,
+    layers: buildCrossSectionLayers(),
+    sources: {
+      crossSectionLine: buildGeoJSONSource(),
+      crossSectionEndpoints: buildGeoJSONSource(),
+      elevationMarker: buildGeoJSONSource(),
+    },
+  };
 }
 
 const color = "#e350a3";
