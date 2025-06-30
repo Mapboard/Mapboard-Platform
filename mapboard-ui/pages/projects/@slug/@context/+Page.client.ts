@@ -7,6 +7,7 @@ import {
   AnchorButton,
   Divider,
   FormGroup,
+  NonIdealState,
   NumericInput,
   Spinner,
   Switch,
@@ -37,7 +38,7 @@ export function Page() {
     ToasterContext,
     h(
       MapStateProvider,
-      { baseURL, baseLayers: ctx.layers, defaultLayer: 22 },
+      { baseURL, baseLayers: ctx.layers, defaultLayer: 22, context: ctx },
       h(PageInner, { baseURL, context: ctx }),
     ),
   );
@@ -178,19 +179,6 @@ function OverlayHeader() {
   ]);
 }
 
-function MultiLayerViewOptions() {
-  /** View options for the case where no layers are selected */
-
-  const checked = useMapState((state) => state.showCrossSectionLines);
-  const onChange = useMapActions((actions) => actions.toggleCrossSectionLines);
-
-  return h(OurSwitch, {
-    label: "Cross section lines",
-    checked,
-    onChange,
-  });
-}
-
 function SingleLayerViewOptions() {
   const enabledFeatureModes = useMapState((state) => state.enabledFeatureModes);
   const toggleFeatureMode = useMapActions(
@@ -216,10 +204,18 @@ function SingleLayerViewOptions() {
     };
   };
 
+  const checked = useMapState((state) => state.showCrossSectionLines);
+  const onChange = useMapActions((actions) => actions.toggleCrossSectionLines);
+
   return h("div.view-options", [
     h(OurSwitch, {
       label: "Lines",
       ...switchProps(FeatureMode.Line),
+    }),
+    h(OurSwitch, {
+      label: "Cross section lines",
+      checked,
+      onChange,
     }),
     h("div.subsidiary-switches", [
       h(OurSwitch, {

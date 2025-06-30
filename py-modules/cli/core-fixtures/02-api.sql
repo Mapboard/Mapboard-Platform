@@ -3,9 +3,6 @@ CREATE SCHEMA IF NOT EXISTS mapboard_api;
 CREATE OR REPLACE VIEW mapboard_api.users AS
 SELECT * FROM public.users;
 
-CREATE OR REPLACE VIEW mapboard_api.projects AS
-SELECT * FROM public.projects;
-
 CREATE OR REPLACE VIEW mapboard_api.project AS
 SELECT
   p.*,
@@ -38,7 +35,7 @@ SELECT
   c.topo_schema,
   st_transform(c.bounds, 4326) AS bounds,
   c.parent,
-  c.parent_geom,
+  st_transform(c.parent_geom, 4326) AS parent_geom,
   c.offset_x,
   c.offset_y,
   p.main_context = c.id        AS is_main,
@@ -59,4 +56,4 @@ SELECT
 FROM
   mapboard.context c
   JOIN mapboard.project p
-    ON c.project_id = p.id
+    ON c.project_id = p.id;

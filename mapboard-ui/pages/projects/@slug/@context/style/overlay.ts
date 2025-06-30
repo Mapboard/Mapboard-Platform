@@ -1,6 +1,7 @@
 import { PolygonStyleIndex } from "./pattern-fills";
-import { createLineSymbolLayers,  } from "./line-symbols";
-import {allFeatureModes, FeatureMode} from "../types";
+import { createLineSymbolLayers } from "./line-symbols";
+import { allFeatureModes, FeatureMode } from "../types";
+import mapboxgl from "mapbox-gl";
 
 export interface SourceChangeTimestamps {
   [key: FeatureMode]: number | null;
@@ -20,20 +21,17 @@ interface MapOverlayOptions {
   showTopologyPrimitives?: boolean;
   useSymbols?: boolean;
   polygonSymbolIndex?: PolygonStyleIndex | null;
-  lineSymbolIndex?: LineSymbolIndex | null;
-  crossSectionConfig?: CrossSectionConfig;
 }
 
 export function buildMapOverlayStyle(
   baseURL: string,
   options: MapOverlayOptions,
-) {
+): mapboxgl.StyleSpecification {
   const {
     showLineEndpoints = true,
     selectedLayer,
     enabledFeatureModes = allFeatureModes,
     sourceChangeTimestamps,
-    crossSectionConfig,
     useSymbols = true,
     showFacesWithNoUnit = false,
     showTopologyPrimitives = false,
@@ -41,12 +39,6 @@ export function buildMapOverlayStyle(
 
   // Disable rivers and roads by default
   let disabledLayers: number[] = [3, 4];
-  if (crossSectionConfig != null) {
-    console.log("Cross section config", crossSectionConfig);
-    if (!crossSectionConfig.enabled) {
-      disabledLayers.push(crossSectionConfig.layerID);
-    }
-  }
 
   let featureModes: Set<FeatureMode> = enabledFeatureModes;
 
@@ -189,10 +181,10 @@ export function buildMapOverlayStyle(
     1,
   ];
 
-  let lineFilter = ["all", filter,  ["!", ["get", "covered"]]];
+  let lineFilter = ["all", filter, ["!", ["get", "covered"]]];
 
   if (selectedLayer == null) {
-    lineFilter.push(["!=", ["get", "layer"], "none"])
+    lineFilter.push(["!=", ["get", "layer"], "none"]);
   }
 
   if (featureModes.has(FeatureMode.Line)) {

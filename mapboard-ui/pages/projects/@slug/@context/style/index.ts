@@ -37,9 +37,9 @@ export function useMapStyle(
   const changeTimestamps = useMapState((state) => state.lastChangeTime);
   const showLineEndpoints = useMapState((state) => state.showLineEndpoints);
   const enabledFeatureModes = useMapState((state) => state.enabledFeatureModes);
-  const crossSectionLayerID: number | null = useMapState(
-    (state) => state.mapLayers?.find((d) => d.name == "Sections")?.id,
-  );
+  // const crossSectionLayerID: number | null = useMapState(
+  //   (state) => state.mapLayers?.find((d) => d.name == "Sections")?.id,
+  // );
   const showCrossSectionLines = useMapState((d) => d.showCrossSectionLines);
   const showFacesWithNoUnit = useMapState((d) => d.showFacesWithNoUnit);
   const showOverlay = useMapState((d) => d.showOverlay);
@@ -50,10 +50,10 @@ export function useMapStyle(
 
   const [overlayStyle, setOverlayStyle] = useState(null);
 
-  const crossSectionConfig: CrossSectionConfig = {
-    layerID: crossSectionLayerID,
-    enabled: showCrossSectionLines,
-  };
+  // const crossSectionConfig: CrossSectionConfig = {
+  //   layerID: crossSectionLayerID,
+  //   enabled: showCrossSectionLines,
+  // };
 
   useAsyncEffect(async () => {
     if (!showOverlay) {
@@ -65,7 +65,6 @@ export function useMapStyle(
       sourceChangeTimestamps: changeTimestamps,
       enabledFeatureModes,
       showLineEndpoints,
-      crossSectionConfig,
       showFacesWithNoUnit,
       showTopologyPrimitives,
     });
@@ -87,7 +86,7 @@ export function useMapStyle(
       return null;
     }
 
-    const mainStyle = {
+    const mainStyle: mapboxgl.StyleSpecification = {
       version: 8,
       name: "Mapboard",
       layers: [],
@@ -113,9 +112,7 @@ export function useMapStyle(
       //sprite: `https://mapboard.local/styles/sprite/naukluft/main`,
     };
 
-    let style = mergeStyles(overlayStyle, mainStyle);
-    console.log("Updated map style", style);
-    return style;
+    return mergeStyles(overlayStyle, mainStyle);
   }, [baseStyleURL, overlayStyle, exaggeration]);
 }
 

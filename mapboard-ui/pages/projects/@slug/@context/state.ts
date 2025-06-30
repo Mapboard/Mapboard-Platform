@@ -1,5 +1,11 @@
 import { create, StoreApi, useStore } from "zustand";
-import { createContext, useContext, useEffect, useRef, useState } from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import h from "@macrostrat/hyper";
 import { devtools } from "zustand/middleware";
 import { MapPosition } from "@macrostrat/mapbox-react";
@@ -14,6 +20,8 @@ import {
   SelectionMode,
   InitialMapState,
 } from "./types";
+import { fetchCrossSections } from "./cross-sections";
+import { Context } from "~/types";
 
 const MapStateContext = createContext<StoreApi<MapState> | null>(null);
 
@@ -47,6 +55,7 @@ function createMapStore(baseURL: string, initialState: InitialMapState) {
         showOverlay: true,
         showLineEndpoints: false,
         showCrossSectionLines: true,
+        crossSectionLines: [],
         showFacesWithNoUnit: false,
         showTopologyPrimitives: false,
         terrainExaggeration: 1,
@@ -138,6 +147,7 @@ function createMapStore(baseURL: string, initialState: InitialMapState) {
           },
           setSelectionFeatureMode: (mode) =>
             set({ selectionFeatureMode: mode }),
+          setCrossSectionLines: (lines) => set({ crossSectionLines: lines }),
           toggleLineEndpoints: () =>
             set((state) => {
               return { showLineEndpoints: !state.showLineEndpoints };
@@ -241,12 +251,21 @@ function validateLocalStorageState(state: any): LocalStorageState | null {
   };
 }
 
+interface MapStateProviderProps {
+  children: React.ReactNode;
+  baseURL: string;
+  baseLayers?: any[];
+  defaultLayer?: number | null;
+  context: Context;
+}
+
 export function MapStateProvider({
   children,
   baseURL,
   baseLayers,
   defaultLayer,
-}) {
+  context,
+}: MapStateProviderProps) {
   const storage = useRef(new LocalStorage<LocalStorageState>("map-state"));
   const storedState: Partial<LocalStorageState> =
     validateLocalStorageState(storage.current.get()) ?? {};
@@ -316,6 +335,14 @@ export function MapStateProvider({
       const updateTypes = (t: DataType[]) => setDataTypes(mode, t);
       fetchDataTypes(baseURL, mode).then(updateTypes);
     }
+  }, []);
+
+  const setCrossSectionLines = value(
+    (state) => state.actions.setCrossSectionLines,
+  );
+  // Fetch cross section lines
+  useEffect(() => {
+    fetchCrossSections(context.id).then(setCrossSectionLines);
   }, []);
 
   return h(MapStateContext.Provider, { value }, [children]);

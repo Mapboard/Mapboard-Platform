@@ -27,6 +27,7 @@ interface MapActions {
   toggleFeatureMode: (mode: FeatureMode) => void;
   setTerrainExaggeration: (exaggeration: number) => void;
   setMapPosition: (position: MapPosition) => void;
+  setCrossSectionLines: (lines: any[]) => void;
   toggleShowTopologyPrimitives: () => void;
 
   toggleShowFacesWithNoUnit(): void;
@@ -126,4 +127,5 @@ export interface MapState extends StoredMapState {
   };
   polygonPatternIndex: PolygonStyleIndex | null;
   inspectPosition: LngLat | null;
+  crossSectionLines: any[];
 }

@@ -2,7 +2,8 @@
   "scripts": {
     "dev": "nodemon --watch server --watch .pnp.cjs --watch .env --exec tsx ./server/express-entry.ts",
     "build": "vike build",
-    "preview": "NODE_ENV=production tsx ./server/express-entry.ts"
+    "preview": "NODE_ENV=production tsx ./server/express-entry.ts",
+    "generate-types": "tsx scripts/generate-types.ts"
   },
   "dependencies": {
     "@blueprintjs/core": "^5.16.6",

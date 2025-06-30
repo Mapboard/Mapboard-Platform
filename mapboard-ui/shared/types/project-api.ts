@@ -12,6 +12,49 @@ export interface paths {
       };
     };
   };
+  "/polygon_type": {
+    get: {
+      parameters: {
+        query: {
+          project_id?: parameters["rowFilter.polygon_type.project_id"];
+          project_slug?: parameters["rowFilter.polygon_type.project_slug"];
+          data_schema?: parameters["rowFilter.polygon_type.data_schema"];
+          context_id?: parameters["rowFilter.polygon_type.context_id"];
+          context_slug?: parameters["rowFilter.polygon_type.context_slug"];
+          id?: parameters["rowFilter.polygon_type.id"];
+          name?: parameters["rowFilter.polygon_type.name"];
+          color?: parameters["rowFilter.polygon_type.color"];
+          symbol?: parameters["rowFilter.polygon_type.symbol"];
+          symbol_color?: parameters["rowFilter.polygon_type.symbol_color"];
+          topological?: parameters["rowFilter.polygon_type.topological"];
+          /** Filtering Columns */
+          select?: parameters["select"];
+          /** Ordering */
+          order?: parameters["order"];
+          /** Limiting and Pagination */
+          offset?: parameters["offset"];
+          /** Limiting and Pagination */
+          limit?: parameters["limit"];
+        };
+        header: {
+          /** Limiting and Pagination */
+          Range?: parameters["range"];
+          /** Limiting and Pagination */
+          "Range-Unit"?: parameters["rangeUnit"];
+          /** Preference */
+          Prefer?: parameters["preferCount"];
+        };
+      };
+      responses: {
+        /** OK */
+        200: {
+          schema: definitions["polygon_type"][];
+        };
+        /** Partial Content */
+        206: unknown;
+      };
+    };
+  };
   "/context": {
     get: {
       parameters: {
@@ -20,21 +63,25 @@ export interface paths {
           project_id?: parameters["rowFilter.context.project_id"];
           name?: parameters["rowFilter.context.name"];
           slug?: parameters["rowFilter.context.slug"];
+          description?: parameters["rowFilter.context.description"];
           uuid?: parameters["rowFilter.context.uuid"];
           type?: parameters["rowFilter.context.type"];
           created_at?: parameters["rowFilter.context.created_at"];
+          srid?: parameters["rowFilter.context.srid"];
+          tolerance?: parameters["rowFilter.context.tolerance"];
           database?: parameters["rowFilter.context.database"];
           data_schema?: parameters["rowFilter.context.data_schema"];
           topo_schema?: parameters["rowFilter.context.topo_schema"];
-          srid?: parameters["rowFilter.context.srid"];
-          tolerance?: parameters["rowFilter.context.tolerance"];
           bounds?: parameters["rowFilter.context.bounds"];
           parent?: parameters["rowFilter.context.parent"];
           parent_geom?: parameters["rowFilter.context.parent_geom"];
           offset_x?: parameters["rowFilter.context.offset_x"];
           offset_y?: parameters["rowFilter.context.offset_y"];
-          is_main_context?: parameters["rowFilter.context.is_main_context"];
+          is_main?: parameters["rowFilter.context.is_main"];
           project_slug?: parameters["rowFilter.context.project_slug"];
+          project_name?: parameters["rowFilter.context.project_name"];
+          project_uuid?: parameters["rowFilter.context.project_uuid"];
+          layers?: parameters["rowFilter.context.layers"];
           /** Filtering Columns */
           select?: parameters["select"];
           /** Ordering */
@@ -202,6 +249,38 @@ export interface paths {
 }
 
 export interface definitions {
+  polygon_type: {
+    /**
+     * Format: integer
+     * @description Note:
+     * This is a Primary Key.<pk/>
+     */
+    project_id?: number;
+    /** Format: text */
+    project_slug?: string;
+    /** Format: text */
+    data_schema?: string;
+    /**
+     * Format: integer
+     * @description Note:
+     * This is a Primary Key.<pk/>
+     */
+    context_id?: number;
+    /** Format: text */
+    context_slug?: string;
+    /** Format: text */
+    id?: string;
+    /** Format: text */
+    name?: string;
+    /** Format: text */
+    color?: string;
+    /** Format: text */
+    symbol?: string;
+    /** Format: text */
+    symbol_color?: string;
+    /** Format: boolean */
+    topological?: boolean;
+  };
   context: {
     /**
      * Format: integer
@@ -212,13 +291,15 @@ export interface definitions {
     /**
      * Format: integer
      * @description Note:
-     * This is a Foreign Key to `project.id`.<fk table='project' column='id'/>
+     * This is a Foreign Key to `polygon_type.project_id`.<fk table='polygon_type' column='project_id'/>
      */
     project_id?: number;
     /** Format: text */
     name?: string;
     /** Format: text */
     slug?: string;
+    /** Format: text */
+    description?: string;
     /** Format: uuid */
     uuid?: string;
     /**
@@ -228,17 +309,17 @@ export interface definitions {
     type?: "map" | "cross-section";
     /** Format: timestamp without time zone */
     created_at?: string;
+    /** Format: integer */
+    srid?: number;
+    /** Format: numeric */
+    tolerance?: number;
     /** Format: text */
     database?: string;
     /** Format: text */
     data_schema?: string;
     /** Format: text */
     topo_schema?: string;
-    /** Format: integer */
-    srid?: number;
-    /** Format: numeric */
-    tolerance?: number;
-    /** Format: public.geometry(MultiPolygon) */
+    /** Format: public.geometry */
     bounds?: string;
     /**
      * Format: integer
@@ -253,9 +334,15 @@ export interface definitions {
     /** Format: numeric */
     offset_y?: number;
     /** Format: boolean */
-    is_main_context?: boolean;
+    is_main?: boolean;
     /** Format: text */
     project_slug?: string;
+    /** Format: text */
+    project_name?: string;
+    /** Format: uuid */
+    project_uuid?: string;
+    /** Format: jsonb */
+    layers?: unknown;
   };
   project: {
     /**
@@ -350,27 +437,44 @@ export interface parameters {
   offset: string;
   /** @description Limiting and Pagination */
   limit: string;
+  /** @description polygon_type */
+  "body.polygon_type": definitions["polygon_type"];
+  "rowFilter.polygon_type.project_id": string;
+  "rowFilter.polygon_type.project_slug": string;
+  "rowFilter.polygon_type.data_schema": string;
+  "rowFilter.polygon_type.context_id": string;
+  "rowFilter.polygon_type.context_slug": string;
+  "rowFilter.polygon_type.id": string;
+  "rowFilter.polygon_type.name": string;
+  "rowFilter.polygon_type.color": string;
+  "rowFilter.polygon_type.symbol": string;
+  "rowFilter.polygon_type.symbol_color": string;
+  "rowFilter.polygon_type.topological": string;
   /** @description context */
   "body.context": definitions["context"];
   "rowFilter.context.id": string;
   "rowFilter.context.project_id": string;
   "rowFilter.context.name": string;
   "rowFilter.context.slug": string;
+  "rowFilter.context.description": string;
   "rowFilter.context.uuid": string;
   "rowFilter.context.type": string;
   "rowFilter.context.created_at": string;
+  "rowFilter.context.srid": string;
+  "rowFilter.context.tolerance": string;
   "rowFilter.context.database": string;
   "rowFilter.context.data_schema": string;
   "rowFilter.context.topo_schema": string;
-  "rowFilter.context.srid": string;
-  "rowFilter.context.tolerance": string;
   "rowFilter.context.bounds": string;
   "rowFilter.context.parent": string;
   "rowFilter.context.parent_geom": string;
   "rowFilter.context.offset_x": string;
   "rowFilter.context.offset_y": string;
-  "rowFilter.context.is_main_context": string;
+  "rowFilter.context.is_main": string;
   "rowFilter.context.project_slug": string;
+  "rowFilter.context.project_name": string;
+  "rowFilter.context.project_uuid": string;
+  "rowFilter.context.layers": string;
   /** @description project */
   "body.project": definitions["project"];
   "rowFilter.project.id": string;
