@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<project version="4">
-  <component name="SqlDialectMappings">
-    <file url="file://$PROJECT_DIR$/py-modules/cli/mapboard/cli/procedures/get-dangling-edges.sql" dialect="PostgreSQL" />
-    <file url="file://$PROJECT_DIR$/py-modules/topology-manager/mapboard/topology_manager/procedures/get-contacts-to-update.sql" dialect="PostgreSQL" />
-    <file url="file://$PROJECT_DIR$/py-modules/topology-manager/mapboard/topology_manager/procedures/update-faces/update-composite-face-elements.sql" dialect="PostgreSQL" />
-    <file url="file://$PROJECT_DIR$/py-modules/topology-manager/mapboard/topology_manager/procedures/update-faces/update-composite-line-elements.sql" dialect="PostgreSQL" />
-  </component>
-</project>

@@ -205,7 +205,7 @@ function SingleLayerViewOptions() {
   };
 
   const checked = useMapState((state) => state.showCrossSectionLines);
-  const onChange = useMapActions((actions) => actions.toggleCrossSectionLines);
+  const onChange = useMapState((state) => state.toggleCrossSectionLines);
 
   return h("div.view-options", [
     h(OurSwitch, {

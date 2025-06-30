@@ -1,7 +1,7 @@
 import { BasemapType, FeatureSelection } from "./state";
 import { MapPosition } from "@macrostrat/mapbox-utils";
 import { SelectionActionType } from "./selection";
-import type { LngLat } from "mapbox-gl";
+import type { GeoJSONFeature, LngLat } from "mapbox-gl";
 import { SourceChangeTimestamps } from "./style/overlay";
 import { PolygonStyleIndex } from "./style/pattern-fills";
 
@@ -27,12 +27,9 @@ interface MapActions {
   toggleFeatureMode: (mode: FeatureMode) => void;
   setTerrainExaggeration: (exaggeration: number) => void;
   setMapPosition: (position: MapPosition) => void;
-  setCrossSectionLines: (lines: any[]) => void;
   toggleShowTopologyPrimitives: () => void;
 
   toggleShowFacesWithNoUnit(): void;
-
-  toggleCrossSectionLines(): void;
 
   toggleOverlay(): void;
 
@@ -87,7 +84,6 @@ export interface LocalStorageState {
   selectionFeatureMode: FeatureMode;
 }
 
-export type StoredMapState = RecoverableMapState & LocalStorageState;
 type LayerType = "dem" | "raster";
 
 interface BaseLayer {
@@ -101,9 +97,22 @@ interface MapLayerState {
   activeLayer: number;
 }
 
+export interface CrossSectionsStore {
+  crossSectionLines: GeoJSONFeature[];
+  setCrossSectionLines: (lines: GeoJSONFeature[]) => void;
+  showCrossSectionLines: boolean;
+  toggleCrossSectionLines: () => void;
+  activeCrossSection: number | null;
+  setActiveCrossSection: (index: number | null) => void;
+}
+
 export type InitialMapState = RecoverableMapState &
   MapLayerState &
   Partial<StoredMapState>;
+
+export type StoredMapState = RecoverableMapState &
+  LocalStorageState &
+  CrossSectionsStore;
 
 export interface MapState extends StoredMapState {
   actions: MapActions;
@@ -127,5 +136,4 @@ export interface MapState extends StoredMapState {
   };
   polygonPatternIndex: PolygonStyleIndex | null;
   inspectPosition: LngLat | null;
-  crossSectionLines: any[];
 }

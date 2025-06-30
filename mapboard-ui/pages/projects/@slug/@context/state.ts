@@ -19,6 +19,7 @@ import {
   MapState,
   SelectionMode,
   InitialMapState,
+  CrossSectionsStore,
 } from "./types";
 import { fetchCrossSections } from "./cross-sections";
 import { Context } from "~/types";
@@ -37,6 +38,27 @@ export type FeatureSelection = {
   dataTypes: Set<string>;
 };
 
+type MapStoreApi = StoreApi<MapState>;
+
+function createCrossSectionsSlice(
+  set: MapStoreApi["setState"],
+  get: MapStoreApi["getState"],
+): CrossSectionsStore {
+  return {
+    crossSectionLines: [],
+    showCrossSectionLines: false,
+    activeCrossSection: null,
+    toggleCrossSectionLines() {
+      set((state) => {
+        return { showCrossSectionLines: !state.showCrossSectionLines };
+      });
+    },
+    setCrossSectionLines: (lines: any) => set({ crossSectionLines: lines }),
+    setActiveCrossSection: (index: number | null) =>
+      set({ activeCrossSection: index }),
+  };
+}
+
 function createMapStore(baseURL: string, initialState: InitialMapState) {
   return create<MapState>(
     // @ts-ignore
@@ -54,8 +76,6 @@ function createMapStore(baseURL: string, initialState: InitialMapState) {
         enabledFeatureModes: allFeatureModes,
         showOverlay: true,
         showLineEndpoints: false,
-        showCrossSectionLines: true,
-        crossSectionLines: [],
         showFacesWithNoUnit: false,
         showTopologyPrimitives: false,
         terrainExaggeration: 1,
@@ -71,6 +91,7 @@ function createMapStore(baseURL: string, initialState: InitialMapState) {
         mapLayerIDMap: new Map(),
         polygonPatternIndex: null,
         ...initialState,
+        ...createCrossSectionsSlice(set, get),
         actions: {
           setBaseMap: (baseMap: BasemapType) => set({ baseMap }),
           setMapPosition: (mapPosition: MapPosition) => {
@@ -147,7 +168,6 @@ function createMapStore(baseURL: string, initialState: InitialMapState) {
           },
           setSelectionFeatureMode: (mode) =>
             set({ selectionFeatureMode: mode }),
-          setCrossSectionLines: (lines) => set({ crossSectionLines: lines }),
           toggleLineEndpoints: () =>
             set((state) => {
               return { showLineEndpoints: !state.showLineEndpoints };
@@ -162,11 +182,6 @@ function createMapStore(baseURL: string, initialState: InitialMapState) {
               }
               return { enabledFeatureModes };
             }),
-          toggleCrossSectionLines() {
-            set((state) => {
-              return { showCrossSectionLines: !state.showCrossSectionLines };
-            });
-          },
           toggleShowFacesWithNoUnit() {
             set((state) => {
               return { showFacesWithNoUnit: !state.showFacesWithNoUnit };
@@ -337,9 +352,7 @@ export function MapStateProvider({
     }
   }, []);
 
-  const setCrossSectionLines = value(
-    (state) => state.actions.setCrossSectionLines,
-  );
+  const setCrossSectionLines = value((state) => state.setCrossSectionLines);
   // Fetch cross section lines
   useEffect(() => {
     fetchCrossSections(context.id).then(setCrossSectionLines);
