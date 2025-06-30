@@ -1,6 +1,8 @@
 import hyper from "@macrostrat/hyper";
 import styles from "./index.module.sass";
 import { postgrest } from "~/utils/api-client";
+import { Button } from "@blueprintjs/core";
+import { useMapState } from "../state";
 
 const h = hyper.styled(styles);
 
@@ -11,7 +13,19 @@ export function CrossSectionPanel({ id }: { id: number }) {
       "p",
       "Cross sections are not yet implemented. This feature will be available in a future release.",
     ),
+    h(CrossSectionCloseButton),
   ]);
+}
+
+function CrossSectionCloseButton() {
+  const setActiveCrossSection = useMapState((a) => a.setActiveCrossSection);
+  return h(Button, {
+    className: "cross-section-close-button",
+    onClick: () => setActiveCrossSection(null),
+    icon: "cross",
+    minimal: true,
+    intent: "danger",
+  });
 }
 
 export async function fetchCrossSections(contextID: number): Promise<any[]> {
@@ -32,5 +46,6 @@ export async function fetchCrossSections(contextID: number): Promise<any[]> {
       name: row.name,
       id: row.id,
     },
+    id: row.id,
   }));
 }

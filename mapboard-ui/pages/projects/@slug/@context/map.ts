@@ -113,6 +113,7 @@ function CrossSectionsLayer() {
   const setActiveSection = useMapState((state) => state.setActiveCrossSection);
 
   const allSections = showCrossSectionLines ? crossSections : null;
+  const activeSection = useMapState((state) => state.activeCrossSection);
 
   useMapStyleOperator(
     (map) => {
@@ -137,18 +138,15 @@ function CrossSectionsLayer() {
   // Click handling for cross-section lines
   useMapStyleOperator(
     (map) => {
+      const layerId = "cross-section-lines";
       map.removeInteraction("cross-section-click");
       map.addInteraction("cross-section-click", {
-        filter: ["==", "$type", "LineString"],
-        target: { layerId: "crossSectionLine" },
+        target: { layerId },
         type: "click",
         handler: (e) => {
-          if (e.feature == null) return;
-
-          const id = e.feature.properties?.id;
+          console.log("click", e);
+          const id = e.feature?.id;
           if (id == null) return;
-
-          console.log(id);
 
           setActiveSection(id);
           // prevent default click behavior
@@ -165,13 +163,29 @@ function CrossSectionsLayer() {
       };
 
       // could probably set classes instead of using mouseenter/mouseleave
-      map.on("mouseenter", "crossSectionLine", onMouseEnter);
+      map.on("mouseenter", layerId, onMouseEnter);
 
-      map.on("mouseleave", "crossSectionLine", onMouseLeave);
+      map.on("mouseleave", layerId, onMouseLeave);
 
       // TODO: upstream add cleanup functions
     },
     [setActiveSection],
+  );
+
+  // Set up selection styling
+  useMapStyleOperator(
+    (map) => {
+      map.removeFeatureState({ source: "crossSectionLine" });
+      if (activeSection == null) {
+        return;
+      }
+      // Set feature state for the active section
+      map.setFeatureState(
+        { source: "crossSectionLine", id: activeSection },
+        { active: true },
+      );
+    },
+    [activeSection],
   );
 
   return null;

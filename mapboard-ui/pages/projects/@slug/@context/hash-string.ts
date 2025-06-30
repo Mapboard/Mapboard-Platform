@@ -64,9 +64,7 @@ function _fmt(num: string | number | string[]) {
   return parseFloat(num.toString());
 }
 
-export function parseQueryParameters(): RecoverableMapState & {
-  showCrossSectionLines: boolean;
-} {
+export function parseQueryParameters(): RecoverableMapState {
   const params = new URLSearchParams(window.location.search);
   let lyr = params.get("layer");
   const activeLayer = lyr == null ? null : parseInt(lyr);
@@ -92,7 +90,6 @@ export function parseQueryParameters(): RecoverableMapState & {
     baseMap,
     mapPosition,
     activeCrossSection,
-    showCrossSectionLines: activeCrossSection != null,
   };
 }
 

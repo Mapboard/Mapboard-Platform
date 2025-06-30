@@ -288,6 +288,9 @@ export function MapStateProvider({
   const params = parseQueryParameters();
 
   let baseState = { ...storedState, ...params };
+  if (baseState.activeCrossSection != null) {
+    baseState.showCrossSectionLines = true;
+  }
 
   const [value] = useState(() =>
     createMapStore(baseURL, {

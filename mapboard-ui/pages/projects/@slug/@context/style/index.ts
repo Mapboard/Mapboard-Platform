@@ -6,6 +6,7 @@ import { buildMapOverlayStyle, CrossSectionConfig } from "./overlay";
 import { buildSelectionLayers } from "../selection";
 import { buildCrossSectionLayers } from "@macrostrat/map-styles";
 import { GeoJSONFeature, GeoJSONSource } from "mapbox-gl";
+import { getCSSVariable } from "@macrostrat/color-utils";
 
 export { buildMapOverlayStyle };
 
@@ -135,9 +136,32 @@ export function useMapStyle(
 }
 
 export function createCrossSectionsStyle(sections: GeoJSONFeature[]) {
+  const color = getCSSVariable("--panel-background-color") ?? "white";
+
   return {
     version: 8,
-    layers: buildCrossSectionLayers(),
+    layers: [
+      {
+        id: "cross-section-lines",
+        type: "line",
+        source: "crossSectionLine",
+        paint: {
+          "line-color": color,
+          "line-width": ["case", ["feature-state", "active"], 4, 2],
+          "line-opacity": ["case", ["feature-state", "active"], 1, 0.2],
+        },
+      },
+      {
+        id: "cross-section-endpoints",
+        type: "circle",
+        source: "crossSectionLine",
+        paint: {
+          "circle-radius": 5,
+          "circle-color": color,
+          "circle-opacity": 1,
+        },
+      },
+    ],
     sources: {
       crossSectionLine: buildGeoJSONSource(),
       crossSectionEndpoints: buildGeoJSONSource(),
