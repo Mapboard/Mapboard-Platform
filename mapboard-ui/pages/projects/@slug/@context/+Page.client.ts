@@ -13,8 +13,6 @@ import {
 } from "@blueprintjs/core";
 import {
   BasemapType,
-  FeatureMode,
-  MapLayer,
   MapStateProvider,
   useMapActions,
   useMapState,
@@ -25,6 +23,7 @@ import { MapArea } from "./map";
 import { ToasterContext } from "@macrostrat/ui-components";
 import { ItemSelect } from "@macrostrat/form-components";
 import { ReactNode } from "react";
+import { FeatureMode, MapLayer } from "./types";
 
 const h = hyper.styled(styles);
 
@@ -39,7 +38,7 @@ export function Page() {
     ToasterContext,
     h(
       MapStateProvider,
-      { baseURL, baseLayers: ctx.layers },
+      { baseURL, baseLayers: ctx.layers, activeLayer: 22 },
       h(PageInner, { baseURL, context: ctx }),
     ),
   );

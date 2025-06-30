@@ -1,6 +1,7 @@
-import { LatLng, MapPosition } from "@macrostrat/mapbox-utils";
-import { applyMapPositionToHash } from "@macrostrat/map-interface";
-import { BasemapType } from "./state";
+import {LatLng, MapPosition} from "@macrostrat/mapbox-utils";
+import {applyMapPositionToHash} from "@macrostrat/map-interface";
+import {BasemapType} from "./state";
+import {RecoverableMapState} from "./types";
 
 export function getMapPositionForHash(
   hashData: URLSearchParams,
@@ -111,8 +112,3 @@ export function setQueryParameters(params: RecoverableMapState) {
   window.history.replaceState({}, "", newUrl);
 }
 
-export interface RecoverableMapState {
-  activeLayer: number | null;
-  baseMap: BasemapType;
-  mapPosition: MapPosition | null;
-}

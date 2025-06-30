@@ -1,6 +1,4 @@
 import {
-  FeatureMode,
-  SelectionMode,
   useMapActions,
   useMapState
 } from "../state";
@@ -17,6 +15,7 @@ import styles from "./control-panel.module.sass";
 import { layerNameForFeatureMode } from "./manager";
 import { useEffect } from "react";
 import { JSONView, useAPIResult } from "@macrostrat/ui-components";
+import {FeatureMode, SelectionMode} from "../types";
 
 const h = hyper.styled(styles);
 

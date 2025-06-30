@@ -1,6 +1,6 @@
-import { allFeatureModes, FeatureMode } from "../state";
 import { PolygonStyleIndex } from "./pattern-fills";
 import { createLineSymbolLayers,  } from "./line-symbols";
+import {allFeatureModes, FeatureMode} from "../types";
 
 export interface SourceChangeTimestamps {
   [key: FeatureMode]: number | null;

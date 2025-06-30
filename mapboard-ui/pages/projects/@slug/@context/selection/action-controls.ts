@@ -2,9 +2,6 @@ import hyper from "@macrostrat/hyper";
 import styles from "./action-controls.module.css";
 import { FormGroup, MenuItem, NumericInput } from "@blueprintjs/core";
 import {
-  FeatureMode,
-  MapLayer,
-  MapState,
   useMapState,
   useMapStateAPI
 } from "../state";
@@ -15,6 +12,7 @@ import {
 } from "@macrostrat/form-components";
 import { Box, NullableSlider, useToaster } from "@macrostrat/ui-components";
 import { useEffect } from "react";
+import {FeatureMode, MapLayer, MapState} from "../types";
 
 const h = hyper.styled(styles);
 

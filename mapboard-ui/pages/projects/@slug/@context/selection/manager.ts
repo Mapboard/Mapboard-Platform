@@ -9,13 +9,12 @@ import mapboxgl from "mapbox-gl";
 import hyper from "@macrostrat/hyper";
 import { renderToString } from "react-dom/server";
 import {
-  allFeatureModes,
-  FeatureMode,
   useMapActions,
   useMapState
 } from "../state";
 import { useEffect, useRef, useState } from "react";
 import { DataField } from "@macrostrat/data-components";
+import {allFeatureModes, FeatureMode} from "../types";
 
 const h = hyper.styled(styles);
 

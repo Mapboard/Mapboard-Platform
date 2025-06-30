@@ -2,127 +2,18 @@ import { create, StoreApi, useStore } from "zustand";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import h from "@macrostrat/hyper";
 import { devtools } from "zustand/middleware";
-import { SelectionActionType } from "./selection";
-import { PolygonStyleIndex } from "./style/pattern-fills";
-import { SourceChangeTimestamps } from "./style/overlay";
 import { MapPosition } from "@macrostrat/mapbox-react";
 import { LocalStorage } from "@macrostrat/ui-components";
+import { parseQueryParameters, setQueryParameters } from "./hash-string";
 import {
-  parseQueryParameters,
-  RecoverableMapState,
-  setQueryParameters,
-} from "./hash-string";
-import type { LngLat } from "mapbox-gl";
-
-interface MapActions {
-  setActiveLayer: (layer: number | null) => void;
-  setBaseMap: (baseMap: BasemapType) => void;
-  selectFeatures: (selection: FeatureSelection | null) => void;
-  toggleLayerPanel: () => void;
-  setMapLayers: (layers: any[]) => void;
-  setSelectionAction: (action: SelectionActionType | null) => void;
-  setSelectionMode: (mode: SelectionMode) => void;
-  setSelectionFeatureMode: (mode: FeatureMode) => void;
-  setSelectionActionState: (state: any) => void;
-  setDataTypes: (mode: "line" | "polygon", types: DataType[]) => void;
-  notifyChange: (mode: FeatureMode) => void;
-  toggleLineEndpoints: () => void;
-  toggleFeatureMode: (mode: FeatureMode) => void;
-  setTerrainExaggeration: (exaggeration: number) => void;
-  setMapPosition: (position: MapPosition) => void;
-  toggleShowTopologyPrimitives: () => void;
-
-  toggleShowFacesWithNoUnit(): void;
-
-  toggleCrossSectionLines(): void;
-
-  toggleOverlay(): void;
-
-  setInspectPosition: (position: LngLat | null) => void;
-}
-
-export interface SelectionActionState<T extends object> {
-  type: SelectionActionType;
-  state: T | null;
-}
-
-export interface MapLayer {
-  id: number;
-  name: string;
-}
-
-export interface DataType {
-  id: string;
-  name: string;
-  color: string;
-}
-
-export enum SelectionMode {
-  Add = "add",
-  Subtract = "subtract",
-  Replace = "replace",
-}
-
-export enum FeatureMode {
-  Line = "line",
-  Polygon = "polygon",
-  Fill = "fill",
-}
-
-export const allFeatureModes = new Set([
-  FeatureMode.Line,
-  FeatureMode.Polygon,
-  FeatureMode.Fill,
-]);
-
-export interface PolygonDataType extends DataType {
-  symbology?: {
-    name: string;
-    color?: string;
-  };
-}
-
-interface LocalStorageState {
-  showCrossSectionLines: boolean;
-  showLineEndpoints: boolean;
-  showTopologyPrimitives: boolean;
-  selectionFeatureMode: FeatureMode;
-}
-
-type StoredMapState = RecoverableMapState & LocalStorageState;
-
-type LayerType = "dem" | "raster";
-
-interface BaseLayer {
-  name: string;
-  description?: string;
-  type: LayerType;
-  url: string;
-}
-
-export interface MapState extends StoredMapState {
-  actions: MapActions;
-  layerPanelIsOpen: boolean;
-  baseLayers: BaseLayer[];
-  selection: FeatureSelection | null;
-  selectionAction: SelectionActionState<any> | null;
-  selectionMode: SelectionMode;
-  enabledFeatureModes: Set<FeatureMode>;
-  showOverlay: boolean;
-  showFacesWithNoUnit: boolean;
-  terrainExaggeration: number;
-  mapLayers: MapLayer[] | null;
-  mapLayerIDMap: Map<number, MapLayer>;
-  apiBaseURL: string;
-  // Time that we last updated the map elements
-  lastChangeTime: SourceChangeTimestamps;
-  dataTypes: {
-    line: DataType[] | null;
-    polygon: PolygonDataType[] | null;
-  };
-  polygonPatternIndex: PolygonStyleIndex | null;
-  inspectPosition: LngLat | null;
-}
+  allFeatureModes,
+  DataType,
+  FeatureMode,
+  LocalStorageState,
+  MapState,
+  SelectionMode,
+  InitialMapState,
+} from "./types";
 
 const MapStateContext = createContext<StoreApi<MapState> | null>(null);
 
@@ -138,10 +29,7 @@ export type FeatureSelection = {
   dataTypes: Set<string>;
 };
 
-function createMapStore(
-  baseURL: string,
-  initialState: RecoverableMapState & Partial<StoredMapState>,
-) {
+function createMapStore(baseURL: string, initialState: InitialMapState) {
   return create<MapState>(
     // @ts-ignore
     devtools((set, get): MapState => {
@@ -353,15 +241,26 @@ function validateLocalStorageState(state: any): LocalStorageState | null {
   };
 }
 
-export function MapStateProvider({ children, baseURL, baseLayers }) {
+export function MapStateProvider({
+  children,
+  baseURL,
+  baseLayers,
+  defaultLayer,
+}) {
   const storage = useRef(new LocalStorage<LocalStorageState>("map-state"));
   const storedState: Partial<LocalStorageState> =
     validateLocalStorageState(storage.current.get()) ?? {};
 
   const params = parseQueryParameters();
 
+  let baseState = { ...storedState, ...params };
+
   const [value] = useState(() =>
-    createMapStore(baseURL, { baseLayers, ...params, ...storedState }),
+    createMapStore(baseURL, {
+      baseLayers,
+      ...baseState,
+      activeLayer: baseState.activeLayer ?? defaultLayer,
+    }),
   );
 
   /** Subscriber to set some values to the query parameters */

@@ -8377,9 +8377,6 @@ __metadata:
     vike-react: "npm:^0.5.13"
     vite: "npm:^6.1.0"
     zustand: "npm:^5.0.0"
-  dependenciesMeta:
-    prettier@3.5.3:
-      unplugged: true
   languageName: unknown
   linkType: soft
 
