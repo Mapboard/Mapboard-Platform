@@ -96,13 +96,19 @@ import { GeoJSONSource } from "mapbox-gl";
 
 function CrossSectionsLayer() {
   const crossSections = useMapState((state) => state.crossSectionLines);
+  const showCrossSectionLines = useMapState(
+    (state) => state.showCrossSectionLines,
+  );
+  const setActiveSection = useMapState((state) => state.setActiveCrossSection);
+
+  const allSections = showCrossSectionLines ? crossSections : null;
 
   useMapStyleOperator(
     (map) => {
       const id = "crossSectionLine";
       const data: GeoJSON.FeatureCollection = {
         type: "FeatureCollection",
-        features: crossSections,
+        features: allSections ?? [],
       };
       const source = map.getSource(id) as GeoJSONSource | null;
       if (source == null) {
@@ -114,7 +120,37 @@ function CrossSectionsLayer() {
         source.setData(data);
       }
     },
-    [crossSections],
+    [allSections],
+  );
+
+  // Click handling for cross-section lines
+  useMapStyleOperator(
+    (map) => {
+      map.on("click", "crossSectionLine", (e) => {
+        if (e.features == null || e.features.length === 0) return;
+        const feature = e.features[0] as GeoJSON.Feature;
+        if (feature == null) return;
+
+        const id = feature.properties?.id;
+        if (id == null) return;
+
+        console.log(id);
+
+        setActiveSection(id);
+        // prevent default click behavior
+        e.preventDefault();
+      });
+
+      // could probably set classes instead of using mouseenter/mouseleave
+      map.on("mouseenter", "crossSectionLine", () => {
+        map.getCanvas().style.cursor = "pointer";
+      });
+
+      map.on("mouseleave", "crossSectionLine", () => {
+        map.getCanvas().style.cursor = "";
+      });
+    },
+    [setActiveSection],
   );
 
   return null;
