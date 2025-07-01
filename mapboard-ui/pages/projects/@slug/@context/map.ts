@@ -32,9 +32,11 @@ export function MapArea({
   bounds = null,
   headerElement = null,
   isMapView = true,
+  contextPanel = null,
 }: {
   headerElement?: React.ReactElement;
   transformRequest?: mapboxgl.TransformRequestFunction;
+  contextPanel?: React.ReactElement;
   children?: React.ReactNode;
   mapboxToken?: string | null;
   baseURL: string;
@@ -70,7 +72,7 @@ export function MapArea({
         width: "fit-content",
         height: "fit-content",
       }),
-      contextPanel: h(PanelCard, [children]),
+      contextPanel: h.if(contextPanel != null)(PanelCard, null, contextPanel),
       contextPanelOpen: isOpen,
       fitViewport: true,
       //detailPanel: h("div.right-elements", [toolsCard, h(InfoDrawer)]),
@@ -97,6 +99,7 @@ export function MapArea({
       }),
       h(MapReloadWatcher, { baseURL }),
       h(CrossSectionsLayer),
+      children,
     ],
   );
 }

@@ -25,6 +25,7 @@ interface MapActions {
   setDataTypes: (mode: "line" | "polygon", types: DataType[]) => void;
   notifyChange: (mode: FeatureMode) => void;
   toggleLineEndpoints: () => void;
+  toggleMapArea: () => void;
   toggleFeatureMode: (mode: FeatureMode) => void;
   setTerrainExaggeration: (exaggeration: number) => void;
   setMapPosition: (position: MapPosition) => void;
@@ -81,6 +82,7 @@ export interface PolygonDataType extends DataType {
 export interface LocalStorageState {
   showCrossSectionLines: boolean;
   showLineEndpoints: boolean;
+  showMapArea: boolean;
   showTopologyPrimitives: boolean;
   selectionFeatureMode: FeatureMode;
 }

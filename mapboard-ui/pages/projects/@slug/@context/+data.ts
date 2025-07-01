@@ -18,8 +18,6 @@ export const data = async (pageContext: PageContextServer) => {
 
   let ctx: Context = res.data?.[0];
 
-  console.log("Context data:", ctx);
-
   if (!ctx) {
     // Redirect to 404 if context not found
     throw render(404, "Context not found");

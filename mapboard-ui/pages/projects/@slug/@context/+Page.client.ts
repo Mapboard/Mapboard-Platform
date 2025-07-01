@@ -24,6 +24,8 @@ import { MapArea } from "./map";
 import { ToasterContext } from "@macrostrat/ui-components";
 import { ItemSelect } from "@macrostrat/form-components";
 import { FeatureMode, MapLayer } from "./types";
+import { useMapStyleOperator } from "@macrostrat/mapbox-react";
+import { setGeoJSON } from "@macrostrat/mapbox-utils";
 
 const h = hyper.styled(styles);
 
@@ -47,6 +49,8 @@ export function Page() {
 function PageInner({ baseURL, context: ctx }) {
   const isMapContext = ctx.type === "map";
 
+  const showMapArea = useMapState((state) => state.showMapArea);
+
   let bounds = null;
   // We might not have any bounds yet, though this should probably be required...
   if (ctx.bounds) {
@@ -63,11 +67,54 @@ function PageInner({ baseURL, context: ctx }) {
         baseURL,
         bounds,
         headerElement: h(ContextHeader, ctx),
+        contextPanel: h(LayerControlPanel),
         isMapView: isMapContext,
       },
-      h(LayerControlPanel),
+      [h(BoundsLayer, { bounds: ctx.bounds, visible: showMapArea })],
     ),
   );
+}
+
+function BoundsLayer({
+  bounds,
+  visible = true,
+}: {
+  bounds: GeoJSON.Geometry;
+  visible?: boolean;
+}) {
+  useMapStyleOperator(
+    (map) => {
+      // Create a GeoJSON source for the bounds
+      const geojson: GeoJSON.FeatureCollection = {
+        type: "FeatureCollection",
+        features: [
+          {
+            type: "Feature",
+            geometry: bounds,
+            properties: {},
+          },
+        ],
+      };
+
+      setGeoJSON(map, "mapboard:map-bounds", geojson);
+    },
+    [bounds],
+  );
+
+  useMapStyleOperator(
+    (map) => {
+      if (visible) {
+        // Show the bounds layer
+        map.setLayoutProperty("mapboard:map-bounds", "visibility", "visible");
+      } else {
+        // Hide the bounds layer
+        map.setLayoutProperty("mapboard:map-bounds", "visibility", "none");
+      }
+    },
+    [visible],
+  );
+
+  return null; // This component does not render anything visually
 }
 
 function ContextHeader({ project_name, project_slug, name }) {
@@ -190,6 +237,7 @@ function SingleLayerViewOptions() {
   );
 
   const showLineEndpoints = useMapState((state) => state.showLineEndpoints);
+  const showMapArea = useMapState((state) => state.showMapArea);
 
   const toggleLineEndpoints = useMapActions(
     (actions) => actions.toggleLineEndpoints,
@@ -212,11 +260,6 @@ function SingleLayerViewOptions() {
       label: "Lines",
       ...switchProps(FeatureMode.Line),
     }),
-    h(OurSwitch, {
-      label: "Cross section lines",
-      checked,
-      onChange,
-    }),
     h("div.subsidiary-switches", [
       h(OurSwitch, {
         label: "Endpoints",
@@ -226,6 +269,16 @@ function SingleLayerViewOptions() {
         },
       }),
     ]),
+    h(OurSwitch, {
+      label: "Cross section lines",
+      checked,
+      onChange,
+    }),
+    h(OurSwitch, {
+      label: "Map area",
+      checked: showMapArea,
+      onChange: useMapActions((actions) => actions.toggleMapArea),
+    }),
     h(OurSwitch, {
       label: "Polygons",
       ...switchProps(FeatureMode.Polygon),

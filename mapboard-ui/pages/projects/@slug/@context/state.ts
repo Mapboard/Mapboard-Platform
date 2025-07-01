@@ -134,6 +134,10 @@ function createMapStore(baseURL: string, initialState: InitialMapState) {
             set((state) => {
               return { layerPanelIsOpen: !state.layerPanelIsOpen };
             }),
+          toggleMapArea: () =>
+            set((state) => {
+              return { showMapArea: !state.showMapArea };
+            }),
           setMapLayers: (layers) =>
             set({
               mapLayers: layers,
@@ -263,6 +267,7 @@ function validateLocalStorageState(state: any): LocalStorageState | null {
     showLineEndpoints: state.showLineEndpoints ?? false,
     showTopologyPrimitives: state.showTopologyPrimitives ?? false,
     selectionFeatureMode: selectionFeatureMode ?? FeatureMode.Line,
+    showMapArea: state.showMapArea ?? false,
   };
 }
 
@@ -335,13 +340,15 @@ export function MapStateProvider({
         showCrossSectionLines != prevState.showCrossSectionLines ||
         showLineEndpoints != prevState.showLineEndpoints ||
         showTopologyPrimitives != prevState.showTopologyPrimitives ||
-        selectionFeatureMode != prevState.selectionFeatureMode
+        selectionFeatureMode != prevState.selectionFeatureMode ||
+        state.showMapArea != prevState.showMapArea
       ) {
         storage.current.set({
           showCrossSectionLines,
           showLineEndpoints,
           showTopologyPrimitives,
           selectionFeatureMode,
+          showMapArea: state.showMapArea,
         });
       }
     });
