@@ -67,15 +67,7 @@ export function useMapStyle(
     });
     const selectionStyle: any = { layers: buildSelectionLayers() };
 
-    let crossSectionStyle: any = null;
-    if (showCrossSections) {
-      const sections: GeoJSONFeature[] = [];
-      // Fetch cross sections from the server or state
-      // sections = await fetchCrossSections(contextID);
-      crossSectionStyle = createCrossSectionsStyle(sections);
-    }
-
-    setOverlayStyle(mergeStyles(style, selectionStyle, crossSectionStyle));
+    setOverlayStyle(mergeStyles(style, selectionStyle));
   }, [
     activeLayer,
     changeTimestamps,

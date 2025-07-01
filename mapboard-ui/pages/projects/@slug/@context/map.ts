@@ -17,6 +17,7 @@ import { BoxSelectionManager } from "./selection";
 import { MapReloadWatcher } from "./change-watcher";
 import { SelectionDrawer } from "./selection/control-panel";
 import { useMemo, useRef } from "react";
+import { getCSSVariable } from "@macrostrat/color-utils";
 
 const mercator = new SphericalMercator({
   size: 256,
@@ -156,6 +157,26 @@ function CrossSectionsLayer() {
       } else {
         source.setData(data);
       }
+      const color = getCSSVariable("--text-color") ?? "white";
+      if (map.getLayer("cross-section-lines") == null) {
+        map.addLayer({
+          id: "cross-section-lines",
+          type: "line",
+          source: "crossSectionLine",
+          paint: {
+            "line-color": color,
+          },
+        });
+
+        map.addLayer({
+          id: "cross-section-endpoints",
+          type: "circle",
+          source: "crossSectionLine",
+          paint: {
+            "circle-color": color,
+          },
+        });
+      }
     },
     [allSections],
   );
@@ -169,13 +190,10 @@ function CrossSectionsLayer() {
         target: { layerId },
         type: "click",
         handler: (e) => {
-          console.log("click", e);
           const id = e.feature?.id;
           if (id == null) return;
-
           setActiveSection(id);
           e.originalEvent.stopPropagation();
-          // prevent default click behavior
           e.preventDefault();
         },
       });
@@ -201,7 +219,50 @@ function CrossSectionsLayer() {
   // Set up selection styling
   useMapStyleOperator(
     (map) => {
+      // Set up the basic layers, if they don't already exist
+
       map.removeFeatureState({ source: "crossSectionLine" });
+      if (activeSection == null) {
+        // Use a default feature size for all sections
+        map.setPaintProperty("cross-section-lines", "line-width", 2);
+        map.setPaintProperty("cross-section-lines", "line-opacity", 1);
+        map.setPaintProperty("cross-section-endpoints", "circle-radius", 2);
+        map.setPaintProperty("cross-section-endpoints", "circle-opacity", 1);
+      } else {
+        // Cases where a single cross-section is selected
+        // Use a larger size for the active section
+        const sizeExpr: any = [
+          "case",
+          ["boolean", ["feature-state", "active"], false],
+          4,
+          3,
+        ];
+
+        const opacityExpr: any = [
+          "case",
+          ["boolean", ["feature-state", "active"], false],
+          1,
+          0.2,
+        ];
+
+        map.setPaintProperty("cross-section-lines", "line-width", sizeExpr);
+        map.setPaintProperty(
+          "cross-section-lines",
+          "line-opacity",
+          opacityExpr,
+        );
+        map.setPaintProperty(
+          "cross-section-endpoints",
+          "circle-radius",
+          sizeExpr,
+        );
+        map.setPaintProperty(
+          "cross-section-endpoints",
+          "circle-opacity",
+          opacityExpr,
+        );
+      }
+
       if (activeSection == null) {
         return;
       }
