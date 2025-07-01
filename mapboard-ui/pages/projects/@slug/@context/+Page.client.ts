@@ -26,6 +26,7 @@ import { ItemSelect } from "@macrostrat/form-components";
 import { FeatureMode, MapLayer } from "./types";
 import { useMapStyleOperator } from "@macrostrat/mapbox-react";
 import { setGeoJSON } from "@macrostrat/mapbox-utils";
+import { getCSSVariable } from "@macrostrat/color-utils";
 import { Provider } from "jotai";
 
 const h = hyper.styled(styles);
@@ -101,6 +102,27 @@ function BoundsLayer({
       };
 
       setGeoJSON(map, "mapboard:map-bounds", geojson);
+
+      const color = getCSSVariable("--panel-background-color") ?? "white";
+
+      const layer = map.getLayer("mapboard:map-bounds");
+
+      if (layer == null) {
+        // Add the bounds layer if it doesn't exist
+        map.addLayer({
+          id: "mapboard:map-bounds",
+          type: "line",
+          source: "mapboard:map-bounds",
+          paint: {
+            "line-color": color,
+            "line-width": 2,
+            "line-opacity": 1,
+          },
+          layout: {
+            visibility: visible ? "visible" : "none",
+          },
+        });
+      }
     },
     [bounds],
   );

@@ -161,16 +161,6 @@ export function createCrossSectionsStyle(sections: GeoJSONFeature[]) {
           "circle-opacity": 1,
         },
       },
-      {
-        id: "mapboard:map-bounds",
-        type: "line",
-        source: "mapboard:map-bounds",
-        paint: {
-          "line-color": color,
-          "line-width": 2,
-          "line-opacity": 0.8,
-        },
-      },
     ],
     sources: {
       crossSectionLine: buildGeoJSONSource(),

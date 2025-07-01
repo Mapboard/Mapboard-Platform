@@ -6,7 +6,6 @@ import { atom, useAtom, Provider, useAtomValue } from "jotai";
 import { Suspense, useEffect, useMemo, useState } from "react";
 
 import styles from "./index.module.sass";
-import { MapArea } from "../map";
 import { mapboxToken } from "~/settings";
 import { useStyleImageManager } from "../style/pattern-manager";
 import { buildMapOverlayStyle, useBaseMapStyle } from "../style";
