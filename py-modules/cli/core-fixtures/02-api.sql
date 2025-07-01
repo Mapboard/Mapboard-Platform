@@ -33,6 +33,7 @@ SELECT
   c.database,
   c.data_schema,
   c.topo_schema,
+  ST_Xmax(c.bounds) - ST_Xmin(c.bounds) AS length,
   st_transform(c.bounds, 4326) AS bounds,
   c.parent,
   st_transform(c.parent_geom, 4326) AS parent_geom,

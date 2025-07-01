@@ -10,7 +10,7 @@ import { getCSSVariable } from "@macrostrat/color-utils";
 
 export { buildMapOverlayStyle };
 
-function useBaseMapStyle(basemapType: BasemapType) {
+export function useBaseMapStyle(basemapType: BasemapType) {
   const isEnabled = useInDarkMode();
 
   let baseStyle = isEnabled

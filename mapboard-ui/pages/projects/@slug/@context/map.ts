@@ -191,7 +191,7 @@ function CrossSectionsLayer() {
   return null;
 }
 
-function MapInner({
+export function MapInner({
   baseURL,
   fitBounds,
   bounds,

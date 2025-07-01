@@ -3,16 +3,13 @@ import styles from "./index.module.sass";
 import { postgrest } from "~/utils/api-client";
 import { Button } from "@blueprintjs/core";
 import { useMapState } from "../state";
+import { CrossSectionAssistantMap } from "./map";
 
 const h = hyper.styled(styles);
 
 export function CrossSectionPanel({ id }: { id: number }) {
   return h("div.cross-section-panel", [
-    h("h2", `Cross Section ${id}`),
-    h(
-      "p",
-      "Cross sections are not yet implemented. This feature will be available in a future release.",
-    ),
+    h(CrossSectionAssistantMap, { id }),
     h(CrossSectionCloseButton),
   ]);
 }
