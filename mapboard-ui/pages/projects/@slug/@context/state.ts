@@ -76,6 +76,7 @@ function createMapStore(baseURL: string, initialState: InitialMapState) {
         enabledFeatureModes: allFeatureModes,
         showOverlay: true,
         showLineEndpoints: false,
+        showMapArea: false,
         showFacesWithNoUnit: false,
         showTopologyPrimitives: false,
         terrainExaggeration: 1,

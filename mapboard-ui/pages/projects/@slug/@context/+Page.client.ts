@@ -26,6 +26,7 @@ import { ItemSelect } from "@macrostrat/form-components";
 import { FeatureMode, MapLayer } from "./types";
 import { useMapStyleOperator } from "@macrostrat/mapbox-react";
 import { setGeoJSON } from "@macrostrat/mapbox-utils";
+import { Provider } from "jotai";
 
 const h = hyper.styled(styles);
 
@@ -39,9 +40,12 @@ export function Page() {
   return h(
     ToasterContext,
     h(
-      MapStateProvider,
-      { baseURL, baseLayers: ctx.layers, defaultLayer: 22, context: ctx },
-      h(PageInner, { baseURL, context: ctx }),
+      Provider,
+      h(
+        MapStateProvider,
+        { baseURL, baseLayers: ctx.layers, defaultLayer: 22, context: ctx },
+        h(PageInner, { baseURL, context: ctx }),
+      ),
     ),
   );
 }

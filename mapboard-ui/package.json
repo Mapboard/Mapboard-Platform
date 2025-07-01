@@ -33,6 +33,7 @@
     "generic-pool": "^3.9.0",
     "geologic-patterns": "2.0.0-dev1",
     "jotai": "^2.12.5",
+    "jotai-zustand": "^0.6.0",
     "jsdom": "^26.1.0",
     "mapbox-gl": "^3.8.0",
     "md5": "^2.3.0",

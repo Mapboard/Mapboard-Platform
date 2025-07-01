@@ -52,9 +52,10 @@ function CrossSectionAssistantInner() {
 
   return h("div.cross-section-assistant-map-holder", [
     h("h2", name),
-    h(MapArea, {
+    h(CrossSectionMapArea, {
       baseURL,
       bounds,
+      maxBounds: bounds,
       isMapView: false,
       mapboxToken,
     }),
@@ -75,7 +76,7 @@ async function fetchCrossSectionMetadata(id: number) {
   return res.data;
 }
 
-export function MapArea({
+function CrossSectionMapArea({
   mapboxToken = null,
   baseURL = null,
   bounds = null,
@@ -107,10 +108,10 @@ export function MapArea({
         boxZoom: false,
         mapboxToken,
         bounds,
-        fitBounds: !isMapView,
+        fitBounds: true,
         maxZoom: 22,
         baseURL,
-        isMapView,
+        isMapView: false,
       }),
     ],
   );

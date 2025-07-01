@@ -5929,6 +5929,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"jotai-zustand@npm:^0.6.0":
+  version: 0.6.0
+  resolution: "jotai-zustand@npm:0.6.0"
+  peerDependencies:
+    jotai: ">=2.0.0"
+  checksum: 10c0/807ceced838731803057597834fa8670d30c19a734df43bbb09b6b49d228d3c014785f2556c49e91b355fadcf927005d1866260248e6f5706e2a805d4db1575f
+  languageName: node
+  linkType: hard
+
 "jotai@npm:^2.12.5":
   version: 2.12.5
   resolution: "jotai@npm:2.12.5"
@@ -8374,6 +8383,7 @@ __metadata:
     generic-pool: "npm:^3.9.0"
     geologic-patterns: "npm:2.0.0-dev1"
     jotai: "npm:^2.12.5"
+    jotai-zustand: "npm:^0.6.0"
     jsdom: "npm:^26.1.0"
     mapbox-gl: "npm:^3.8.0"
     md5: "npm:^2.3.0"
