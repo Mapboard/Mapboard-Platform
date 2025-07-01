@@ -103,7 +103,7 @@ function BoundsLayer({
 
       setGeoJSON(map, "mapboard:map-bounds", geojson);
 
-      const color = getCSSVariable("--panel-background-color") ?? "white";
+      const color = getCSSVariable("--text-color") ?? "black";
 
       const layer = map.getLayer("mapboard:map-bounds");
 

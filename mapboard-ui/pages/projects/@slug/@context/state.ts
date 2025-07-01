@@ -96,7 +96,6 @@ function createMapStore(baseURL: string, initialState: InitialMapState) {
         actions: {
           setBaseMap: (baseMap: BasemapType) => set({ baseMap }),
           setMapPosition: (mapPosition: MapPosition) => {
-            console.log("Setting map position", mapPosition);
             set({ mapPosition });
           },
           setActiveLayer: (layer) =>

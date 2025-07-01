@@ -3,9 +3,9 @@ import hyper from "@macrostrat/hyper";
 import {
   FloatingNavbar,
   MapAreaContainer,
-  MapMarker,
   MapView,
   PanelCard,
+  useMapMarker,
 } from "@macrostrat/map-interface";
 import styles from "./map.module.scss";
 import { useMapActions, useMapState } from "./state";
@@ -16,7 +16,7 @@ import { useStyleImageManager } from "./style/pattern-manager";
 import { BoxSelectionManager } from "./selection";
 import { MapReloadWatcher } from "./change-watcher";
 import { SelectionDrawer } from "./selection/control-panel";
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 
 const mercator = new SphericalMercator({
   size: 256,
@@ -81,6 +81,7 @@ export function MapArea({
       bottomPanel,
     },
     [
+      h(CrossSectionsLayer),
       h(MapInner, {
         projection,
         boxZoom: false,
@@ -93,15 +94,36 @@ export function MapArea({
         transformRequest,
       }),
       h(BoxSelectionManager),
-      h(MapMarker, {
-        position: inspectPosition,
-        setPosition: onSelectPosition,
-      }),
+      h(MapMarker),
       h(MapReloadWatcher, { baseURL }),
-      h(CrossSectionsLayer),
       children,
     ],
   );
+}
+
+function MapMarker() {
+  const position = useMapState((state) => state.inspectPosition);
+  const setPosition = useMapActions((a) => a.setInspectPosition);
+
+  const mapRef = useMapRef();
+  const markerRef = useRef(null);
+
+  useMapMarker(mapRef, markerRef, position);
+
+  useMapStyleOperator(
+    (map) => {
+      map.removeInteraction("inspect-click");
+      map.addInteraction("inspect-click", {
+        type: "click",
+        handler(e) {
+          setPosition(e.lngLat, e, map);
+        },
+      });
+    },
+    [setPosition],
+  );
+
+  return null;
 }
 
 import GeoJSON from "geojson";
@@ -152,6 +174,7 @@ function CrossSectionsLayer() {
           if (id == null) return;
 
           setActiveSection(id);
+          e.originalEvent.stopPropagation();
           // prevent default click behavior
           e.preventDefault();
         },

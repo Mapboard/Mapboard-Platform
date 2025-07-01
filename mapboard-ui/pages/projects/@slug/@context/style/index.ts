@@ -136,7 +136,20 @@ export function useMapStyle(
 }
 
 export function createCrossSectionsStyle(sections: GeoJSONFeature[]) {
-  const color = getCSSVariable("--panel-background-color") ?? "white";
+  const color = getCSSVariable("--text-color") ?? "white";
+  const opacityExpr = [
+    "case",
+    ["boolean", ["feature-state", "active"], false],
+    1,
+    0.2,
+  ];
+
+  const sizeExpr = [
+    "case",
+    ["boolean", ["feature-state", "active"], false],
+    4,
+    2,
+  ];
 
   return {
     version: 8,
@@ -147,8 +160,8 @@ export function createCrossSectionsStyle(sections: GeoJSONFeature[]) {
         source: "crossSectionLine",
         paint: {
           "line-color": color,
-          "line-width": ["case", ["feature-state", "active"], 4, 2],
-          "line-opacity": ["case", ["feature-state", "active"], 1, 0.2],
+          "line-width": sizeExpr,
+          "line-opacity": opacityExpr,
         },
       },
       {
@@ -156,9 +169,9 @@ export function createCrossSectionsStyle(sections: GeoJSONFeature[]) {
         type: "circle",
         source: "crossSectionLine",
         paint: {
-          "circle-radius": 5,
+          "circle-radius": sizeExpr,
           "circle-color": color,
-          "circle-opacity": 1,
+          "circle-opacity": opacityExpr,
         },
       },
     ],
@@ -166,10 +179,6 @@ export function createCrossSectionsStyle(sections: GeoJSONFeature[]) {
       crossSectionLine: buildGeoJSONSource(),
       crossSectionEndpoints: buildGeoJSONSource(),
       elevationMarker: buildGeoJSONSource(),
-      "mapboard:map-bounds": {
-        type: "geojson",
-        data: null,
-      },
     },
   };
 }
