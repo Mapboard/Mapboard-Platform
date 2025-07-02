@@ -271,7 +271,7 @@ export function MapInner({
   const setMapPosition = useMapActions((a) => a.setMapPosition);
   const mapPosition = useMapState((state) => state.mapPosition);
 
-  useStyleImageManager(mapRef);
+  useStyleImageManager();
 
   const style = useMapStyle(baseURL, {
     isMapView,

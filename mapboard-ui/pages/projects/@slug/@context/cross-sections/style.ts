@@ -30,6 +30,7 @@ export function useCrossSectionStyle(baseURL: string) {
 
     return mergeStyles(overlay, mainStyle);
   }, [
+    baseURL,
     showLineEndpoints,
     showFacesWithNoUnit,
     showTopologyPrimitives,

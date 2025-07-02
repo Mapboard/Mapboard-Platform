@@ -110,15 +110,14 @@ function CrossSectionMapArea({
 function MapInner({ baseURL, mapboxToken, bounds, ...rest }) {
   const mapRef = useMapRef();
 
-  useStyleImageManager(mapRef);
+  useStyleImageManager();
 
-  const style = useCrossSectionStyle(baseURL, {
-    isMapView: false,
-    mapboxToken,
-  });
+  const style = useCrossSectionStyle(baseURL);
   if (style == null) {
     return null;
   }
+
+  console.log("Setup style", style);
 
   const boundsArray = bbox(bounds);
 
@@ -137,6 +136,8 @@ function MapInner({ baseURL, mapboxToken, bounds, ...rest }) {
     enableTerrain: false,
     maxZoom: 22,
     pitchWithRotate: false,
+    antialias: false,
+    optimizeForTerrain: false,
     //standalone: true,
     //onMapMoved: setMapPosition,
     ...rest,

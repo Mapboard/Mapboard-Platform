@@ -46,7 +46,6 @@ export function buildMapOverlayStyle(
 
   if (selectedLayer == null) {
     filter = ["!", ["in", ["get", "map_layer"], ["literal", disabledLayers]]];
-    featureModes = new Set([FeatureMode.Line, FeatureMode.Fill]);
   }
 
   let params = new URLSearchParams();
@@ -57,14 +56,7 @@ export function buildMapOverlayStyle(
 
   const overlayLayers: mapboxgl.Layer[] = [];
 
-  let sources: Record<string, mapboxgl.SourceSpecification> = {
-    "mapbox-dem": {
-      type: "raster-dem",
-      url: "mapbox://mapbox.mapbox-terrain-dem-v1",
-      tileSize: 512,
-      maxzoom: 14,
-    },
-  };
+  let sources: Record<string, mapboxgl.SourceSpecification> = {};
 
   let layers: mapboxgl.Layer[] = [];
 
@@ -95,7 +87,6 @@ export function buildMapOverlayStyle(
 
   const compositeTileset = tilesetArray.join(",");
 
-  /** Could also consider separate sources per layer */
   const suffix = getTileQueryParams({
     map_layer: selectedLayer,
     changed,
@@ -115,7 +106,19 @@ export function buildMapOverlayStyle(
     }
 
     layers.push({
-      id: "fills",
+      id: "fills-without-symbols",
+      type: "fill",
+      source: "mapboard",
+      "source-layer": "fills",
+      paint: {
+        "fill-color": ["get", "color"],
+        "fill-opacity": selectedLayerOpacity(0.5, 0.3),
+      },
+      filter: ["all", ["!", ["has", "symbol"]], ...topoFilters],
+    });
+
+    layers.push({
+      id: "fills-with-symbols",
       type: "fill",
       source: "mapboard",
       "source-layer": "fills",
@@ -138,7 +141,7 @@ export function buildMapOverlayStyle(
         ],
         "fill-opacity": selectedLayerOpacity(0.5, 0.3),
       },
-      filter: ["all", ...topoFilters],
+      filter: ["all", ["has", "symbol"], ...topoFilters],
     });
   }
 

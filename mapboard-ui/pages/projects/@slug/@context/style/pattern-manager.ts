@@ -1,7 +1,10 @@
 import { useEffect } from "react";
 import { createSolidColorImage, loadImage } from "./pattern-images";
+import { useMapInitialized, useMapRef } from "@macrostrat/mapbox-react";
 
-export function useStyleImageManager(mapRef) {
+export function useStyleImageManager() {
+  const isInitialized = useMapInitialized();
+  const mapRef = useMapRef();
   useEffect(() => {
     const map = mapRef.current;
     if (map == null) return;
@@ -20,7 +23,7 @@ export function useStyleImageManager(mapRef) {
       // Clean up the event listener when the component unmounts
       map.off("styleimagemissing", styleImageMissing);
     };
-  }, [mapRef.current]);
+  }, [isInitialized]);
 }
 
 async function loadStyleImage(map: mapboxgl.Map, id: string) {
