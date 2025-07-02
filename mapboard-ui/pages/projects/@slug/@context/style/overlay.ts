@@ -38,7 +38,7 @@ export function buildMapOverlayStyle(
   } = options ?? {};
 
   // Disable rivers and roads by default
-  let disabledLayers: number[] = [3, 4];
+  let disabledLayers: number[] = [];
 
   let featureModes: Set<FeatureMode> = enabledFeatureModes;
 

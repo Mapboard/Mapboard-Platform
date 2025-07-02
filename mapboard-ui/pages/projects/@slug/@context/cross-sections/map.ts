@@ -3,18 +3,16 @@ import { Spinner } from "@blueprintjs/core";
 import { postgrest } from "~/utils/api-client";
 
 import { atom, useAtom, Provider, useAtomValue } from "jotai";
-import { Suspense, useEffect, useMemo, useState } from "react";
-
+import { Suspense, useEffect } from "react";
 import styles from "./index.module.sass";
 import { mapboxToken } from "~/settings";
 import { useStyleImageManager } from "../style/pattern-manager";
-import { buildMapOverlayStyle, useBaseMapStyle } from "../style";
-import { useMapRef } from "@macrostrat/mapbox-react";
-import { MapAreaContainer, MapView } from "@macrostrat/map-interface";
+import { MapboxMapProvider, useMapRef } from "@macrostrat/mapbox-react";
 import { bbox } from "@turf/bbox";
-import { useMapState } from "../state";
-import { mergeStyles } from "@macrostrat/mapbox-utils";
+import { MapView } from "@macrostrat/map-interface";
+import { BoundsLayer } from "~/client-components";
 const h = hyper.styled(styles);
+import { useCrossSectionStyle } from "./style";
 
 const crossSectionIDAtom = atom<number | null>(null);
 
@@ -53,8 +51,8 @@ function CrossSectionAssistantInner() {
     h("h2", name),
     h(CrossSectionMapArea, {
       baseURL,
-      bounds,
-      maxBounds: bounds,
+      bounds, // Default bounds for cross-section
+
       isMapView: false,
       mapboxToken,
     }),
@@ -91,37 +89,30 @@ function CrossSectionMapArea({
   isMapView: boolean;
 }) {
   return h(
-    MapAreaContainer,
-    {
-      navbar: null,
-      contextPanel: null,
-      contextPanelOpen: false,
-      fitViewport: false,
-      //detailPanel: h("div.right-elements", [toolsCard, h(InfoDrawer)]),
-      detailPanel: null,
-      className: "cross-section-map",
-    },
-    [
-      h(MapInner, {
-        projection: { name: "mercator" },
-        boxZoom: false,
-        mapboxToken,
-        bounds,
-        fitBounds: true,
-        maxZoom: 22,
-        baseURL,
-        isMapView: false,
-      }),
-    ],
+    MapboxMapProvider,
+    h("div.cross-section-container", [
+      h(
+        MapInner,
+        {
+          projection: { name: "mercator" },
+          boxZoom: false,
+          mapboxToken,
+          bounds,
+          baseURL,
+          isMapView: false,
+        },
+        [h(BoundsLayer, { bounds, visible: true, zoomToBounds: true })],
+      ),
+    ]),
   );
 }
 
-function MapInner({ baseURL, fitBounds, bounds, mapboxToken, ...rest }) {
+function MapInner({ baseURL, mapboxToken, bounds, ...rest }) {
   const mapRef = useMapRef();
 
   useStyleImageManager(mapRef);
 
-  const style = useMapStyle(baseURL, {
+  const style = useCrossSectionStyle(baseURL, {
     isMapView: false,
     mapboxToken,
   });
@@ -131,8 +122,6 @@ function MapInner({ baseURL, fitBounds, bounds, mapboxToken, ...rest }) {
 
   const boundsArray = bbox(bounds);
 
-  console.log(bounds);
-
   let aspectRatio = 1;
   const rect = mapRef?.current?.getContainer().getBoundingClientRect();
   if (rect != null) {
@@ -141,83 +130,15 @@ function MapInner({ baseURL, fitBounds, bounds, mapboxToken, ...rest }) {
   }
 
   return h(MapView, {
-    //maxBounds,
     bounds: boundsArray,
     //mapPosition: _mapPosition,
     mapboxToken,
     style,
+    enableTerrain: false,
+    maxZoom: 22,
+    pitchWithRotate: false,
+    //standalone: true,
     //onMapMoved: setMapPosition,
     ...rest,
   });
-}
-
-export function useMapStyle(
-  baseURL: string,
-  { mapboxToken, isMapView = true }: MapStyleOptions,
-) {
-  const basemapType = useMapState((state) => state.baseMap);
-  const showLineEndpoints = useMapState((state) => state.showLineEndpoints);
-  const enabledFeatureModes = useMapState((state) => state.enabledFeatureModes);
-
-  const showFacesWithNoUnit = useMapState((d) => d.showFacesWithNoUnit);
-  const showOverlay = useMapState((d) => d.showOverlay);
-  const exaggeration = useMapState((d) => d.terrainExaggeration);
-  const showTopologyPrimitives = useMapState((d) => d.showTopologyPrimitives);
-  const showCrossSections = useMapState((d) => d.showCrossSectionLines);
-
-  const baseStyleURL = useBaseMapStyle(basemapType);
-
-  const [overlayStyle, setOverlayStyle] = useState(null);
-
-  useEffect(() => {
-    if (!showOverlay) {
-      setOverlayStyle(null);
-      return;
-    }
-    const style = buildMapOverlayStyle(baseURL, {
-      selectedLayer: null,
-      sourceChangeTimestamps: [0],
-      enabledFeatureModes,
-      showLineEndpoints,
-      showFacesWithNoUnit,
-      showTopologyPrimitives,
-    });
-
-    setOverlayStyle(style);
-  }, [
-    showLineEndpoints,
-    enabledFeatureModes,
-    showFacesWithNoUnit,
-    showOverlay,
-    showTopologyPrimitives,
-    showCrossSections,
-  ]);
-
-  return useMemo(() => {
-    if (baseStyleURL == null || overlayStyle == null) {
-      return null;
-    }
-
-    const mainStyle: mapboxgl.StyleSpecification = {
-      version: 8,
-      name: "Mapboard",
-      layers: [
-        // We need to add this so that the style doesn't randomly reload
-        {
-          id: "sky",
-          type: "sky",
-          paint: {
-            "sky-type": "atmosphere",
-            "sky-atmosphere-sun": [0.0, 0.0],
-            "sky-atmosphere-sun-intensity": 15,
-          },
-        },
-      ],
-      sources: {},
-    };
-
-    const style = mergeStyles(overlayStyle, mainStyle);
-    console.log("Setting style", style);
-    return style;
-  }, [baseStyleURL, overlayStyle, exaggeration]);
 }

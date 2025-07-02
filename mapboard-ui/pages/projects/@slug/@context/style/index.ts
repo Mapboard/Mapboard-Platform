@@ -1,12 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { useAsyncEffect, useInDarkMode } from "@macrostrat/ui-components";
+import { useInDarkMode } from "@macrostrat/ui-components";
 import { BasemapType, useMapState } from "../state";
-import { buildGeoJSONSource, mergeStyles } from "@macrostrat/mapbox-utils";
+import { mergeStyles } from "@macrostrat/mapbox-utils";
 import { buildMapOverlayStyle, CrossSectionConfig } from "./overlay";
 import { buildSelectionLayers } from "../selection";
-import { buildCrossSectionLayers } from "@macrostrat/map-styles";
-import { GeoJSONFeature, GeoJSONSource } from "mapbox-gl";
-import { getCSSVariable } from "@macrostrat/color-utils";
 
 export { buildMapOverlayStyle };
 
@@ -41,12 +38,10 @@ export function useMapStyle(
   const showLineEndpoints = useMapState((state) => state.showLineEndpoints);
   const enabledFeatureModes = useMapState((state) => state.enabledFeatureModes);
 
-  const showCrossSectionLines = useMapState((d) => d.showCrossSectionLines);
   const showFacesWithNoUnit = useMapState((d) => d.showFacesWithNoUnit);
   const showOverlay = useMapState((d) => d.showOverlay);
   const exaggeration = useMapState((d) => d.terrainExaggeration);
   const showTopologyPrimitives = useMapState((d) => d.showTopologyPrimitives);
-  const showCrossSections = useMapState((d) => d.showCrossSectionLines);
 
   const baseStyleURL = useBaseMapStyle(basemapType);
 
@@ -73,11 +68,9 @@ export function useMapStyle(
     changeTimestamps,
     showLineEndpoints,
     enabledFeatureModes,
-    showCrossSectionLines,
     showFacesWithNoUnit,
     showOverlay,
     showTopologyPrimitives,
-    showCrossSections,
   ]);
 
   return useMemo(() => {
@@ -125,54 +118,6 @@ export function useMapStyle(
     console.log("Setting style", style);
     return style;
   }, [baseStyleURL, overlayStyle, exaggeration]);
-}
-
-export function createCrossSectionsStyle(sections: GeoJSONFeature[]) {
-  const color = getCSSVariable("--text-color") ?? "white";
-  const opacityExpr = [
-    "case",
-    ["boolean", ["feature-state", "active"], false],
-    1,
-    0.2,
-  ];
-
-  const sizeExpr = [
-    "case",
-    ["boolean", ["feature-state", "active"], false],
-    4,
-    2,
-  ];
-
-  return {
-    version: 8,
-    layers: [
-      {
-        id: "cross-section-lines",
-        type: "line",
-        source: "crossSectionLine",
-        paint: {
-          "line-color": color,
-          "line-width": sizeExpr,
-          "line-opacity": opacityExpr,
-        },
-      },
-      {
-        id: "cross-section-endpoints",
-        type: "circle",
-        source: "crossSectionLine",
-        paint: {
-          "circle-radius": sizeExpr,
-          "circle-color": color,
-          "circle-opacity": opacityExpr,
-        },
-      },
-    ],
-    sources: {
-      crossSectionLine: buildGeoJSONSource(),
-      crossSectionEndpoints: buildGeoJSONSource(),
-      elevationMarker: buildGeoJSONSource(),
-    },
-  };
 }
 
 const color = "#e350a3";
