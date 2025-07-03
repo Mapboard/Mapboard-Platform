@@ -25,6 +25,7 @@ INSERT INTO map_layer_linework_type (type, map_layer)
 SELECT 'cross-section', _layer_id
 ON CONFLICT DO NOTHING;
 
+-- delete all piercing point information
 DELETE FROM linework WHERE map_layer = _layer_id;
 DELETE FROM polygon WHERE map_layer = _layer_id;
 

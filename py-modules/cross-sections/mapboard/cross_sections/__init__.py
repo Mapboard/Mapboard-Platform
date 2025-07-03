@@ -28,3 +28,16 @@ def get_terrain():
 
     proc = procedures / "update-topography.sql"
     db.run_sql(proc)
+
+
+@app.command(name="sync")
+def sync_with_mapboard():
+    """
+    Sync the cross-sections with the mapboard database
+
+    This command is temporary until we
+    """
+    db = setup_database("mapboard")
+
+    proc = procedures / "copy-info-to-mapboard-database.sql"
+    db.run_sql(proc)
