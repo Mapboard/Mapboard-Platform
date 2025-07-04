@@ -1,7 +1,5 @@
-import { PolygonStyleIndex } from "./pattern-fills";
 import { createLineSymbolLayers } from "./line-symbols";
 import { allFeatureModes, FeatureMode } from "../types";
-import mapboxgl from "mapbox-gl";
 
 export interface SourceChangeTimestamps {
   [key: FeatureMode]: number | null;
@@ -20,7 +18,7 @@ interface MapOverlayOptions {
   showFacesWithNoUnit?: boolean;
   showTopologyPrimitives?: boolean;
   useSymbols?: boolean;
-  polygonSymbolIndex?: PolygonStyleIndex | null;
+  styleMode?: "display" | "edit";
 }
 
 export function buildMapOverlayStyle(
@@ -35,6 +33,7 @@ export function buildMapOverlayStyle(
     useSymbols = true,
     showFacesWithNoUnit = false,
     showTopologyPrimitives = false,
+    styleMode = "edit",
   } = options ?? {};
 
   // Disable rivers and roads by default
@@ -101,7 +100,7 @@ export function buildMapOverlayStyle(
   if (featureModes.has(FeatureMode.Fill)) {
     let topoFilters = [filter];
 
-    if (!showFacesWithNoUnit) {
+    if (!showFacesWithNoUnit || styleMode === "display") {
       topoFilters.push(["has", "unit"]);
     }
 
@@ -113,6 +112,7 @@ export function buildMapOverlayStyle(
       paint: {
         "fill-color": ["get", "color"],
         "fill-opacity": selectedLayerOpacity(0.5, 0.3),
+        "fill-outline-color": "transparent",
       },
       filter: ["all", ["!", ["has", "symbol"]], ...topoFilters],
     });
@@ -140,6 +140,7 @@ export function buildMapOverlayStyle(
           ],
         ],
         "fill-opacity": selectedLayerOpacity(0.5, 0.3),
+        "fill-outline-color": "transparent",
       },
       filter: ["all", ["has", "symbol"], ...topoFilters],
     });
@@ -172,22 +173,40 @@ export function buildMapOverlayStyle(
     ["get", "color"],
   ];
 
-  let lineWidth: any = 1;
+  let baseLineWidth = 1;
+  if (styleMode === "display") {
+    // In display mode, we use a smaller base line width
+    baseLineWidth = 0.5;
+  }
+
+  let displayCases: any = [];
+
+  if (styleMode === "display") {
+    // Add special cases for certain layers
+    displayCases = [["==", ["get", "layer"], 8], 3];
+  }
+
+  let lineWidth: any = baseLineWidth;
   lineWidth = [
     "case",
+    ...displayCases,
     [
       "in",
       ["get", "type"],
       ["literal", ["thrust-fault", "normal-fault", "fault"]],
     ],
-    1.5,
-    1,
+    2 * baseLineWidth,
+    baseLineWidth,
   ];
 
   let lineFilter = ["all", filter, ["!", ["get", "covered"]]];
 
   if (selectedLayer == null) {
     lineFilter.push(["!=", ["get", "layer"], "none"]);
+  }
+
+  if (styleMode === "display") {
+    lineFilter.push(["!=", ["get", "type"], "mapboard:arbitrary"]);
   }
 
   if (featureModes.has(FeatureMode.Line)) {

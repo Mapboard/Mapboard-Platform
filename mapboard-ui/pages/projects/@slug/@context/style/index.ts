@@ -4,6 +4,8 @@ import { BasemapType, useMapState } from "../state";
 import { mergeStyles } from "@macrostrat/mapbox-utils";
 import { buildMapOverlayStyle, CrossSectionConfig } from "./overlay";
 import { buildSelectionLayers } from "../selection";
+import { atom, useAtom, useAtomValue } from "jotai";
+import mapboxgl from "mapbox-gl";
 
 export { buildMapOverlayStyle };
 
@@ -28,6 +30,18 @@ interface MapStyleOptions {
   isMapView: boolean;
 }
 
+const overlayStyleAtom = atom<mapboxgl.StyleSpecification | null>(null);
+
+const styleLayerIDsAtom = atom<string[]>((get) => {
+  const overlayStyle = get(overlayStyleAtom);
+  if (overlayStyle == null) return [];
+  return overlayStyle.layers.map((l) => l.id);
+});
+
+export function useStyleLayerIDs() {
+  return useAtomValue(styleLayerIDsAtom);
+}
+
 export function useMapStyle(
   baseURL: string,
   { mapboxToken, isMapView = true }: MapStyleOptions,
@@ -42,10 +56,11 @@ export function useMapStyle(
   const showOverlay = useMapState((d) => d.showOverlay);
   const exaggeration = useMapState((d) => d.terrainExaggeration);
   const showTopologyPrimitives = useMapState((d) => d.showTopologyPrimitives);
+  const styleMode = useMapState((d) => d.styleMode);
 
   const baseStyleURL = useBaseMapStyle(basemapType);
 
-  const [overlayStyle, setOverlayStyle] = useState(null);
+  const [overlayStyle, setOverlayStyle] = useAtom(overlayStyleAtom);
 
   useEffect(() => {
     if (!showOverlay) {
@@ -59,6 +74,7 @@ export function useMapStyle(
       showLineEndpoints,
       showFacesWithNoUnit,
       showTopologyPrimitives,
+      styleMode,
     });
     const selectionStyle: any = { layers: buildSelectionLayers() };
 

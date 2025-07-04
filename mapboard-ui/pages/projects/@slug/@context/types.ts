@@ -3,7 +3,6 @@ import { MapPosition } from "@macrostrat/mapbox-utils";
 import { SelectionActionType } from "./selection";
 import type { GeoJSONFeature, LngLat } from "mapbox-gl";
 import { SourceChangeTimestamps } from "./style/overlay";
-import { PolygonStyleIndex } from "./style/pattern-fills";
 
 export interface RecoverableMapState {
   activeLayer: number | null;
@@ -21,6 +20,7 @@ interface MapActions {
   setSelectionAction: (action: SelectionActionType | null) => void;
   setSelectionMode: (mode: SelectionMode) => void;
   setSelectionFeatureMode: (mode: FeatureMode) => void;
+  setStyleMode: (mode: StyleMode) => void;
   setSelectionActionState: (state: any) => void;
   setDataTypes: (mode: "line" | "polygon", types: DataType[]) => void;
   notifyChange: (mode: FeatureMode) => void;
@@ -35,7 +35,7 @@ interface MapActions {
 
   toggleOverlay(): void;
 
-  setInspectPosition: (position: LngLat | null) => void;
+  setInspectPosition: (position: LngLat | null, tileFeatureData?: any) => void;
 }
 
 export interface SelectionActionState<T extends object> {
@@ -79,12 +79,15 @@ export interface PolygonDataType extends DataType {
   };
 }
 
+export type StyleMode = "display" | "edit";
+
 export interface LocalStorageState {
   showCrossSectionLines: boolean;
   showLineEndpoints: boolean;
   showMapArea: boolean;
   showTopologyPrimitives: boolean;
   selectionFeatureMode: FeatureMode;
+  styleMode: StyleMode;
 }
 
 type LayerType = "dem" | "raster";
@@ -137,6 +140,8 @@ export interface MapState extends StoredMapState {
     line: DataType[] | null;
     polygon: PolygonDataType[] | null;
   };
-  polygonPatternIndex: PolygonStyleIndex | null;
-  inspectPosition: LngLat | null;
+  inspect: {
+    position: LngLat;
+    tileFeatureData: GeoJSONFeature[];
+  } | null;
 }

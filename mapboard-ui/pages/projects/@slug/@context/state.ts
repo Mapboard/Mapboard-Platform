@@ -20,9 +20,11 @@ import {
   SelectionMode,
   InitialMapState,
   CrossSectionsStore,
+  StyleMode,
 } from "./types";
 import { fetchCrossSections } from "./cross-sections";
 import { Context } from "~/types";
+import { GeoJSONFeature } from "mapbox-gl";
 
 const MapStateContext = createContext<StoreApi<MapState> | null>(null);
 
@@ -71,7 +73,7 @@ function createMapStore(baseURL: string, initialState: InitialMapState) {
         selectionAction: null,
         selectionFeatureMode: FeatureMode.Line,
         selectionMode: SelectionMode.Replace,
-        inspectPosition: null,
+        inspect: null,
         mapLayers: null,
         enabledFeatureModes: allFeatureModes,
         showOverlay: true,
@@ -80,6 +82,7 @@ function createMapStore(baseURL: string, initialState: InitialMapState) {
         showFacesWithNoUnit: false,
         showTopologyPrimitives: false,
         terrainExaggeration: 1,
+        styleMode: "display",
         lastChangeTime: {
           line: null,
           polygon: null,
@@ -90,7 +93,6 @@ function createMapStore(baseURL: string, initialState: InitialMapState) {
           polygon: null,
         },
         mapLayerIDMap: new Map(),
-        polygonPatternIndex: null,
         ...createCrossSectionsSlice(set, get),
         ...initialState,
         actions: {
@@ -127,7 +129,7 @@ function createMapStore(baseURL: string, initialState: InitialMapState) {
                   selection,
                   state.selectionMode,
                 ),
-                inspectPosition: null,
+                inspect: null,
               };
             }),
           toggleLayerPanel: () =>
@@ -204,8 +206,18 @@ function createMapStore(baseURL: string, initialState: InitialMapState) {
               return { showTopologyPrimitives: !state.showTopologyPrimitives };
             });
           },
-          setInspectPosition: (position) => {
-            return set({ inspectPosition: position, selection: null });
+          setInspectPosition: (position, targetFeatures: GeoJSONFeature[]) => {
+            let inspect = null;
+            if (position != null) {
+              inspect = {
+                position,
+                tileFeatureData: targetFeatures,
+              };
+            }
+            return set({ inspect, selection: null });
+          },
+          setStyleMode(styleMode: StyleMode) {
+            return set({ styleMode });
           },
         },
       };
@@ -268,6 +280,7 @@ function validateLocalStorageState(state: any): LocalStorageState | null {
     showTopologyPrimitives: state.showTopologyPrimitives ?? false,
     selectionFeatureMode: selectionFeatureMode ?? FeatureMode.Line,
     showMapArea: state.showMapArea ?? false,
+    styleMode: state.styleMode ?? "display",
   };
 }
 
@@ -335,13 +348,15 @@ export function MapStateProvider({
         showLineEndpoints,
         showTopologyPrimitives,
         selectionFeatureMode,
+        styleMode,
       } = state;
       if (
         showCrossSectionLines != prevState.showCrossSectionLines ||
         showLineEndpoints != prevState.showLineEndpoints ||
         showTopologyPrimitives != prevState.showTopologyPrimitives ||
         selectionFeatureMode != prevState.selectionFeatureMode ||
-        state.showMapArea != prevState.showMapArea
+        state.showMapArea != prevState.showMapArea ||
+        state.styleMode != prevState.styleMode
       ) {
         storage.current.set({
           showCrossSectionLines,
@@ -349,6 +364,7 @@ export function MapStateProvider({
           showTopologyPrimitives,
           selectionFeatureMode,
           showMapArea: state.showMapArea,
+          styleMode,
         });
       }
     });

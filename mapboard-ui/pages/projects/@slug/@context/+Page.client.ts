@@ -9,6 +9,7 @@ import {
   FormGroup,
   NonIdealState,
   NumericInput,
+  SegmentedControl,
   Spinner,
   Switch,
 } from "@blueprintjs/core";
@@ -130,7 +131,28 @@ function LayerControlPanel() {
     h(BasemapList),
     h(TerrainExaggeration),
     h(TopologyPrimitivesSwitch),
+    h(StyleModeControl),
   ]);
+}
+
+function StyleModeControl() {
+  const styleMode = useMapState((state) => state.styleMode);
+  const setStyleMode = useMapActions((actions) => actions.setStyleMode);
+
+  return h(
+    FormGroup,
+    { label: "Style mode", inline: true, fill: true },
+    h(SegmentedControl, {
+      options: [
+        { label: "Display", value: "display" },
+        { label: "Edit", value: "edit" },
+      ],
+      onValueChange(value) {
+        setStyleMode(value as "edit" | "display");
+      },
+      value: styleMode,
+    }),
+  );
 }
 
 function TopologyPrimitivesSwitch() {

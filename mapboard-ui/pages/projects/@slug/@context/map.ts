@@ -11,7 +11,7 @@ import styles from "./map.module.scss";
 import { useMapActions, useMapState } from "./state";
 import { SphericalMercator } from "@mapbox/sphericalmercator";
 import { useMapRef, useMapStyleOperator } from "@macrostrat/mapbox-react";
-import { useMapStyle } from "./style";
+import { useMapStyle, useStyleLayerIDs } from "./style";
 import { useStyleImageManager } from "./style/pattern-manager";
 import { BoxSelectionManager } from "./selection";
 import { MapReloadWatcher } from "./change-watcher";
@@ -47,8 +47,6 @@ export function MapArea({
   isMapView: boolean;
 }) {
   const isOpen = useMapState((state) => state.layerPanelIsOpen);
-  const onSelectPosition = useMapActions((a) => a.setInspectPosition);
-  const inspectPosition = useMapState((state) => state.inspectPosition);
 
   const activeCrossSection = useMapState((state) => state.activeCrossSection);
 
@@ -104,8 +102,9 @@ export function MapArea({
 }
 
 function MapMarker() {
-  const position = useMapState((state) => state.inspectPosition);
+  const position = useMapState((state) => state.inspect?.position);
   const setPosition = useMapActions((a) => a.setInspectPosition);
+  const layerIDs = useStyleLayerIDs();
 
   const mapRef = useMapRef();
   const markerRef = useRef(null);
@@ -118,18 +117,28 @@ function MapMarker() {
       map.addInteraction("inspect-click", {
         type: "click",
         handler(e) {
-          setPosition(e.lngLat, e, map);
+          const r = 10;
+          const pt = e.point;
+
+          const bbox: [mapboxgl.PointLike, mapboxgl.PointLike] = [
+            [pt.x - r, pt.y - r],
+            [pt.x + r, pt.y + r],
+          ];
+          const tileFeatureData = map.queryRenderedFeatures(bbox, {
+            layers: layerIDs,
+          });
+          setPosition(e.lngLat, tileFeatureData);
         },
       });
     },
-    [setPosition],
+    [setPosition, layerIDs],
   );
 
   return null;
 }
 
 import GeoJSON from "geojson";
-import { GeoJSONSource } from "mapbox-gl";
+import mapboxgl, { GeoJSONSource } from "mapbox-gl";
 import { CrossSectionPanel } from "./cross-sections";
 import { setGeoJSON } from "@macrostrat/mapbox-utils";
 
