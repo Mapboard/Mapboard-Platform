@@ -58,7 +58,19 @@ function PageInner({ baseURL, context: ctx }) {
   let bounds = null;
   // We might not have any bounds yet, though this should probably be required...
   if (ctx.bounds) {
-    bounds = bbox(ctx.bounds);
+    // Expand the bounds slightly for better view
+    const b0 = bbox(ctx.bounds);
+    const expansionFactor = 0.1; // 10% expansion
+    const width = b0[2] - b0[0];
+    const height = b0[3] - b0[1];
+    const expandedBounds: any = [
+      b0[0] - width * expansionFactor,
+      b0[1] - height * expansionFactor,
+      b0[2] + width * expansionFactor,
+      b0[3] + height * expansionFactor,
+    ];
+
+    bounds = expandedBounds;
   }
 
   return h(
