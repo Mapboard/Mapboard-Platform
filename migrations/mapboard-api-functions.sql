@@ -5,7 +5,7 @@
  * @return JSON object containing the location and units information
  */
 
-CREATE OR REPLACE FUNCTION map_digitizer.get_location_info(
+CREATE OR REPLACE FUNCTION {data_schema}.get_location_info(
   lng numeric,
   lat numeric,
   radius numeric DEFAULT 0.0
@@ -47,10 +47,10 @@ BEGIN
              l.source_layer,
              l.covered
            FROM
-             map_digitizer.linework l
-             JOIN map_digitizer.linework_type lt
+             {data_schema}.linework l
+             JOIN {data_schema}.linework_type lt
                ON l.type = lt.id
-             JOIN map_digitizer.map_layer ml
+             JOIN {data_schema}.map_layer ml
                ON l.map_layer = ml.id
            WHERE
              st_intersects(l.geometry, region))
@@ -70,10 +70,10 @@ BEGIN
              ml.name,
              ml.topological
            FROM
-             map_digitizer.polygon p
-             JOIN map_digitizer.polygon_type pt
+             {data_schema}.polygon p
+             JOIN {data_schema}.polygon_type pt
                ON p.type = pt.id
-             JOIN map_digitizer.map_layer ml
+             JOIN {data_schema}.map_layer ml
                ON p.map_layer = ml.id
            WHERE
              st_intersects(p.geometry, region))
@@ -94,10 +94,10 @@ BEGIN
              pt.symbol,
              pt.symbol_color
            FROM
-             map_topology.map_face f
-             LEFT JOIN map_digitizer.map_layer ml
+             {topo_schema}.map_face f
+             LEFT JOIN {data_schema}.map_layer ml
                ON ml.id = f.map_layer
-             LEFT JOIN map_digitizer.polygon_type pt
+             LEFT JOIN {data_schema}.polygon_type pt
                ON pt.id = f.unit_id
            WHERE
              st_intersects(f.geometry, region))
@@ -110,7 +110,7 @@ BEGIN
   SELECT
     jsonb_agg(face_id)
   FROM
-    map_topology.face f
+    {topo_schema}.face f
   WHERE
       mbr && region
   AND st_intersects(st_getfacegeometry('map_topology', f.face_id), region)
@@ -119,7 +119,7 @@ BEGIN
   SELECT
     jsonb_agg(edge_id)
   FROM
-    map_topology.edge e
+    {topo_schema}.edge e
   WHERE
     st_intersects(e.geom, region)
   INTO edges;
@@ -127,7 +127,7 @@ BEGIN
   SELECT
     jsonb_agg(node_id)
   FROM
-    map_topology.node n
+    {topo_schema}.node n
   WHERE
     st_intersects(n.geom, region)
   INTO nodes;
@@ -145,4 +145,4 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql STABLE;
 
-SELECT map_digitizer.get_location_info(16.15, -24.29, 100)::text;
+-- SELECT {data_schema}.get_location_info(16.15, -24.29, 100)::text;

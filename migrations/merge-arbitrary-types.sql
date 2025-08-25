@@ -8,11 +8,18 @@ WHERE NOT EXISTS (
     SELECT 1 FROM {data_schema}.linework_type WHERE id = 'mapboard:arbitrary'
 );
 
-WITH update_map_layer_linework_type AS (
-    UPDATE {data_schema}.map_layer_linework_type
-    SET type = 'mapboard:arbitrary'
-    WHERE type IN ('arbitrary-bedrock-contact', 'arbitrary-surficial-contact')
-)
+INSERT INTO {data_schema}.map_layer_linework_type (map_layer, type)
+SELECT map_layer, 'mapboard:arbitrary'
+FROM {data_schema}.map_layer_linework_type
+WHERE type IN ('arbitrary-bedrock', 'arbitrary-bedrock-contact', 'arbitrary-surficial-contact')
+ON CONFLICT DO NOTHING;
+
 UPDATE {data_schema}.linework
 SET type = 'mapboard:arbitrary'
-WHERE type IN ('arbitrary-bedrock-contact', 'arbitrary-surficial-contact');
+WHERE type IN ('arbitrary-bedrock','arbitrary-bedrock-contact', 'arbitrary-surficial-contact');
+
+DELETE FROM {data_schema}.map_layer_linework_type
+WHERE type IN ('arbitrary-bedrock', 'arbitrary-bedrock-contact', 'arbitrary-surficial-contact');
+
+DELETE FROM {data_schema}.linework_type
+WHERE id IN ('arbitrary-bedrock', 'arbitrary-bedrock-contact', 'arbitrary-surficial-contact');

@@ -31,3 +31,5 @@ cfg
 
 .idea/httpRequests
 http-client.private.env.json
+
+mapboard-ui/.idea
