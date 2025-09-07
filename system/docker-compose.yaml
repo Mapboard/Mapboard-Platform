@@ -36,6 +36,8 @@ services:
   postgrest:
     image: "postgrest/postgrest:latest"
     restart: unless-stopped
+    depends_on:
+      - database
     environment:
       - PGRST_DB_URI=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@database:5432/${POSTGRES_DB}
       - PGRST_DB_SCHEMA=mapboard_api

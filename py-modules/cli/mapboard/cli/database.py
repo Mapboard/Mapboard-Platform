@@ -28,7 +28,7 @@ db_app = Typer(name="db", no_args_is_help=True)
 def create_fixtures(
     project: Optional[str] = None,
 ):
-    """Create database fixtures"""
+    """Create database fixtures, either for the core database or a specific project"""
     if project is None:
         return create_core_fixtures()
 
@@ -87,8 +87,9 @@ def migrate(
     apply: bool = False,
     allow_unsafe: bool = False,
 ):
-    console = Console(file=sys.stderr)
     """Migrate a Mapboard project database to the latest version"""
+
+    console = Console(file=sys.stderr)
     if project is None:
         project = "mapboard"
         database = "mapboard"
