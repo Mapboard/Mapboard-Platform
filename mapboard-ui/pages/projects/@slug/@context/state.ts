@@ -172,6 +172,9 @@ function createMapStore(baseURL: string, initialState: InitialMapState) {
               };
             });
           },
+          closeCrossSectionPanel: () => {
+            set({ activeCrossSection: null });
+          },
           setSelectionFeatureMode: (mode) =>
             set({ selectionFeatureMode: mode }),
           toggleLineEndpoints: () =>

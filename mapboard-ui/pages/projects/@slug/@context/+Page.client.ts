@@ -188,9 +188,9 @@ function ClipToBoundsSwitch() {
     label: "Clip to context bounds",
     checked: clip,
     onChange() {
-      setClip((c)=>!c);
-    }
-  })
+      setClip((c) => !c);
+    },
+  });
 }
 
 function TerrainExaggeration() {

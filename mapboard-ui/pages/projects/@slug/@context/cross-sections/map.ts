@@ -138,6 +138,8 @@ function MapInner({ baseURL, mapboxToken, bounds, ...rest }) {
     pitchWithRotate: false,
     antialias: false,
     optimizeForTerrain: false,
+    dragRotate: false,
+    touchPitch: false,
     //standalone: true,
     //onMapMoved: setMapPosition,
     ...rest,

@@ -3602,6 +3602,23 @@ __metadata:
   languageName: node
   linkType: hard
 
+"allotment@npm:^1.20.4":
+  version: 1.20.4
+  resolution: "allotment@npm:1.20.4"
+  dependencies:
+    classnames: "npm:^2.3.0"
+    eventemitter3: "npm:^5.0.0"
+    lodash.clamp: "npm:^4.0.0"
+    lodash.debounce: "npm:^4.0.0"
+    lodash.isequal: "npm:^4.5.0"
+    use-resize-observer: "npm:^9.0.0"
+  peerDependencies:
+    react: ^17.0.0 || ^18.0.0 || ^19.0.0
+    react-dom: ^17.0.0 || ^18.0.0 || ^19.0.0
+  checksum: 10c0/ae3a043cbdc92196833d10aa7a3e5f2be44f26a3617809dd42da3c3743c87373009f2c8419a01fd191ed820c6384fa6bb07d0972a75f2dfbea2860c6b44c0ac7
+  languageName: node
+  linkType: hard
+
 "ansi-regex@npm:^5.0.1":
   version: 5.0.1
   resolution: "ansi-regex@npm:5.0.1"
@@ -5096,6 +5113,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"eventemitter3@npm:^5.0.0":
+  version: 5.0.1
+  resolution: "eventemitter3@npm:5.0.1"
+  checksum: 10c0/4ba5c00c506e6c786b4d6262cfbce90ddc14c10d4667e5c83ae993c9de88aa856033994dd2b35b83e8dc1170e224e66a319fa80adc4c32adcd2379bbc75da814
+  languageName: node
+  linkType: hard
+
 "expand-template@npm:^2.0.3":
   version: 2.0.3
   resolution: "expand-template@npm:2.0.3"
@@ -6118,10 +6142,24 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lodash.debounce@npm:^4":
+"lodash.clamp@npm:^4.0.0":
+  version: 4.0.3
+  resolution: "lodash.clamp@npm:4.0.3"
+  checksum: 10c0/f5eb45e5941fae30f35fb151869342565b24b8aac19463c73f745b6d6d68127784c2b192a4bca185ddaa66a5221efdcd1da2b36e3f9127d9faf3b917f8a9fee7
+  languageName: node
+  linkType: hard
+
+"lodash.debounce@npm:^4, lodash.debounce@npm:^4.0.0":
   version: 4.0.8
   resolution: "lodash.debounce@npm:4.0.8"
   checksum: 10c0/762998a63e095412b6099b8290903e0a8ddcb353ac6e2e0f2d7e7d03abd4275fe3c689d88960eb90b0dde4f177554d51a690f22a343932ecbc50a5d111849987
+  languageName: node
+  linkType: hard
+
+"lodash.isequal@npm:^4.5.0":
+  version: 4.5.0
+  resolution: "lodash.isequal@npm:4.5.0"
+  checksum: 10c0/dfdb2356db19631a4b445d5f37868a095e2402292d59539a987f134a8778c62a2810c2452d11ae9e6dcac71fc9de40a6fedcb20e2952a15b431ad8b29e50e28f
   languageName: node
   linkType: hard
 
@@ -8436,6 +8474,7 @@ __metadata:
     "@universal-middleware/core": "npm:^0.4.0"
     "@universal-middleware/express": "npm:^0.4.1"
     "@vitejs/plugin-react": "npm:^4.3.4"
+    allotment: "npm:^1.20.4"
     canvas: "npm:^3.1.0"
     classnames: "npm:^2.5.1"
     cross-fetch: "npm:^4.1.0"
@@ -9604,7 +9643,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"use-resize-observer@npm:^9.1.0":
+"use-resize-observer@npm:^9.0.0, use-resize-observer@npm:^9.1.0":
   version: 9.1.0
   resolution: "use-resize-observer@npm:9.1.0"
   dependencies:

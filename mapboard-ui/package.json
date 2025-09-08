@@ -26,6 +26,7 @@
     "@universal-middleware/core": "^0.4.0",
     "@universal-middleware/express": "^0.4.1",
     "@vitejs/plugin-react": "^4.3.4",
+    "allotment": "^1.20.4",
     "canvas": "^3.1.0",
     "classnames": "^2.5.1",
     "cross-fetch": "^4.1.0",

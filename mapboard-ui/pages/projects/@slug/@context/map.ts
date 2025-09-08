@@ -23,6 +23,8 @@ import GeoJSON from "geojson";
 import mapboxgl, { GeoJSONSource } from "mapbox-gl";
 import { CrossSectionPanel } from "./cross-sections";
 import { setGeoJSON } from "@macrostrat/mapbox-utils";
+import { Allotment } from "allotment";
+import "allotment/dist/style.css";
 
 const mercator = new SphericalMercator({
   size: 256,
@@ -53,13 +55,14 @@ export function MapArea({
   const isOpen = useMapState((state) => state.layerPanelIsOpen);
 
   const activeCrossSection = useMapState((state) => state.activeCrossSection);
+  const setActiveCrossSection = useMapState(
+    (state) => state.setActiveCrossSection,
+  );
 
   /** Add a cross section assistant panel if a cross section is active */
   let bottomPanel = null;
   if (activeCrossSection != null) {
-    bottomPanel = h("div.bottom-panel", [
-      h(CrossSectionPanel, { id: activeCrossSection }),
-    ]);
+    bottomPanel = h(CrossSectionPanel, { id: activeCrossSection });
   }
 
   const transformRequest = useRequestTransformer();
@@ -69,7 +72,7 @@ export function MapArea({
     projection = { name: "mercator" };
   }
 
-  return h(
+  const mainArea = h(
     MapAreaContainer,
     {
       navbar: h(FloatingNavbar, {
@@ -79,11 +82,9 @@ export function MapArea({
       }),
       contextPanel: h.if(contextPanel != null)(PanelCard, null, contextPanel),
       contextPanelOpen: isOpen,
-      fitViewport: true,
-      //detailPanel: h("div.right-elements", [toolsCard, h(InfoDrawer)]),
+      fitViewport: false,
       detailPanel: h(SelectionDrawer),
       className: "mapboard-map",
-      bottomPanel,
     },
     [
       h(CrossSectionsLayer),
@@ -102,6 +103,39 @@ export function MapArea({
       h(MapMarker),
       h(MapReloadWatcher, { baseURL }),
       children,
+    ],
+  );
+
+  return h(
+    Allotment,
+    {
+      vertical: true,
+      onVisibleChange(paneIndex, visible) {
+        // When the bottom panel is closed, clear the active cross-section
+        if (paneIndex === 1 && !visible) {
+          setActiveCrossSection(null);
+        }
+      },
+    },
+    [
+      h(
+        Allotment.Pane,
+        {
+          preferredSize: "80%",
+          minSize: 300,
+        },
+        mainArea,
+      ),
+      h(
+        Allotment.Pane,
+        {
+          preferredSize: "20%",
+          minSize: 100,
+          snap: true,
+          visible: activeCrossSection != null,
+        },
+        bottomPanel,
+      ),
     ],
   );
 }
