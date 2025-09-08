@@ -101,7 +101,7 @@ function CrossSectionMapArea({
           baseURL,
           isMapView: false,
         },
-        [h(BoundsLayer, { bounds, visible: true, zoomToBounds: true })],
+        h(BoundsLayer, { bounds, visible: true, zoomToBounds: true }),
       ),
     ]),
   );

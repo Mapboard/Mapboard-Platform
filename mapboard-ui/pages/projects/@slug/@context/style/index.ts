@@ -42,6 +42,8 @@ export function useStyleLayerIDs() {
   return useAtomValue(styleLayerIDsAtom);
 }
 
+export const overlayClipAtom = atom<boolean>(false);
+
 export function useMapStyle(
   baseURL: string,
   { mapboxToken, isMapView = true }: MapStyleOptions,
@@ -61,6 +63,9 @@ export function useMapStyle(
   const baseStyleURL = useBaseMapStyle(basemapType);
 
   const [overlayStyle, setOverlayStyle] = useAtom(overlayStyleAtom);
+  const clipToContextBounds = useAtomValue(
+    overlayClipAtom,
+  );
 
   useEffect(() => {
     if (!showOverlay) {
@@ -75,6 +80,7 @@ export function useMapStyle(
       showFacesWithNoUnit,
       showTopologyPrimitives,
       styleMode,
+      clipToContextBounds
     });
     const selectionStyle: any = { layers: buildSelectionLayers() };
 
@@ -87,6 +93,7 @@ export function useMapStyle(
     showFacesWithNoUnit,
     showOverlay,
     showTopologyPrimitives,
+    clipToContextBounds
   ]);
 
   return useMemo(() => {

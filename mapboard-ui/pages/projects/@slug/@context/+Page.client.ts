@@ -25,8 +25,9 @@ import { MapArea } from "./map";
 import { ToasterContext } from "@macrostrat/ui-components";
 import { ItemSelect } from "@macrostrat/form-components";
 import { FeatureMode, MapLayer } from "./types";
-import { Provider } from "jotai";
+import { Provider, useAtom } from "jotai";
 import { BoundsLayer } from "~/client-components";
+import { overlayClipAtom } from "./style";
 
 const h = hyper.styled(styles);
 
@@ -143,6 +144,7 @@ function LayerControlPanel() {
     h(BasemapList),
     h(TerrainExaggeration),
     h(TopologyPrimitivesSwitch),
+    h(ClipToBoundsSwitch),
     h(StyleModeControl),
   ]);
 }
@@ -178,6 +180,17 @@ function TopologyPrimitivesSwitch() {
     checked: showPrimitives,
     onChange: togglePrimitives,
   });
+}
+
+function ClipToBoundsSwitch() {
+  const [clip, setClip] = useAtom(overlayClipAtom);
+  return h(OurSwitch, {
+    label: "Clip to context bounds",
+    checked: clip,
+    onChange() {
+      setClip((c)=>!c);
+    }
+  })
 }
 
 function TerrainExaggeration() {

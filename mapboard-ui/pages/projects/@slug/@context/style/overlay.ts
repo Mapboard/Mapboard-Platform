@@ -19,6 +19,8 @@ interface MapOverlayOptions {
   showTopologyPrimitives?: boolean;
   useSymbols?: boolean;
   styleMode?: "display" | "edit";
+  // Restrict to bounds
+  clipToContextBounds?: boolean;
 }
 
 export function buildMapOverlayStyle(
@@ -33,8 +35,11 @@ export function buildMapOverlayStyle(
     useSymbols = true,
     showFacesWithNoUnit = false,
     showTopologyPrimitives = false,
+    clipToContextBounds = false,
     styleMode = "edit",
   } = options ?? {};
+
+  console.log("Building overlay style with options:", options);
 
   // Disable rivers and roads by default
   let disabledLayers: number[] = [];
@@ -86,10 +91,15 @@ export function buildMapOverlayStyle(
 
   const compositeTileset = tilesetArray.join(",");
 
-  const suffix = getTileQueryParams({
+  let p0: any = {
     map_layer: selectedLayer,
     changed,
-  });
+  }
+  if (clipToContextBounds) {
+    p0.clip = true;
+  }
+
+  const suffix = getTileQueryParams(p0);
 
   sources["mapboard"] = {
     type: "vector",

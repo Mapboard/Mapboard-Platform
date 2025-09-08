@@ -19,6 +19,10 @@ import { SelectionDrawer } from "./selection/control-panel";
 import { useMemo, useRef } from "react";
 import { getCSSVariable } from "@macrostrat/color-utils";
 import { updateStyleLayers } from "@macrostrat/mapbox-utils";
+import GeoJSON from "geojson";
+import mapboxgl, { GeoJSONSource } from "mapbox-gl";
+import { CrossSectionPanel } from "./cross-sections";
+import { setGeoJSON } from "@macrostrat/mapbox-utils";
 
 const mercator = new SphericalMercator({
   size: 256,
@@ -50,6 +54,7 @@ export function MapArea({
 
   const activeCrossSection = useMapState((state) => state.activeCrossSection);
 
+  /** Add a cross section assistant panel if a cross section is active */
   let bottomPanel = null;
   if (activeCrossSection != null) {
     bottomPanel = h("div.bottom-panel", [
@@ -136,11 +141,6 @@ function MapMarker() {
 
   return null;
 }
-
-import GeoJSON from "geojson";
-import mapboxgl, { GeoJSONSource } from "mapbox-gl";
-import { CrossSectionPanel } from "./cross-sections";
-import { setGeoJSON } from "@macrostrat/mapbox-utils";
 
 function CrossSectionsLayer() {
   const crossSections = useMapState((state) => state.crossSectionLines);

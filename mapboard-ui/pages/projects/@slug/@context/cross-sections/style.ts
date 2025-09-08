@@ -19,6 +19,7 @@ export function useCrossSectionStyle(baseURL: string) {
       showLineEndpoints,
       showFacesWithNoUnit,
       showTopologyPrimitives,
+      clipToContextBounds: true,
     });
 
     const mainStyle: mapboxgl.StyleSpecification = {

@@ -2,6 +2,7 @@ import h from "@macrostrat/hyper";
 import { useParams } from "~/utils/routing";
 import { useData } from "vike-react/useData";
 import type { Data } from "./+data";
+import { Spinner } from "@blueprintjs/core";
 
 export function Page() {
   const { slug } = useParams();
@@ -21,6 +22,10 @@ export function Page() {
 }
 
 function Contexts({ contexts }) {
+
+  if (contexts == null) {
+    return h(Spinner)
+  }
   // Group contexts by type
   const ctxMap = contexts.reduce((acc, ctx) => {
     const { type } = ctx;
