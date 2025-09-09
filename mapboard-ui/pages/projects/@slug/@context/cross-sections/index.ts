@@ -10,9 +10,6 @@ export * from "./map-layer";
 
 const h = hyper.styled(styles);
 
-// Fractional distance along the cross-section line to place a cursor.
-export const crossSectionCursorDistanceAtom = atom<number | null>(null);
-
 export function CrossSectionPanel({ id }: { id: number }) {
   return h("div.cross-section-panel", [
     h(CrossSectionAssistantMap, { id }),

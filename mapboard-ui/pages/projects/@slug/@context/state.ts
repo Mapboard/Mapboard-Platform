@@ -25,6 +25,7 @@ import {
 import { fetchCrossSections } from "./cross-sections";
 import { Context } from "~/types";
 import { GeoJSONFeature } from "mapbox-gl";
+import { atomWithStore } from "jotai-zustand";
 
 const MapStateContext = createContext<StoreApi<MapState> | null>(null);
 

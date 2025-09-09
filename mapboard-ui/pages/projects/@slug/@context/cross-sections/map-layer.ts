@@ -3,6 +3,10 @@ import { useMapStyleOperator } from "@macrostrat/mapbox-react";
 import { getCSSVariable } from "@macrostrat/color-utils";
 import { setGeoJSON, updateStyleLayers } from "@macrostrat/mapbox-utils";
 import GeoJSON from "geojson";
+import { atom } from "jotai";
+
+// Fractional distance along the cross-section line to place a cursor.
+export const crossSectionCursorDistanceAtom = atom<number | null>(null);
 
 export function CrossSectionsLayer() {
   const crossSections = useMapState((state) => state.crossSectionLines);
@@ -89,7 +93,7 @@ export function CrossSectionsLayer() {
     [activeSection],
   );
 
-  // Click handling for cross-section lines
+  // Click and handling for cross-section lines
   useMapStyleOperator(
     (map) => {
       const layerId = "cross-section-lines";
@@ -106,16 +110,31 @@ export function CrossSectionsLayer() {
         },
       });
 
+      const canvas = map.getCanvas();
+      const onMouseMove = (e) => {
+        const activeCrossSection = e.features.find(
+          (f) => f.state?.active === true,
+        );
+        if (activeCrossSection == null) {
+          // Find the nearest point on the active cross section
+          canvas.style.cursor = "pointer";
+        } else {
+          canvas.style.cursor = "";
+        }
+      };
+
       const onMouseEnter = () => {
-        map.getCanvas().style.cursor = "pointer";
+        canvas.style.cursor = "pointer";
       };
 
       const onMouseLeave = () => {
-        map.getCanvas().style.cursor = "";
+        canvas.style.cursor = "";
       };
 
+      map.on("mousemove", layerId, onMouseMove);
+
       // could probably set classes instead of using mouseenter/mouseleave
-      map.on("mouseenter", layerId, onMouseEnter);
+      //map.on("mouseenter", layerId, onMouseEnter);
 
       map.on("mouseleave", layerId, onMouseLeave);
 
