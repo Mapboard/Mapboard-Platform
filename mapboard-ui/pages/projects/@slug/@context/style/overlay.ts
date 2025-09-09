@@ -39,8 +39,6 @@ export function buildMapOverlayStyle(
     styleMode = "edit",
   } = options ?? {};
 
-  console.log("Building overlay style with options:", options);
-
   // Disable rivers and roads by default
   let disabledLayers: number[] = [];
 
@@ -94,7 +92,7 @@ export function buildMapOverlayStyle(
   let p0: any = {
     map_layer: selectedLayer,
     changed,
-  }
+  };
   if (clipToContextBounds) {
     p0.clip = true;
   }
