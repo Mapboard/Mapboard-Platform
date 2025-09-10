@@ -6,6 +6,7 @@ import { buildMapOverlayStyle, CrossSectionConfig } from "./overlay";
 import { buildSelectionLayers } from "../selection";
 import { atom, useAtom, useAtomValue } from "jotai";
 import mapboxgl from "mapbox-gl";
+import { atomWithStorage } from "jotai/utils";
 
 export { buildMapOverlayStyle };
 
@@ -42,7 +43,10 @@ export function useStyleLayerIDs() {
   return useAtomValue(styleLayerIDsAtom);
 }
 
-export const overlayClipAtom = atom<boolean>(false);
+export const overlayClipAtom = atomWithStorage<boolean>(
+  "mapboard:clip-overlay",
+  false,
+);
 
 export function useMapStyle(
   baseURL: string,
@@ -63,9 +67,7 @@ export function useMapStyle(
   const baseStyleURL = useBaseMapStyle(basemapType);
 
   const [overlayStyle, setOverlayStyle] = useAtom(overlayStyleAtom);
-  const clipToContextBounds = useAtomValue(
-    overlayClipAtom,
-  );
+  const clipToContextBounds = useAtomValue(overlayClipAtom);
 
   useEffect(() => {
     if (!showOverlay) {
@@ -80,7 +82,7 @@ export function useMapStyle(
       showFacesWithNoUnit,
       showTopologyPrimitives,
       styleMode,
-      clipToContextBounds
+      clipToContextBounds,
     });
     const selectionStyle: any = { layers: buildSelectionLayers() };
 
@@ -93,7 +95,7 @@ export function useMapStyle(
     showFacesWithNoUnit,
     showOverlay,
     showTopologyPrimitives,
-    clipToContextBounds
+    clipToContextBounds,
   ]);
 
   return useMemo(() => {
