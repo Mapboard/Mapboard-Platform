@@ -3,10 +3,12 @@ import { useMapStyleOperator } from "@macrostrat/mapbox-react";
 import { getCSSVariable } from "@macrostrat/color-utils";
 import { setGeoJSON, updateStyleLayers } from "@macrostrat/mapbox-utils";
 import GeoJSON from "geojson";
-import { atom } from "jotai";
-
-// Fractional distance along the cross-section line to place a cursor.
-export const crossSectionCursorDistanceAtom = atom<number | null>(null);
+import { atom, useAtomValue } from "jotai";
+import { length } from "@turf/length";
+import { along } from "@turf/along";
+import { unwrapMultiLineString } from "./utils";
+import { crossSectionCursorDistanceAtom } from "./state";
+import { useEffect } from "react";
 
 export function CrossSectionsLayer() {
   const crossSections = useMapState((state) => state.crossSectionLines);
@@ -30,10 +32,44 @@ export function CrossSectionsLayer() {
     [allSections],
   );
 
+  const crossSectionDistance = useAtomValue(crossSectionCursorDistanceAtom);
+
+  useEffect(() => {
+    console.log("Cross Section loaded", crossSectionDistance);
+  }, [crossSectionDistance]);
+
+  useMapStyleOperator(
+    (map) => {
+      console.log("Updating cross section cursor");
+      // Calculate the distance along the line for the cursor
+      const activeSectionGeom = allSections?.find(
+        (d) => d.id === activeSection,
+      );
+      if (crossSectionDistance == null || activeSectionGeom == null) {
+        setGeoJSON(map, "crossSectionCursor", {
+          type: "FeatureCollection",
+          features: [],
+        });
+        return;
+      }
+      const line: any = unwrapMultiLineString(activeSectionGeom.geometry);
+      const lineLength = length(line);
+      const cursorPoint = along(line, lineLength * crossSectionDistance, {
+        units: "kilometers",
+      });
+      setGeoJSON(map, "crossSectionCursor", {
+        type: "FeatureCollection",
+        features: [cursorPoint],
+      });
+    },
+    [crossSectionDistance, allSections, activeSection],
+  );
+
   useMapStyleOperator(
     (map) => {
       // Set up style
-      const color = getCSSVariable("--text-color") ?? "white";
+      const color = getCSSVariable("--text-color", "white");
+      const secondaryColor = getCSSVariable("--secondary-color", "black");
 
       let sizeExpr: any = 2;
       let opacityExpr: any = 1;
@@ -74,6 +110,18 @@ export function CrossSectionsLayer() {
             "circle-color": color,
             "circle-radius": sizeExpr,
             "circle-opacity": opacityExpr,
+          },
+        },
+        {
+          id: "cross-section-cursor",
+          type: "circle",
+          source: "crossSectionCursor",
+          paint: {
+            "circle-color": secondaryColor,
+            "circle-radius": 4,
+            "circle-opacity": 1,
+            "circle-stroke-color": color,
+            "circle-stroke-width": 2,
           },
         },
       ]);

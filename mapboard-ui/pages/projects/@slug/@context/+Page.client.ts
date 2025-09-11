@@ -8,7 +8,6 @@ import { bbox } from "@turf/bbox";
 import { MapLoadingButton } from "@macrostrat/map-interface";
 import { MapArea } from "./map";
 import { ToasterContext } from "@macrostrat/ui-components";
-import { Provider } from "jotai";
 import { BoundsLayer } from "~/client-components";
 import { BackButton, LayerControlPanel } from "./controls";
 
@@ -24,12 +23,9 @@ export function Page() {
   return h(
     ToasterContext,
     h(
-      Provider,
-      h(
-        MapStateProvider,
-        { baseURL, baseLayers: ctx.layers, defaultLayer: 22, context: ctx },
-        h(PageInner, { baseURL, context: ctx }),
-      ),
+      MapStateProvider,
+      { baseURL, baseLayers: ctx.layers, defaultLayer: 22, context: ctx },
+      h(PageInner, { baseURL, context: ctx }),
     ),
   );
 }

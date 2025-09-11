@@ -2707,6 +2707,21 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@turf/along@npm:^7.2.0":
+  version: 7.2.0
+  resolution: "@turf/along@npm:7.2.0"
+  dependencies:
+    "@turf/bearing": "npm:^7.2.0"
+    "@turf/destination": "npm:^7.2.0"
+    "@turf/distance": "npm:^7.2.0"
+    "@turf/helpers": "npm:^7.2.0"
+    "@turf/invariant": "npm:^7.2.0"
+    "@types/geojson": "npm:^7946.0.10"
+    tslib: "npm:^2.8.1"
+  checksum: 10c0/903b1291dfb55eda8e9980edd01ace91dc744a2cfeaa14cfe10123aa21c459b32156a58f7b9009ca1aeb56d9b92f7a320920709987476dc8e597e5f953fdbfb9
+  languageName: node
+  linkType: hard
+
 "@turf/bbox@npm:^7.1.0, @turf/bbox@npm:^7.2.0":
   version: 7.2.0
   resolution: "@turf/bbox@npm:7.2.0"
@@ -2716,6 +2731,18 @@ __metadata:
     "@types/geojson": "npm:^7946.0.10"
     tslib: "npm:^2.8.1"
   checksum: 10c0/766d59d5f75c272481e971cd4004e139962607e8f34391b2abfb15bb34f9544a0479ceb14772565e005e4a12fdd82adf0d440ab1c9e0decbde6de50a5706db43
+  languageName: node
+  linkType: hard
+
+"@turf/bearing@npm:^7.2.0":
+  version: 7.2.0
+  resolution: "@turf/bearing@npm:7.2.0"
+  dependencies:
+    "@turf/helpers": "npm:^7.2.0"
+    "@turf/invariant": "npm:^7.2.0"
+    "@types/geojson": "npm:^7946.0.10"
+    tslib: "npm:^2.8.1"
+  checksum: 10c0/970f1a87f9489f8ca812e6f3193dd4da6b7f89a93dfb46e5c4b11b1064db99e56a04917f0e46ea443aff28e30392da529d7db08315c2bcd2d492b9350070b6e5
   languageName: node
   linkType: hard
 
@@ -2770,6 +2797,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@turf/destination@npm:^7.2.0":
+  version: 7.2.0
+  resolution: "@turf/destination@npm:7.2.0"
+  dependencies:
+    "@turf/helpers": "npm:^7.2.0"
+    "@turf/invariant": "npm:^7.2.0"
+    "@types/geojson": "npm:^7946.0.10"
+    tslib: "npm:^2.8.1"
+  checksum: 10c0/64ca7562d081a3bc9000d7b08a417577a9d5431e91b002f39e771df4c0f8b323becbff2bddaadd414069e7fe8704c7ae1880c4d6cb5c140d3333fba2b65bd6e0
+  languageName: node
+  linkType: hard
+
 "@turf/distance@npm:6.3.0":
   version: 6.3.0
   resolution: "@turf/distance@npm:6.3.0"
@@ -2777,6 +2816,18 @@ __metadata:
     "@turf/helpers": "npm:^6.3.0"
     "@turf/invariant": "npm:^6.3.0"
   checksum: 10c0/91bd7980f9b373efa628297b54c32b04980c5b20146c076a602a35ed84d29a5fddd137bc74b52cb389d29a7fd3a1c3ba9c199d2a7857952e51afdc1076331053
+  languageName: node
+  linkType: hard
+
+"@turf/distance@npm:^7.2.0":
+  version: 7.2.0
+  resolution: "@turf/distance@npm:7.2.0"
+  dependencies:
+    "@turf/helpers": "npm:^7.2.0"
+    "@turf/invariant": "npm:^7.2.0"
+    "@types/geojson": "npm:^7946.0.10"
+    tslib: "npm:^2.8.1"
+  checksum: 10c0/13ceacf30624e48ee5baabe25340fcba6693c94ecc05c31e6480574ef3017fd1492efb5f7b504933c1451c9428b7a1a7112f11cbeae475571e025a2e0962679a
   languageName: node
   linkType: hard
 
@@ -2806,12 +2857,36 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@turf/invariant@npm:^7.2.0":
+  version: 7.2.0
+  resolution: "@turf/invariant@npm:7.2.0"
+  dependencies:
+    "@turf/helpers": "npm:^7.2.0"
+    "@types/geojson": "npm:^7946.0.10"
+    tslib: "npm:^2.8.1"
+  checksum: 10c0/6968b766d5522488bb2b149a72f863e3f0d4bb0342b14f3992e3e920d9e32c252e1e07e84213732cb51609aef7a82833a8fe76b1c7d0db4cd384954cfedaa4e5
+  languageName: node
+  linkType: hard
+
 "@turf/jsts@npm:^2.7.1":
   version: 2.7.2
   resolution: "@turf/jsts@npm:2.7.2"
   dependencies:
     jsts: "npm:2.7.1"
   checksum: 10c0/19eab63e7e26a613e7186de170d9f96c32759769a0268acac3da4c5cefc8f9f5a1274f9fc73b0cb85c5d52c9d9516167c98a42d1635e03c3a712e2a784e192c7
+  languageName: node
+  linkType: hard
+
+"@turf/length@npm:^7.2.0":
+  version: 7.2.0
+  resolution: "@turf/length@npm:7.2.0"
+  dependencies:
+    "@turf/distance": "npm:^7.2.0"
+    "@turf/helpers": "npm:^7.2.0"
+    "@turf/meta": "npm:^7.2.0"
+    "@types/geojson": "npm:^7946.0.10"
+    tslib: "npm:^2.8.1"
+  checksum: 10c0/57769e202b705f1d9a353febdaffd0013e501e9d6b75943e6d4f659f3b7195db2910185b56b595efb8b78843aaf7e1603080dbe60f2ab1965cd9a6c06fed0fdc
   languageName: node
   linkType: hard
 
@@ -8463,8 +8538,10 @@ __metadata:
     "@mapbox/sphericalmercator": "npm:^2.0.1"
     "@mdx-js/rollup": "npm:^3.1.0"
     "@supabase/postgrest-js": "npm:^1.18.1"
+    "@turf/along": "npm:^7.2.0"
     "@turf/bbox": "npm:^7.2.0"
     "@turf/buffer": "npm:^7.2.0"
+    "@turf/length": "npm:^7.2.0"
     "@types/express": "npm:^4.17.21"
     "@types/jsdom": "npm:^21.1.7"
     "@types/md5": "npm:^2"

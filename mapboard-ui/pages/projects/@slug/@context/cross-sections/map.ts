@@ -2,17 +2,29 @@ import hyper, { compose } from "@macrostrat/hyper";
 import { Spinner } from "@blueprintjs/core";
 import { postgrest } from "~/utils/api-client";
 
-import { atom, useAtom, Provider, useAtomValue } from "jotai";
+import { atom, useAtom, useAtomValue } from "jotai";
 import { Suspense, useEffect } from "react";
 import styles from "./index.module.sass";
 import { mapboxToken } from "~/settings";
 import { useStyleImageManager } from "../style/pattern-manager";
-import { MapboxMapProvider, useMapRef } from "@macrostrat/mapbox-react";
+import {
+  MapboxMapProvider,
+  useMapRef,
+  useMapStyleOperator,
+} from "@macrostrat/mapbox-react";
 import { bbox } from "@turf/bbox";
 import { MapView } from "@macrostrat/map-interface";
 import { BoundsLayer } from "~/client-components";
 const h = hyper.styled(styles);
 import { useCrossSectionStyle } from "./style";
+import { unwrapMultiLineString } from "./utils";
+import { crossSectionCursorDistanceAtom } from "./state";
+import { SphericalMercator } from "@mapbox/sphericalmercator";
+import { LineString } from "geojson";
+
+const merc = new SphericalMercator({
+  size: 256,
+});
 
 const crossSectionIDAtom = atom<number | null>(null);
 
@@ -24,10 +36,7 @@ const crossSectionDataAtom = atom(async (get) => {
   return fetchCrossSectionMetadata(id);
 });
 
-export const CrossSectionAssistantMap = compose(
-  Provider,
-  _CrossSectionAssistantMap,
-);
+export const CrossSectionAssistantMap = compose(_CrossSectionAssistantMap);
 
 function _CrossSectionAssistantMap({ id }: { id: number }) {
   const [_, setCrossSectionID] = useAtom(crossSectionIDAtom);
@@ -39,20 +48,32 @@ function _CrossSectionAssistantMap({ id }: { id: number }) {
   return h(Suspense, { fallback: h(Spinner) }, h(CrossSectionAssistantInner));
 }
 
+interface CrossSectionPositionData {
+  length: number;
+  parentGeom: LineString;
+  offset: [number, number];
+}
+
 function CrossSectionAssistantInner() {
   const ctx = useAtomValue(crossSectionDataAtom);
 
-  const { name, id, slug, bounds } = ctx;
+  const { name, id, bounds, slug, project_slug } = ctx;
+
+  const positionData = {
+    length: ctx.length,
+    parentGeom: unwrapMultiLineString(ctx.parent_geom),
+    offset: [ctx.offset_x || 0, ctx.offset_y || 0],
+  };
 
   let domain = document.location.origin;
-  const baseURL = `${domain}/api/project/${ctx.project_slug}/context/${ctx.slug}`;
+  const baseURL = `${domain}/api/project/${project_slug}/context/${slug}`;
 
   return h("div.cross-section-assistant-map-holder", [
     h("h2", name),
     h(CrossSectionMapArea, {
       baseURL,
       bounds, // Default bounds for cross-section
-
+      positionData,
       isMapView: false,
       mapboxToken,
     }),
@@ -78,6 +99,7 @@ function CrossSectionMapArea({
   baseURL = null,
   bounds = null,
   isMapView = true,
+  positionData,
 }: {
   headerElement?: React.ReactElement;
   transformRequest?: mapboxgl.TransformRequestFunction;
@@ -87,6 +109,7 @@ function CrossSectionMapArea({
   focusedSource?: string;
   focusedSourceTitle?: string;
   isMapView: boolean;
+  positionData: CrossSectionPositionData;
 }) {
   return h(
     MapboxMapProvider,
@@ -101,7 +124,10 @@ function CrossSectionMapArea({
           baseURL,
           isMapView: false,
         },
-        h(BoundsLayer, { bounds, visible: true, zoomToBounds: true }),
+        [
+          h(BoundsLayer, { bounds, visible: true, zoomToBounds: true }),
+          h(CrossSectionHoverHandler, { positionData }),
+        ],
       ),
     ]),
   );
@@ -144,4 +170,33 @@ function MapInner({ baseURL, mapboxToken, bounds, ...rest }) {
     //onMapMoved: setMapPosition,
     ...rest,
   });
+}
+
+function CrossSectionHoverHandler({
+  positionData,
+}: {
+  positionData: CrossSectionPositionData;
+}) {
+  const [dist, setCursorDistance] = useAtom(crossSectionCursorDistanceAtom);
+  useMapStyleOperator(
+    (map) => {
+      map.on("mousemove", (e) => {
+        // Get x/y position of cursor in lat/lon
+        const coords = e.lngLat;
+        const mercatorCoords = merc.forward([coords.lng, coords.lat]);
+
+        const totalLength = positionData.length;
+        const xProportion =
+          (mercatorCoords[0] - positionData.offset[0]) / totalLength;
+
+        if (xProportion < 0 || xProportion > 1) {
+          setCursorDistance(null);
+        } else {
+          setCursorDistance(xProportion);
+        }
+      });
+    },
+    [setCursorDistance, positionData],
+  );
+  return null;
 }
