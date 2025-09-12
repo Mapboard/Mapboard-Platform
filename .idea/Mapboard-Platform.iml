@@ -9,6 +9,7 @@
       <sourceFolder url="file://$MODULE_DIR$/py-modules/core" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/py-modules/cross-sections" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/py-modules/tasks" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/py-modules/topology-manager" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/cfg" />
       <excludeFolder url="file://$MODULE_DIR$/data" />
       <excludeFolder url="file://$MODULE_DIR$/mapboard-ui/.idea" />

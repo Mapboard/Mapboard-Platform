@@ -293,6 +293,8 @@ interface MapStateProviderProps {
   context: Context;
 }
 
+const storeAtom = atomWithStore<MapState>(undefined);
+
 export function MapStateProvider({
   children,
   baseURL,
@@ -311,6 +313,7 @@ export function MapStateProvider({
     baseState.showCrossSectionLines = true;
   }
 
+  // Create a zustand store (only once)
   const [value] = useState(() =>
     createMapStore(baseURL, {
       baseLayers,

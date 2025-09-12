@@ -5,7 +5,7 @@ import type { GeoJSONFeature, LngLat } from "mapbox-gl";
 import { SourceChangeTimestamps } from "./style/overlay";
 
 export interface RecoverableMapState {
-  activeLayer: number | null;
+  activeLayer: number | null | undefined;
   baseMap: BasemapType;
   mapPosition: MapPosition | null;
   activeCrossSection: number | null;
@@ -114,7 +114,7 @@ export interface CrossSectionsStore {
 
 export type InitialMapState = RecoverableMapState &
   MapLayerState &
-  Partial<StoredMapState>;
+  Partial<StoredMapState> & { apiBaseURL: string; baseLayers?: BaseLayer[] };
 
 export type StoredMapState = RecoverableMapState &
   LocalStorageState &
