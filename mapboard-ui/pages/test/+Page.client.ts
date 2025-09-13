@@ -32,6 +32,7 @@ const storeAtom = atom((get, set) => {
 function CounterContext({ children }: { children: React.ReactNode }) {
   const [jotaiStore] = useState(() => {
     let store = createJotaiStore();
+    // Create a Zustand store bound to this Jotai context
     store.set(storeAPIAtom, createStore());
     return store;
   });

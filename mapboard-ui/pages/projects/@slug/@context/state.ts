@@ -293,7 +293,7 @@ interface MapStateProviderProps {
   context: Context;
 }
 
-const storeAtom = atomWithStore<MapState>(undefined);
+//const storeAtom = atomWithStore<MapState>(undefined);
 
 export function MapStateProvider({
   children,
