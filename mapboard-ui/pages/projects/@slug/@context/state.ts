@@ -1,4 +1,4 @@
-import { create, StoreApi, useStore } from "zustand";
+import { createStore as createZustandStore, StoreApi, useStore } from "zustand";
 import React, {
   createContext,
   useContext,
@@ -26,6 +26,8 @@ import { fetchCrossSections } from "./cross-sections";
 import { Context } from "~/types";
 import { GeoJSONFeature } from "mapbox-gl";
 import { atomWithStore } from "jotai-zustand";
+import { atom, createStore as createJotaiStore, Provider } from "jotai";
+import { join } from "node:path";
 
 const MapStateContext = createContext<StoreApi<MapState> | null>(null);
 
@@ -63,7 +65,7 @@ function createCrossSectionsSlice(
 }
 
 function createMapStore(baseURL: string, initialState: InitialMapState) {
-  return create<MapState>(
+  return createZustandStore<MapState>(
     // @ts-ignore
     devtools((set, get): MapState => {
       return {
@@ -293,7 +295,15 @@ interface MapStateProviderProps {
   context: Context;
 }
 
-//const storeAtom = atomWithStore<MapState>(undefined);
+const storeAPIAtom = atom<StoreApi<MapState>>(undefined as any);
+
+const storeAtom = atom((get) => {
+  const store = get(storeAPIAtom);
+  if (store == null) {
+    throw new Error("No store found");
+  }
+  return atomWithStore(store);
+});
 
 export function MapStateProvider({
   children,
@@ -376,9 +386,12 @@ export function MapStateProvider({
 
   const allModes = ["line", "polygon"] as ("line" | "polygon")[];
 
+  const storeHook = (selector: <T = any>(s: MapState) => T) =>
+    useStore(value, selector);
+
   /** Setup basic data types */
-  const setMapLayers = value((state) => state.actions.setMapLayers);
-  const setDataTypes = value((state) => state.actions.setDataTypes);
+  const setMapLayers = storeHook((state) => state.actions.setMapLayers);
+  const setDataTypes = storeHook((state) => state.actions.setDataTypes);
   useEffect(() => {
     /** Fetch map layers and data types that are relevant for the map */
     fetchMapLayers(baseURL).then(setMapLayers);
@@ -388,13 +401,24 @@ export function MapStateProvider({
     }
   }, []);
 
-  const setCrossSectionLines = value((state) => state.setCrossSectionLines);
+  const setCrossSectionLines = storeHook((state) => state.setCrossSectionLines);
   // Fetch cross section lines
   useEffect(() => {
     fetchCrossSections(context.id).then(setCrossSectionLines);
   }, []);
 
-  return h(MapStateContext.Provider, { value }, [children]);
+  const [jotaiStore] = useState(() => {
+    let store = createJotaiStore();
+    // Create a Zustand store bound to this Jotai context
+    store.set(storeAPIAtom, value);
+    return store;
+  });
+
+  return h(
+    Provider,
+    { store: jotaiStore },
+    h(MapStateContext.Provider, { value }, [children]),
+  );
 }
 
 async function fetchMapLayers(baseURL: string): Promise<any[]> {
