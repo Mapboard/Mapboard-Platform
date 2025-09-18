@@ -2,17 +2,36 @@ import { useData } from "vike-react/useData";
 import type { Data } from "./+data";
 import hyper from "@macrostrat/hyper";
 
-import { useMemo } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import styles from "./+Page.client.module.sass";
-import { mapboxToken } from "~/settings";
 import { useStyleImageManager } from "../../@context/style/pattern-manager";
-import { MapboxMapProvider, useMapRef } from "@macrostrat/mapbox-react";
+import {
+  MapboxMapProvider,
+  useMapDispatch,
+  useMapRef,
+  useMapStatus,
+} from "@macrostrat/mapbox-react";
 import { bbox } from "@turf/bbox";
 import { BoundsLayer } from "~/client-components";
 import { buildCrossSectionStyle } from "../../@context/cross-sections/style";
 import { LineString } from "geojson";
 import mapboxgl from "mapbox-gl";
 import maplibre from "maplibre-gl";
+import "maplibre-gl/dist/maplibre-gl.css";
+import {
+  getMapboxStyle,
+  MapPosition,
+  mergeStyles,
+  setMapPosition,
+} from "@macrostrat/mapbox-utils";
+import classNames from "classnames";
+import {
+  getMapPadding,
+  MapLoadingReporter,
+  MapPaddingManager,
+  MapResizeManager,
+} from "@macrostrat/map-interface";
+import { useAsyncEffect } from "@macrostrat/ui-components";
 
 const h = hyper.styled(styles);
 
@@ -20,7 +39,7 @@ export function Page() {
   const crossSections = useData<Data>() ?? [];
 
   return h(
-    "div.cross-sections",
+    "div.cross-sections-page",
     crossSections.map((ctx) => {
       let domain = document.location.origin;
       const { project_slug, slug, bounds } = ctx;
@@ -31,8 +50,6 @@ export function Page() {
         h(CrossSectionMapArea, {
           baseURL,
           bounds,
-          isMapView: false,
-          mapboxToken,
         }),
       ]);
     }),
@@ -51,13 +68,10 @@ function CrossSectionMapArea({
   bounds = null,
 }: {
   headerElement?: React.ReactElement;
-  transformRequest?: mapboxgl.TransformRequestFunction;
   children?: React.ReactNode;
   mapboxToken?: string | null;
   baseURL: string;
-  focusedSource?: string;
-  focusedSourceTitle?: string;
-  isMapView: boolean;
+  bounds: any;
   positionData: CrossSectionPositionData;
 }) {
   return h(
@@ -94,13 +108,6 @@ function MapInner({ baseURL, mapboxToken, bounds, ...rest }) {
 
   const boundsArray = bbox(bounds);
 
-  let aspectRatio = 1;
-  const rect = mapRef?.current?.getContainer().getBoundingClientRect();
-  if (rect != null) {
-    const { width, height } = rect;
-    aspectRatio = width / height;
-  }
-
   return h(MapView, {
     bounds: boundsArray,
     mapboxToken,
@@ -109,28 +116,23 @@ function MapInner({ baseURL, mapboxToken, bounds, ...rest }) {
     maxZoom: 22,
     pitchWithRotate: false,
     antialias: false,
-    optimizeForTerrain: false,
     dragRotate: false,
     touchPitch: false,
     className: "cross-section-map",
-    initializeMap(element, options) {
-      return defaultInitializeMap(element, options);
-    },
+    initializeMap,
     ...rest,
   });
 }
 
-function defaultInitializeMap(container, args: MapboxOptionsExt = {}) {
+function initializeMap(container: HTMLElement, args: MapboxOptionsExt) {
   const { mapPosition, ...rest } = args;
 
   const map = new maplibre.Map({
     container,
     maxZoom: 18,
     trackResize: false,
-    antialias: true,
-    // This is a legacy option for Mapbox GL v2
-    // @ts-ignore
-    optimizeForTerrain: true,
+    attributionControl: false,
+    interactive: false,
     ...rest,
   });
 
@@ -142,31 +144,7 @@ function defaultInitializeMap(container, args: MapboxOptionsExt = {}) {
   return map;
 }
 
-import {
-  useMapDispatch,
-  use3DTerrain,
-  useMapStatus,
-} from "@macrostrat/mapbox-react";
-import React from "react";
-import {
-  MapPosition,
-  setMapPosition,
-  getMapboxStyle,
-  mergeStyles,
-} from "@macrostrat/mapbox-utils";
-import classNames from "classnames";
-import mapboxgl from "mapbox-gl";
-import { useEffect, useRef, useState } from "react";
-import {
-  MapLoadingReporter,
-  MapPaddingManager,
-  MapResizeManager,
-  getMapPadding,
-} from "@macrostrat/map-interface";
-import "mapbox-gl/dist/mapbox-gl.css";
-import { useAsyncEffect } from "@macrostrat/ui-components";
-
-type MapboxCoreOptions = Omit<mapboxgl.MapboxOptions, "container">;
+type MapboxCoreOptions = Omit<maplibre.MapOptions, "container">;
 
 export interface MapViewProps extends MapboxCoreOptions {
   showLineSymbols?: boolean;
@@ -230,22 +208,12 @@ export function MapView(props: MapViewProps) {
     ...rest
   } = props;
 
-  if (enableTerrain) {
-    terrainSourceID ??= "mapbox-3d-dem";
-  }
-
-  const _mapboxToken = mapboxToken ?? accessToken;
-
-  if (_mapboxToken != null) {
-    mapboxgl.accessToken = _mapboxToken;
-  }
-
   const dispatch = useMapDispatch();
   let mapRef = useMapRef();
   const ref = useRef<HTMLDivElement>();
   const parentRef = useRef<HTMLDivElement>();
 
-  const [baseStyle, setBaseStyle] = useState<mapboxgl.Style>(null);
+  const [baseStyle, setBaseStyle] = useState<maplibre.Style>(null);
 
   useEffect(() => {
     /** Manager to update map style */
