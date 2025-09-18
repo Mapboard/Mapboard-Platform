@@ -8,10 +8,12 @@ import { mapboxToken } from "~/settings";
 import { useStyleImageManager } from "../../@context/style/pattern-manager";
 import { MapboxMapProvider, useMapRef } from "@macrostrat/mapbox-react";
 import { bbox } from "@turf/bbox";
-import { MapView } from "@macrostrat/map-interface";
+import { MapboxOptionsExt, MapView } from "@macrostrat/map-interface";
 import { BoundsLayer } from "~/client-components";
 import { buildCrossSectionStyle } from "../../@context/cross-sections/style";
 import { LineString } from "geojson";
+import mapboxgl from "mapbox-gl";
+import { setMapPosition } from "@macrostrat/mapbox-utils";
 
 const h = hyper.styled(styles);
 
@@ -111,6 +113,32 @@ function MapInner({ baseURL, mapboxToken, bounds, ...rest }) {
     optimizeForTerrain: false,
     dragRotate: false,
     touchPitch: false,
+    initializeMap(element, options) {
+      return defaultInitializeMap(element, options);
+    },
     ...rest,
   });
+}
+
+function defaultInitializeMap(container, args: MapboxOptionsExt = {}) {
+  const { mapPosition, ...rest } = args;
+
+  const map = new mapboxgl.Map({
+    container,
+    maxZoom: 18,
+    logoPosition: "bottom-left",
+    trackResize: false,
+    antialias: true,
+    // This is a legacy option for Mapbox GL v2
+    // @ts-ignore
+    optimizeForTerrain: true,
+    ...rest,
+  });
+
+  // set initial map position
+  if (mapPosition != null) {
+    setMapPosition(map, mapPosition);
+  }
+
+  return map;
 }
