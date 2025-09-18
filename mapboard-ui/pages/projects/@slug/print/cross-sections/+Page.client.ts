@@ -8,12 +8,11 @@ import { mapboxToken } from "~/settings";
 import { useStyleImageManager } from "../../@context/style/pattern-manager";
 import { MapboxMapProvider, useMapRef } from "@macrostrat/mapbox-react";
 import { bbox } from "@turf/bbox";
-import { MapboxOptionsExt, MapView } from "@macrostrat/map-interface";
 import { BoundsLayer } from "~/client-components";
 import { buildCrossSectionStyle } from "../../@context/cross-sections/style";
 import { LineString } from "geojson";
 import mapboxgl from "mapbox-gl";
-import { setMapPosition } from "@macrostrat/mapbox-utils";
+import maplibre from "maplibre-gl";
 
 const h = hyper.styled(styles);
 
@@ -113,6 +112,7 @@ function MapInner({ baseURL, mapboxToken, bounds, ...rest }) {
     optimizeForTerrain: false,
     dragRotate: false,
     touchPitch: false,
+    className: "cross-section-map",
     initializeMap(element, options) {
       return defaultInitializeMap(element, options);
     },
@@ -123,10 +123,9 @@ function MapInner({ baseURL, mapboxToken, bounds, ...rest }) {
 function defaultInitializeMap(container, args: MapboxOptionsExt = {}) {
   const { mapPosition, ...rest } = args;
 
-  const map = new mapboxgl.Map({
+  const map = new maplibre.Map({
     container,
     maxZoom: 18,
-    logoPosition: "bottom-left",
     trackResize: false,
     antialias: true,
     // This is a legacy option for Mapbox GL v2
@@ -139,6 +138,212 @@ function defaultInitializeMap(container, args: MapboxOptionsExt = {}) {
   if (mapPosition != null) {
     setMapPosition(map, mapPosition);
   }
-
+  //
   return map;
+}
+
+import {
+  useMapDispatch,
+  use3DTerrain,
+  useMapStatus,
+} from "@macrostrat/mapbox-react";
+import React from "react";
+import {
+  MapPosition,
+  setMapPosition,
+  getMapboxStyle,
+  mergeStyles,
+} from "@macrostrat/mapbox-utils";
+import classNames from "classnames";
+import mapboxgl from "mapbox-gl";
+import { useEffect, useRef, useState } from "react";
+import {
+  MapLoadingReporter,
+  MapPaddingManager,
+  MapResizeManager,
+  getMapPadding,
+} from "@macrostrat/map-interface";
+import "mapbox-gl/dist/mapbox-gl.css";
+import { useAsyncEffect } from "@macrostrat/ui-components";
+
+type MapboxCoreOptions = Omit<mapboxgl.MapboxOptions, "container">;
+
+export interface MapViewProps extends MapboxCoreOptions {
+  showLineSymbols?: boolean;
+  children?: React.ReactNode;
+  mapboxToken?: string;
+  // Deprecated
+  accessToken?: string;
+  terrainSourceID?: string;
+  enableTerrain?: boolean;
+  infoMarkerPosition?: mapboxgl.LngLatLike;
+  mapPosition?: MapPosition;
+  initializeMap?: (
+    container: HTMLElement,
+    args: MapboxOptionsExt,
+  ) => mapboxgl.Map;
+  onMapLoaded?: (map: mapboxgl.Map) => void;
+  onStyleLoaded?: (map: mapboxgl.Map) => void;
+  onMapMoved?: (mapPosition: MapPosition, map: mapboxgl.Map) => void;
+  /** This map sets its own viewport, rather than being positioned by a parent.
+   * This is a hack to ensure that the map can overflow its "safe area" when false */
+  standalone?: boolean;
+  /** Overlay styles to apply to the map: a list of mapbox style objects or fragments to
+   * overlay on top of the main map style at runtime */
+  overlayStyles?: Partial<mapboxgl.StyleSpecification>[];
+  /** A function to transform the map style before it is loaded */
+  transformStyle?: (
+    style: mapboxgl.StyleSpecification,
+  ) => mapboxgl.StyleSpecification;
+  loadingIgnoredSources?: string[];
+  id?: string;
+  className?: string;
+}
+
+export interface MapboxOptionsExt extends MapboxCoreOptions {
+  mapPosition?: MapPosition;
+}
+
+export function MapView(props: MapViewProps) {
+  let { terrainSourceID } = props;
+  const {
+    enableTerrain = true,
+    style,
+    mapPosition,
+    initializeMap = defaultInitializeMap,
+    children,
+    mapboxToken,
+    // Deprecated
+    accessToken,
+    infoMarkerPosition,
+    transformRequest,
+    projection,
+    onMapLoaded = null,
+    onStyleLoaded = null,
+    onMapMoved = null,
+    standalone = false,
+    overlayStyles,
+    transformStyle,
+    trackResize = true,
+    loadingIgnoredSources = ["elevationMarker", "crossSectionEndpoints"],
+    className,
+    ...rest
+  } = props;
+
+  if (enableTerrain) {
+    terrainSourceID ??= "mapbox-3d-dem";
+  }
+
+  const _mapboxToken = mapboxToken ?? accessToken;
+
+  if (_mapboxToken != null) {
+    mapboxgl.accessToken = _mapboxToken;
+  }
+
+  const dispatch = useMapDispatch();
+  let mapRef = useMapRef();
+  const ref = useRef<HTMLDivElement>();
+  const parentRef = useRef<HTMLDivElement>();
+
+  const [baseStyle, setBaseStyle] = useState<mapboxgl.Style>(null);
+
+  useEffect(() => {
+    /** Manager to update map style */
+    if (baseStyle == null) return;
+    let map = mapRef.current;
+
+    let newStyle: mapboxgl.StyleSpecification = baseStyle;
+
+    const overlayStyles = props.overlayStyles ?? [];
+
+    if (overlayStyles.length > 0) {
+      newStyle = mergeStyles(newStyle, ...overlayStyles);
+    }
+
+    if (transformStyle != null) {
+      newStyle = transformStyle(newStyle);
+    }
+
+    if (map != null) {
+      dispatch({ type: "set-style-loaded", payload: false });
+      map.setStyle(newStyle);
+    } else {
+      const map = initializeMap(ref.current, {
+        style: newStyle,
+        projection,
+        mapPosition,
+        transformRequest,
+        ...rest,
+      });
+      dispatch({ type: "set-map", payload: map });
+      map.setPadding(getMapPadding(ref, parentRef), { animate: false });
+      onMapLoaded?.(map);
+    }
+  }, [baseStyle, overlayStyles, transformStyle]);
+
+  useAsyncEffect(async () => {
+    /** Manager to update map style */
+    let newStyle: mapboxgl.StyleSpecification;
+    if (typeof style === "string") {
+      newStyle = await getMapboxStyle(style, {
+        access_token: mapboxgl.accessToken,
+      });
+    } else {
+      newStyle = style;
+    }
+    setBaseStyle(newStyle);
+  }, [style]);
+
+  const parentClassName = classNames(
+    {
+      standalone,
+    },
+    className,
+  );
+
+  return h(
+    "div.map-view-container.main-view",
+    { ref: parentRef, className: parentClassName },
+    [
+      h("div.mapbox-map.map-view", { ref }),
+      h(MapLoadingReporter, {
+        ignoredSources: loadingIgnoredSources,
+      }),
+      h(StyleLoadedReporter, { onStyleLoaded }),
+      // Subsitute for trackResize: true that allows map resizing to
+      // be tied to a specific ref component
+      h.if(trackResize)(MapResizeManager, { containerRef: ref }),
+      h(MapPaddingManager, {
+        containerRef: ref,
+        parentRef,
+        infoMarkerPosition,
+      }),
+      children,
+    ],
+  );
+}
+
+function StyleLoadedReporter({ onStyleLoaded = null }) {
+  /** Check back every 0.1 seconds to see if the map has loaded.
+   * We do it this way because mapboxgl loading events are unreliable */
+  const isStyleLoaded = useMapStatus((state) => state.isStyleLoaded);
+  const mapRef = useMapRef();
+  const dispatch = useMapDispatch();
+
+  useEffect(() => {
+    if (isStyleLoaded) return;
+    const interval = setInterval(() => {
+      const map = mapRef.current;
+      if (map == null) return;
+      if (map.isStyleLoaded()) {
+        // Wait a tick before setting the style loaded state
+        dispatch({ type: "set-style-loaded", payload: true });
+        onStyleLoaded?.(map);
+        clearInterval(interval);
+      }
+    }, 50);
+    return () => clearInterval(interval);
+  }, [isStyleLoaded]);
+
+  return null;
 }

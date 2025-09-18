@@ -56,5 +56,7 @@ export function buildCrossSectionStyle(
     sources: {},
   };
 
-  return mergeStyles(overlay, mainStyle);
+  let style = mergeStyles(overlay, mainStyle);
+  delete style.sprite;
+  return style;
 }
