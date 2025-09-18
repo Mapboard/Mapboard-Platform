@@ -12,24 +12,12 @@ export function useCrossSectionStyle(baseURL: string) {
   const showCrossSections = useMapState((d) => d.showCrossSectionLines);
 
   return useMemo(() => {
-    const overlay = buildMapOverlayStyle(baseURL, {
-      selectedLayer: null,
-      sourceChangeTimestamps: [0],
-      enabledFeatureModes: allFeatureModes,
+    if (!showCrossSections) return null;
+    return buildCrossSectionStyle(baseURL, {
       showLineEndpoints,
       showFacesWithNoUnit,
       showTopologyPrimitives,
-      clipToContextBounds: true,
     });
-
-    const mainStyle: mapboxgl.StyleSpecification = {
-      version: 8,
-      name: "Mapboard cross sections",
-      layers: [],
-      sources: {},
-    };
-
-    return mergeStyles(overlay, mainStyle);
   }, [
     baseURL,
     showLineEndpoints,
@@ -37,4 +25,36 @@ export function useCrossSectionStyle(baseURL: string) {
     showTopologyPrimitives,
     showCrossSections,
   ]);
+}
+
+type CrossSectionStyleOptions = {
+  showLineEndpoints?: boolean;
+  showFacesWithNoUnit?: boolean;
+  showTopologyPrimitives?: boolean;
+};
+
+export function buildCrossSectionStyle(
+  baseURL: string,
+  opts: CrossSectionStyleOptions,
+) {
+  const { showLineEndpoints, showFacesWithNoUnit, showTopologyPrimitives } =
+    opts;
+  const overlay = buildMapOverlayStyle(baseURL, {
+    selectedLayer: null,
+    sourceChangeTimestamps: [0],
+    enabledFeatureModes: allFeatureModes,
+    showLineEndpoints,
+    showFacesWithNoUnit,
+    showTopologyPrimitives,
+    clipToContextBounds: true,
+  });
+
+  const mainStyle: mapboxgl.StyleSpecification = {
+    version: 8,
+    name: "Mapboard cross sections",
+    layers: [],
+    sources: {},
+  };
+
+  return mergeStyles(overlay, mainStyle);
 }
