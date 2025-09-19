@@ -21,16 +21,9 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import {
   getMapboxStyle,
   MapPosition,
-  mergeStyles,
   setMapPosition,
 } from "@macrostrat/mapbox-utils";
-import classNames from "classnames";
-import {
-  getMapPadding,
-  MapLoadingReporter,
-  MapPaddingManager,
-  MapResizeManager,
-} from "@macrostrat/map-interface";
+import { getMapPadding } from "@macrostrat/map-interface";
 import { useAsyncEffect } from "@macrostrat/ui-components";
 
 const h = hyper.styled(styles);
@@ -76,7 +69,7 @@ function CrossSectionMapArea({
 }) {
   return h(
     MapboxMapProvider,
-    h("div.cross-section-container", [
+    h("div.cross-section-map-container", [
       h(
         MapInner,
         {
@@ -183,7 +176,6 @@ export interface MapboxOptionsExt extends MapboxCoreOptions {
 }
 
 export function MapView(props: MapViewProps) {
-  let { terrainSourceID } = props;
   const {
     enableTerrain = true,
     style,
@@ -201,7 +193,6 @@ export function MapView(props: MapViewProps) {
     onMapMoved = null,
     standalone = false,
     overlayStyles,
-    transformStyle,
     trackResize = true,
     loadingIgnoredSources = ["elevationMarker", "crossSectionEndpoints"],
     className,
@@ -222,16 +213,6 @@ export function MapView(props: MapViewProps) {
 
     let newStyle: mapboxgl.StyleSpecification = baseStyle;
 
-    const overlayStyles = props.overlayStyles ?? [];
-
-    if (overlayStyles.length > 0) {
-      newStyle = mergeStyles(newStyle, ...overlayStyles);
-    }
-
-    if (transformStyle != null) {
-      newStyle = transformStyle(newStyle);
-    }
-
     if (map != null) {
       dispatch({ type: "set-style-loaded", payload: false });
       map.setStyle(newStyle);
@@ -247,7 +228,7 @@ export function MapView(props: MapViewProps) {
       map.setPadding(getMapPadding(ref, parentRef), { animate: false });
       onMapLoaded?.(map);
     }
-  }, [baseStyle, overlayStyles, transformStyle]);
+  }, [baseStyle]);
 
   useAsyncEffect(async () => {
     /** Manager to update map style */
@@ -262,33 +243,11 @@ export function MapView(props: MapViewProps) {
     setBaseStyle(newStyle);
   }, [style]);
 
-  const parentClassName = classNames(
-    {
-      standalone,
-    },
-    className,
-  );
-
-  return h(
-    "div.map-view-container.main-view",
-    { ref: parentRef, className: parentClassName },
-    [
-      h("div.mapbox-map.map-view", { ref }),
-      h(MapLoadingReporter, {
-        ignoredSources: loadingIgnoredSources,
-      }),
-      h(StyleLoadedReporter, { onStyleLoaded }),
-      // Subsitute for trackResize: true that allows map resizing to
-      // be tied to a specific ref component
-      h.if(trackResize)(MapResizeManager, { containerRef: ref }),
-      h(MapPaddingManager, {
-        containerRef: ref,
-        parentRef,
-        infoMarkerPosition,
-      }),
-      children,
-    ],
-  );
+  return h("div.map-view-container.main-view", { ref: parentRef, className }, [
+    h("div.mapbox-map.map-view", { ref }),
+    h(StyleLoadedReporter, { onStyleLoaded }),
+    children,
+  ]);
 }
 
 function StyleLoadedReporter({ onStyleLoaded = null }) {
