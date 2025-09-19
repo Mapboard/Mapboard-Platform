@@ -14,14 +14,9 @@ import {
 import { bbox } from "@turf/bbox";
 import { BoundsLayer } from "~/client-components";
 import { buildCrossSectionStyle } from "../../@context/cross-sections/style";
-import mapboxgl from "mapbox-gl";
 import maplibre from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import {
-  getMapboxStyle,
-  MapPosition,
-  setMapPosition,
-} from "@macrostrat/mapbox-utils";
+import { MapPosition, setMapPosition } from "@macrostrat/mapbox-utils";
 import { getMapPadding } from "@macrostrat/map-interface";
 import { useAsyncEffect } from "@macrostrat/ui-components";
 
@@ -85,7 +80,7 @@ function CrossSectionMapArea({
   );
 }
 
-function MapInner({ baseURL, mapboxToken, bounds, ...rest }) {
+function MapInner({ baseURL, bounds, ...rest }) {
   const mapRef = useMapRef();
 
   useStyleImageManager();
@@ -102,7 +97,6 @@ function MapInner({ baseURL, mapboxToken, bounds, ...rest }) {
 
   return h(MapView, {
     bounds: boundsArray,
-    mapboxToken,
     style,
     enableTerrain: false,
     maxZoom: 22,
@@ -145,7 +139,6 @@ export interface MapViewProps extends MapboxCoreOptions {
   // Deprecated
   accessToken?: string;
   terrainSourceID?: string;
-  enableTerrain?: boolean;
   infoMarkerPosition?: mapboxgl.LngLatLike;
   mapPosition?: MapPosition;
   initializeMap?: (
@@ -162,9 +155,6 @@ export interface MapViewProps extends MapboxCoreOptions {
    * overlay on top of the main map style at runtime */
   overlayStyles?: Partial<mapboxgl.StyleSpecification>[];
   /** A function to transform the map style before it is loaded */
-  transformStyle?: (
-    style: mapboxgl.StyleSpecification,
-  ) => mapboxgl.StyleSpecification;
   loadingIgnoredSources?: string[];
   id?: string;
   className?: string;
@@ -181,12 +171,8 @@ export function MapView(props: MapViewProps) {
     mapPosition,
     initializeMap = defaultInitializeMap,
     children,
-    mapboxToken,
-    // Deprecated
-    accessToken,
     infoMarkerPosition,
     transformRequest,
-    projection,
     onMapLoaded = null,
     onStyleLoaded = null,
     onMapMoved = null,
@@ -218,7 +204,6 @@ export function MapView(props: MapViewProps) {
     } else {
       const map = initializeMap(ref.current, {
         style: newStyle,
-        projection,
         mapPosition,
         transformRequest,
         ...rest,
@@ -231,15 +216,7 @@ export function MapView(props: MapViewProps) {
 
   useAsyncEffect(async () => {
     /** Manager to update map style */
-    let newStyle: mapboxgl.StyleSpecification;
-    if (typeof style === "string") {
-      newStyle = await getMapboxStyle(style, {
-        access_token: mapboxgl.accessToken,
-      });
-    } else {
-      newStyle = style;
-    }
-    setBaseStyle(newStyle);
+    setBaseStyle(style as mapboxgl.StyleSpecification);
   }, [style]);
 
   return h("div.map-view-container.main-view", { ref: parentRef, className }, [
