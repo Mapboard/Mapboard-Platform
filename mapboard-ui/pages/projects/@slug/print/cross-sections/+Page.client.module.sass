@@ -1,14 +1,15 @@
 .cross-sections
   padding: 2em
+  --cross-section-scale: 5
 
 .cross-section-map-container
-  width: 1000px
-  height: 200px
+  width: var(--cross-section-width)
+  height: var(--cross-section-height)
 
 .cross-section-map
-  width: 5000px
-  height: 1000px
-  transform: scale(0.2)
+  width: calc(var(--cross-section-width) * var(--cross-section-scale))
+  height: calc(var(--cross-section-height) * var(--cross-section-scale))
+  transform: scale(calc(1 / var(--cross-section-scale)))
   transform-origin: top left
   position: relative
   :global(.maplibregl-map)

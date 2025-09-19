@@ -12,21 +12,26 @@ import {
   useMapStatus,
 } from "@macrostrat/mapbox-react";
 import { bbox } from "@turf/bbox";
-import { BoundsLayer } from "~/client-components";
 import { buildCrossSectionStyle } from "../../@context/cross-sections/style";
 import maplibre from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { MapPosition, setMapPosition } from "@macrostrat/mapbox-utils";
 import { getMapPadding } from "@macrostrat/map-interface";
 import { useAsyncEffect } from "@macrostrat/ui-components";
+import { SphericalMercator } from "@mapbox/sphericalmercator";
 
 const h = hyper.styled(styles);
+
+const mercator = new SphericalMercator({
+  size: 256,
+  antimeridian: true,
+});
 
 export function Page() {
   const crossSections = useData<Data>() ?? [];
 
   return h(
-    "div.cross-sections-page",
+    "div.cross-sections",
     crossSections.map((ctx) => {
       return h(CrossSection, { key: ctx.id, data: ctx });
     }),
@@ -37,17 +42,43 @@ type ArrayElement<A> = A extends readonly (infer T)[] ? T : never;
 
 function CrossSection(props: { data: ArrayElement<Data> }) {
   const { data } = props;
+  console.log("Cross section", data);
   let domain = document.location.origin;
-  const { project_slug, slug, bounds } = data;
+  const { project_slug, slug } = data;
   const baseURL = `${domain}/api/project/${project_slug}/context/${slug}`;
 
-  return h("div.cross-section", [
-    h("h2.cross-section-title", data.name),
-    h(CrossSectionMapArea, {
-      baseURL,
-      bounds,
-    }),
-  ]);
+  const { width, height, bounds } = computeCrossSectionBounds(data);
+
+  const scale = 20;
+
+  return h(
+    "div.cross-section",
+    {
+      style: {
+        "--cross-section-width": `${width / scale}px`,
+        "--cross-section-height": `${height / scale}px`,
+      },
+    },
+    [
+      h("h2.cross-section-title", data.name),
+      h(CrossSectionMapArea, {
+        baseURL,
+        bounds,
+      }),
+    ],
+  );
+}
+
+function computeCrossSectionBounds(data) {
+  const ll = [data.offset_x, data.offset_y];
+  const ur = [data.offset_x + data.length, data.offset_y + 2500];
+
+  const coordinates = [ll, ur].map(mercator.inverse);
+  return {
+    bounds: bbox({ type: "MultiPoint", coordinates }),
+    width: data.length,
+    height: ur[1] - ll[1],
+  };
 }
 
 function CrossSectionMapArea({
@@ -64,18 +95,14 @@ function CrossSectionMapArea({
   return h(
     MapboxMapProvider,
     h("div.cross-section-map-container", [
-      h(
-        MapInner,
-        {
-          projection: { name: "mercator" },
-          boxZoom: false,
-          mapboxToken,
-          bounds,
-          baseURL,
-          isMapView: false,
-        },
-        [h(BoundsLayer, { bounds, visible: true, zoomToBounds: true })],
-      ),
+      h(MapInner, {
+        projection: { name: "mercator" },
+        boxZoom: false,
+        mapboxToken,
+        bounds,
+        baseURL,
+        isMapView: false,
+      }),
     ]),
   );
 }
@@ -93,10 +120,8 @@ function MapInner({ baseURL, bounds, ...rest }) {
     });
   }, [baseURL]);
 
-  const boundsArray = bbox(bounds);
-
   return h(MapView, {
-    bounds: boundsArray,
+    bounds,
     style,
     enableTerrain: false,
     maxZoom: 22,
@@ -123,9 +148,9 @@ function initializeMap(container: HTMLElement, args: MapboxOptionsExt) {
   });
 
   // set initial map position
-  if (mapPosition != null) {
-    setMapPosition(map, mapPosition);
-  }
+  // if (mapPosition != null) {
+  //   setMapPosition(map, mapPosition);
+  // }
   //
   return map;
 }
@@ -135,10 +160,6 @@ type MapboxCoreOptions = Omit<maplibre.MapOptions, "container">;
 export interface MapViewProps extends MapboxCoreOptions {
   showLineSymbols?: boolean;
   children?: React.ReactNode;
-  mapboxToken?: string;
-  // Deprecated
-  accessToken?: string;
-  terrainSourceID?: string;
   infoMarkerPosition?: mapboxgl.LngLatLike;
   mapPosition?: MapPosition;
   initializeMap?: (
@@ -166,7 +187,6 @@ export interface MapboxOptionsExt extends MapboxCoreOptions {
 
 export function MapView(props: MapViewProps) {
   const {
-    enableTerrain = true,
     style,
     mapPosition,
     initializeMap = defaultInitializeMap,
