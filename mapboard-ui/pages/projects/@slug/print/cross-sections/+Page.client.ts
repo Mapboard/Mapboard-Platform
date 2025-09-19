@@ -14,7 +14,6 @@ import {
 import { bbox } from "@turf/bbox";
 import { BoundsLayer } from "~/client-components";
 import { buildCrossSectionStyle } from "../../@context/cross-sections/style";
-import { LineString } from "geojson";
 import mapboxgl from "mapbox-gl";
 import maplibre from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -34,25 +33,26 @@ export function Page() {
   return h(
     "div.cross-sections-page",
     crossSections.map((ctx) => {
-      let domain = document.location.origin;
-      const { project_slug, slug, bounds } = ctx;
-      const baseURL = `${domain}/api/project/${project_slug}/context/${slug}`;
-
-      return h("div.cross-section", [
-        h("h2.cross-section-title", ctx.name),
-        h(CrossSectionMapArea, {
-          baseURL,
-          bounds,
-        }),
-      ]);
+      return h(CrossSection, { key: ctx.id, data: ctx });
     }),
   );
 }
 
-interface CrossSectionPositionData {
-  length: number;
-  parentGeom: LineString;
-  offset: [number, number];
+type ArrayElement<A> = A extends readonly (infer T)[] ? T : never;
+
+function CrossSection(props: { data: ArrayElement<Data> }) {
+  const { data } = props;
+  let domain = document.location.origin;
+  const { project_slug, slug, bounds } = data;
+  const baseURL = `${domain}/api/project/${project_slug}/context/${slug}`;
+
+  return h("div.cross-section", [
+    h("h2.cross-section-title", data.name),
+    h(CrossSectionMapArea, {
+      baseURL,
+      bounds,
+    }),
+  ]);
 }
 
 function CrossSectionMapArea({
@@ -65,7 +65,6 @@ function CrossSectionMapArea({
   mapboxToken?: string | null;
   baseURL: string;
   bounds: any;
-  positionData: CrossSectionPositionData;
 }) {
   return h(
     MapboxMapProvider,
