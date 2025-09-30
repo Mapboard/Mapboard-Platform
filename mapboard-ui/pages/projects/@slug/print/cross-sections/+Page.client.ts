@@ -51,12 +51,17 @@ function CrossSection(props: { data: ArrayElement<Data> }) {
 
   const scale = 20;
 
+  const size = {
+    width: width / scale,
+    height: height / scale,
+  };
+
   return h(
     "div.cross-section",
     {
       style: {
-        "--cross-section-width": `${width / scale}px`,
-        "--cross-section-height": `${height / scale}px`,
+        "--cross-section-width": `${size.width}px`,
+        "--cross-section-height": `${size.height}px`,
       },
     },
     [
@@ -138,21 +143,16 @@ function MapInner({ baseURL, bounds, ...rest }) {
 function initializeMap(container: HTMLElement, args: MapboxOptionsExt) {
   const { mapPosition, ...rest } = args;
 
-  const map = new maplibre.Map({
+  return new maplibre.Map({
     container,
     maxZoom: 18,
     trackResize: false,
     attributionControl: false,
     interactive: false,
+    //pixelRatio: ,
+    maxCanvasSize: [10000, 1000],
     ...rest,
   });
-
-  // set initial map position
-  // if (mapPosition != null) {
-  //   setMapPosition(map, mapPosition);
-  // }
-  //
-  return map;
 }
 
 type MapboxCoreOptions = Omit<maplibre.MapOptions, "container">;
@@ -192,7 +192,6 @@ export function MapView(props: MapViewProps) {
     initializeMap = defaultInitializeMap,
     children,
     infoMarkerPosition,
-    transformRequest,
     onMapLoaded = null,
     onStyleLoaded = null,
     onMapMoved = null,
@@ -225,7 +224,6 @@ export function MapView(props: MapViewProps) {
       const map = initializeMap(ref.current, {
         style: newStyle,
         mapPosition,
-        transformRequest,
         ...rest,
       });
       dispatch({ type: "set-map", payload: map });

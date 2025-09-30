@@ -75,7 +75,8 @@ export function useMapStyle(
       return;
     }
     const style = buildMapOverlayStyle(baseURL, {
-      selectedLayer: activeLayer,
+      // We want to show all layers if in a cross-section view (at least for now
+      selectedLayer: isMapView ? activeLayer : null,
       sourceChangeTimestamps: changeTimestamps,
       enabledFeatureModes,
       showLineEndpoints,

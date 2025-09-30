@@ -98,7 +98,6 @@ function CrossSectionMapArea({
   mapboxToken = null,
   baseURL = null,
   bounds = null,
-  isMapView = true,
   positionData,
 }: {
   headerElement?: React.ReactElement;
@@ -125,8 +124,9 @@ function CrossSectionMapArea({
           isMapView: false,
         },
         [
-          h(BoundsLayer, { bounds, visible: true, zoomToBounds: true }),
+          h(BoundsLayer, { bounds, visible: false, zoomToBounds: true }),
           h(CrossSectionHoverHandler, { positionData }),
+          h(CrossSectionDistanceCursor, { positionData }),
         ],
       ),
     ]),
@@ -156,6 +156,7 @@ function MapInner({ baseURL, mapboxToken, bounds, ...rest }) {
 
   return h(MapView, {
     bounds: boundsArray,
+    //maxBounds: convertedBounds,
     //mapPosition: _mapPosition,
     mapboxToken,
     style,
@@ -170,6 +171,59 @@ function MapInner({ baseURL, mapboxToken, bounds, ...rest }) {
     //onMapMoved: setMapPosition,
     ...rest,
   });
+}
+
+function CrossSectionDistanceCursor({
+  positionData,
+}: {
+  positionData: CrossSectionPositionData;
+}) {
+  const [dist] = useAtom(crossSectionCursorDistanceAtom);
+
+  useMapStyleOperator(
+    (map) => {
+      const totalLength = positionData.length;
+      const xPos = positionData.offset[0] + (dist ?? 0) * totalLength;
+
+      const c0 = merc.inverse([xPos, positionData.offset[1]]);
+      const c1 = merc.inverse([xPos, positionData.offset[1] + 10000]);
+
+      const lineGeom = {
+        type: "Feature",
+        geometry: {
+          type: "LineString",
+          coordinates: [c0, c1],
+        },
+      };
+
+      let src = map.getSource("cross-section-cursor");
+      if (src == null) {
+        map.addSource("cross-section-cursor", {
+          type: "geojson",
+          data: lineGeom,
+        });
+        map.addLayer({
+          id: "cross-section-cursor",
+          source: "cross-section-cursor",
+          type: "line",
+          paint: {
+            "line-color": "#ff0000",
+            "line-width": 2,
+            "line-dasharray": [2, 2],
+          },
+          layout: {
+            "line-cap": "round",
+            "line-join": "round",
+          },
+        });
+      } else {
+        src.setData(lineGeom);
+      }
+    },
+    [dist, positionData],
+  );
+
+  return null;
 }
 
 function CrossSectionHoverHandler({
@@ -199,4 +253,18 @@ function CrossSectionHoverHandler({
     [setCursorDistance, positionData],
   );
   return null;
+}
+
+function convertBBoxToWebMercator(bbox: number[]) {
+  const [minX, minY, maxX, maxY] = bbox;
+  const [minX2, minY2] = merc.forward([minX, minY]);
+  const [maxX2, maxY2] = merc.forward([maxX, maxY]);
+  return [minX2, minY2, maxX2, maxY2];
+}
+
+function convertBBoxToEPSG4326(bbox: number[]) {
+  const [minX, minY, maxX, maxY] = bbox;
+  const [minX2, minY2] = merc.inverse([minX, minY]);
+  const [maxX2, maxY2] = merc.inverse([maxX, maxY]);
+  return [minX2, minY2, maxX2, maxY2];
 }
