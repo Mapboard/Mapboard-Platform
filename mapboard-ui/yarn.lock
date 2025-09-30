@@ -2964,6 +2964,20 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@turf/nearest-point-on-line@npm:^7.2.0":
+  version: 7.2.0
+  resolution: "@turf/nearest-point-on-line@npm:7.2.0"
+  dependencies:
+    "@turf/distance": "npm:^7.2.0"
+    "@turf/helpers": "npm:^7.2.0"
+    "@turf/invariant": "npm:^7.2.0"
+    "@turf/meta": "npm:^7.2.0"
+    "@types/geojson": "npm:^7946.0.10"
+    tslib: "npm:^2.8.1"
+  checksum: 10c0/2a2236612db6adbd75337fa35ee89a2acad2897f18f34a55a736bcf313c3d2d1887aa17390580945985e6bc302dce772fd1ed2ce36b1cc299ca48a80ddc2de6e
+  languageName: node
+  linkType: hard
+
 "@turf/projection@npm:^7.2.0":
   version: 7.2.0
   resolution: "@turf/projection@npm:7.2.0"
@@ -8682,6 +8696,7 @@ __metadata:
     "@turf/bbox": "npm:^7.2.0"
     "@turf/buffer": "npm:^7.2.0"
     "@turf/length": "npm:^7.2.0"
+    "@turf/nearest-point-on-line": "npm:^7.2.0"
     "@types/express": "npm:^4.17.21"
     "@types/jsdom": "npm:^21.1.7"
     "@types/md5": "npm:^2"

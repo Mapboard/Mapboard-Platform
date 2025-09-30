@@ -2,7 +2,7 @@ import hyper, { compose } from "@macrostrat/hyper";
 import { Spinner } from "@blueprintjs/core";
 import { postgrest } from "~/utils/api-client";
 
-import { atom, useAtom, useAtomValue } from "jotai";
+import { atom, useAtom, useAtomValue, useSetAtom } from "jotai";
 import { Suspense, useEffect } from "react";
 import styles from "./index.module.sass";
 import { mapboxToken } from "~/settings";
@@ -21,6 +21,7 @@ import { unwrapMultiLineString } from "./utils";
 import { crossSectionCursorDistanceAtom } from "./state";
 import { SphericalMercator } from "@mapbox/sphericalmercator";
 import { LineString } from "geojson";
+import { getCrossSectionColor } from "./map-layer";
 
 const merc = new SphericalMercator({
   size: 256,
@@ -39,10 +40,12 @@ const crossSectionDataAtom = atom(async (get) => {
 export const CrossSectionAssistantMap = compose(_CrossSectionAssistantMap);
 
 function _CrossSectionAssistantMap({ id }: { id: number }) {
-  const [_, setCrossSectionID] = useAtom(crossSectionIDAtom);
+  const setCrossSectionID = useSetAtom(crossSectionIDAtom);
+  const setCursorDistance = useSetAtom(crossSectionCursorDistanceAtom);
 
   useEffect(() => {
     setCrossSectionID(id);
+    setCursorDistance(null);
   }, [id]);
 
   return h(Suspense, { fallback: h(Spinner) }, h(CrossSectionAssistantInner));
@@ -182,11 +185,17 @@ function CrossSectionDistanceCursor({
 
   useMapStyleOperator(
     (map) => {
+      let src = map.getSource("cross-section-cursor");
+      if (dist == null || positionData == null) {
+        if (src != null) {
+          src.setData({ type: "FeatureCollection", features: [] });
+        }
+      }
       const totalLength = positionData.length;
-      const xPos = positionData.offset[0] + (dist ?? 0) * totalLength;
+      const xPos = positionData.offset[0] + dist;
 
-      const c0 = merc.inverse([xPos, positionData.offset[1]]);
-      const c1 = merc.inverse([xPos, positionData.offset[1] + 10000]);
+      const c0 = merc.inverse([xPos, positionData.offset[1] - 3500]);
+      const c1 = merc.inverse([xPos, positionData.offset[1] + 3500]);
 
       const lineGeom = {
         type: "Feature",
@@ -196,8 +205,8 @@ function CrossSectionDistanceCursor({
         },
       };
 
-      let src = map.getSource("cross-section-cursor");
       if (src == null) {
+        const color = getCrossSectionColor();
         map.addSource("cross-section-cursor", {
           type: "geojson",
           data: lineGeom,
@@ -207,9 +216,8 @@ function CrossSectionDistanceCursor({
           source: "cross-section-cursor",
           type: "line",
           paint: {
-            "line-color": "#ff0000",
-            "line-width": 2,
-            "line-dasharray": [2, 2],
+            "line-color": color,
+            "line-width": 3,
           },
           layout: {
             "line-cap": "round",
@@ -240,13 +248,12 @@ function CrossSectionHoverHandler({
         const mercatorCoords = merc.forward([coords.lng, coords.lat]);
 
         const totalLength = positionData.length;
-        const xProportion =
-          (mercatorCoords[0] - positionData.offset[0]) / totalLength;
+        const xDistance = mercatorCoords[0] - positionData.offset[0];
 
-        if (xProportion < 0 || xProportion > 1) {
+        if (xDistance < 0 || xDistance > positionData.length) {
           setCursorDistance(null);
         } else {
-          setCursorDistance(xProportion);
+          setCursorDistance(xDistance);
         }
       });
     },

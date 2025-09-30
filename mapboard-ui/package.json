@@ -24,6 +24,7 @@
     "@turf/bbox": "^7.2.0",
     "@turf/buffer": "^7.2.0",
     "@turf/length": "^7.2.0",
+    "@turf/nearest-point-on-line": "^7.2.0",
     "@types/jsdom": "^21.1.7",
     "@universal-middleware/core": "^0.4.0",
     "@universal-middleware/express": "^0.4.1",

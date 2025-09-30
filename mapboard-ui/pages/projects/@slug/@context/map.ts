@@ -223,6 +223,7 @@ export function MapInner({
     mapboxToken,
     style,
     onMapMoved: setMapPosition,
+    loadingIgnoredSources: ["cross-section-cursor"],
     ...rest,
   });
 }

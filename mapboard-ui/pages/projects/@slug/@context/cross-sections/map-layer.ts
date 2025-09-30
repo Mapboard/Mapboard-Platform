@@ -3,12 +3,43 @@ import { useMapStyleOperator } from "@macrostrat/mapbox-react";
 import { getCSSVariable } from "@macrostrat/color-utils";
 import { setGeoJSON, updateStyleLayers } from "@macrostrat/mapbox-utils";
 import GeoJSON from "geojson";
-import { atom, useAtomValue } from "jotai";
+import { useAtom } from "jotai";
 import { length } from "@turf/length";
 import { along } from "@turf/along";
 import { unwrapMultiLineString } from "./utils";
 import { crossSectionCursorDistanceAtom } from "./state";
-import { useEffect } from "react";
+import { nearestPointOnLine } from "@turf/nearest-point-on-line";
+
+export function getCrossSectionColor() {
+  return getCSSVariable("--text-color", "white");
+}
+
+interface ActiveCrossSectionData {
+  id: string | number;
+  length: number;
+  line: GeoJSON.LineString;
+}
+
+function useActiveCrossSection(): ActiveCrossSectionData | null {
+  const crossSections = useMapState((state) => state.crossSectionLines);
+  const activeSection = useMapState((state) => state.activeCrossSection);
+  if (activeSection == null) return null;
+  const activeCrossSectionGeometry = crossSections?.find(
+    (d) => d.id === activeSection,
+  )?.geometry;
+  if (activeCrossSectionGeometry == null) return null;
+  const line = unwrapMultiLineString(activeCrossSectionGeometry);
+  const lengthInMeters =
+    length(line, {
+      units: "kilometers",
+    }) * 1000;
+
+  return {
+    id: activeSection,
+    length: lengthInMeters,
+    line: line as GeoJSON.LineString,
+  };
+}
 
 export function CrossSectionsLayer() {
   const crossSections = useMapState((state) => state.crossSectionLines);
@@ -20,6 +51,9 @@ export function CrossSectionsLayer() {
   const allSections = showCrossSectionLines ? crossSections : null;
   const activeSection = useMapState((state) => state.activeCrossSection);
   const id = "crossSectionLine";
+  const interactionLayerID = "cross-section-interaction-underlay";
+
+  const activeSectionData = useActiveCrossSection();
 
   useMapStyleOperator(
     (map) => {
@@ -32,19 +66,15 @@ export function CrossSectionsLayer() {
     [allSections],
   );
 
-  const crossSectionDistance = useAtomValue(crossSectionCursorDistanceAtom);
-
-  useEffect(() => {
-    console.log("Cross Section loaded", crossSectionDistance);
-  }, [crossSectionDistance]);
+  const [crossSectionDistance, setCursorDistance] = useAtom(
+    crossSectionCursorDistanceAtom,
+  );
 
   useMapStyleOperator(
     (map) => {
-      console.log("Updating cross section cursor");
       // Calculate the distance along the line for the cursor
-      const activeSectionGeom = allSections?.find(
-        (d) => d.id === activeSection,
-      );
+      const activeSectionGeom = activeSectionData?.line;
+
       if (crossSectionDistance == null || activeSectionGeom == null) {
         setGeoJSON(map, "crossSectionCursor", {
           type: "FeatureCollection",
@@ -52,24 +82,25 @@ export function CrossSectionsLayer() {
         });
         return;
       }
-      const line: any = unwrapMultiLineString(activeSectionGeom.geometry);
-      const lineLength = length(line);
-      const cursorPoint = along(line, lineLength * crossSectionDistance, {
-        units: "kilometers",
-      });
+      const cursorPoint = along(
+        activeSectionGeom,
+        crossSectionDistance / 1000,
+        {
+          units: "kilometers",
+        },
+      );
       setGeoJSON(map, "crossSectionCursor", {
         type: "FeatureCollection",
         features: [cursorPoint],
       });
     },
-    [crossSectionDistance, allSections, activeSection],
+    [crossSectionDistance, allSections, activeSectionData],
   );
 
   useMapStyleOperator(
     (map) => {
       // Set up style
-      const color = getCSSVariable("--text-color", "white");
-      const secondaryColor = getCSSVariable("--secondary-color", "black");
+      const color = getCrossSectionColor();
 
       let sizeExpr: any = 2;
       let opacityExpr: any = 1;
@@ -92,6 +123,16 @@ export function CrossSectionsLayer() {
       }
 
       updateStyleLayers(map, [
+        // A slightly wider line to interact with
+        {
+          id: interactionLayerID,
+          type: "line",
+          source: id,
+          paint: {
+            "line-color": "transparent",
+            "line-width": 8,
+          },
+        },
         {
           id: "cross-section-lines",
           type: "line",
@@ -117,11 +158,9 @@ export function CrossSectionsLayer() {
           type: "circle",
           source: "crossSectionCursor",
           paint: {
-            "circle-color": secondaryColor,
-            "circle-radius": 4,
+            "circle-color": color,
+            "circle-radius": 6,
             "circle-opacity": 1,
-            "circle-stroke-color": color,
-            "circle-stroke-width": 2,
           },
         },
       ]);
@@ -144,7 +183,7 @@ export function CrossSectionsLayer() {
   // Click and handling for cross-section lines
   useMapStyleOperator(
     (map) => {
-      const layerId = "cross-section-lines";
+      const layerId = interactionLayerID;
       map.removeInteraction("cross-section-click");
       map.addInteraction("cross-section-click", {
         target: { layerId },
@@ -157,22 +196,39 @@ export function CrossSectionsLayer() {
           e.preventDefault();
         },
       });
+    },
+    [setActiveSection],
+  );
 
+  useMapStyleOperator(
+    (map) => {
+      const layerId = interactionLayerID;
       const canvas = map.getCanvas();
       const onMouseMove = (e) => {
-        const activeCrossSection = e.features.find(
+        const currentActiveCrossSection = e.features.find(
           (f) => f.state?.active === true,
         );
-        if (activeCrossSection == null) {
+        const isActive = currentActiveCrossSection != null;
+
+        if (isActive) {
           // Find the nearest point on the active cross section
           canvas.style.cursor = "pointer";
         } else {
           canvas.style.cursor = "";
         }
-      };
 
-      const onMouseEnter = () => {
-        canvas.style.cursor = "pointer";
+        if (!isActive) {
+          setCursorDistance(null);
+        } else {
+          // set the cross section distance along the active cross section
+          const line: any = activeSectionData.line;
+          if (line == null) return;
+          const pt = e.lngLat;
+          const snapped = nearestPointOnLine(line, [pt.lng, pt.lat], {
+            units: "kilometers",
+          });
+          setCursorDistance(snapped.properties.location * 1000);
+        }
       };
 
       const onMouseLeave = () => {
@@ -180,15 +236,15 @@ export function CrossSectionsLayer() {
       };
 
       map.on("mousemove", layerId, onMouseMove);
-
-      // could probably set classes instead of using mouseenter/mouseleave
-      //map.on("mouseenter", layerId, onMouseEnter);
-
       map.on("mouseleave", layerId, onMouseLeave);
 
       // TODO: upstream add cleanup functions
+      return () => {
+        map.off("mousemove", layerId, onMouseMove);
+        map.off("mouseleave", layerId, onMouseLeave);
+      };
     },
-    [setActiveSection],
+    [setActiveSection, activeSectionData],
   );
 
   return null;
