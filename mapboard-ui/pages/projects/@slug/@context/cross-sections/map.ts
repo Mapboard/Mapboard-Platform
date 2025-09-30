@@ -1,5 +1,5 @@
 import hyper, { compose } from "@macrostrat/hyper";
-import { Spinner } from "@blueprintjs/core";
+import { AnchorButton, Button, Spinner } from "@blueprintjs/core";
 import { postgrest } from "~/utils/api-client";
 
 import { atom, useAtom, useAtomValue, useSetAtom } from "jotai";
@@ -37,9 +37,7 @@ const crossSectionDataAtom = atom(async (get) => {
   return fetchCrossSectionMetadata(id);
 });
 
-export const CrossSectionAssistantMap = compose(_CrossSectionAssistantMap);
-
-function _CrossSectionAssistantMap({ id }: { id: number }) {
+export function CrossSectionAssistantMap({ id }: { id: number }) {
   const setCrossSectionID = useSetAtom(crossSectionIDAtom);
   const setCursorDistance = useSetAtom(crossSectionCursorDistanceAtom);
 
@@ -71,8 +69,13 @@ function CrossSectionAssistantInner() {
   let domain = document.location.origin;
   const baseURL = `${domain}/api/project/${project_slug}/context/${slug}`;
 
+  const href = `${window.location.origin}/projects/${project_slug}/${slug}`;
+
   return h("div.cross-section-assistant-map-holder", [
-    h("h2", name),
+    h("div.cross-section-header", [
+      h("h2.cross-section-name", name),
+      h(AnchorButton, { icon: "link", minimal: true, href }),
+    ]),
     h(CrossSectionMapArea, {
       baseURL,
       bounds, // Default bounds for cross-section
