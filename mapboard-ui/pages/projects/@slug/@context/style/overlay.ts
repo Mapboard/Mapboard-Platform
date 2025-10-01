@@ -21,6 +21,7 @@ interface MapOverlayOptions {
   styleMode?: "display" | "edit";
   // Restrict to bounds
   clipToContextBounds?: boolean;
+  opacity?: number;
 }
 
 export function buildMapOverlayStyle(
@@ -37,6 +38,7 @@ export function buildMapOverlayStyle(
     showTopologyPrimitives = false,
     clipToContextBounds = false,
     styleMode = "edit",
+    opacity = 1.0,
   } = options ?? {};
 
   // Disable rivers and roads by default
@@ -53,7 +55,7 @@ export function buildMapOverlayStyle(
   let params = new URLSearchParams();
 
   let selectedLayerOpacity = (a, b) => {
-    return a;
+    return a * opacity;
   };
 
   const overlayLayers: mapboxgl.Layer[] = [];
@@ -68,13 +70,23 @@ export function buildMapOverlayStyle(
   if (selectedLayer != null) {
     params.set("map_layer", selectedLayer.toString());
     selectedLayerOpacity = (a, b) => {
-      return ["case", ["==", ["get", "map_layer"], selectedLayer], a, b];
+      return [
+        "case",
+        ["==", ["get", "map_layer"], selectedLayer],
+        a * opacity,
+        b * opacity,
+      ];
     };
   }
 
-  const tilesetArray = Array.from(featureModes).map(
-    tileLayerNameForFeatureMode,
-  );
+  // always include all feature modes to ensure that styles reload quickly
+  // we could change this eventually...
+  const allModes = new Set<FeatureMode>([
+    FeatureMode.Fill,
+    FeatureMode.Line,
+    FeatureMode.Polygon,
+  ]);
+  const tilesetArray = Array.from(allModes).map(tileLayerNameForFeatureMode);
 
   if (showTopologyPrimitives) {
     tilesetArray.push("nodes");

@@ -27,7 +27,6 @@ import { Context } from "~/types";
 import { GeoJSONFeature } from "mapbox-gl";
 import { atomWithStore } from "jotai-zustand";
 import { atom, createStore as createJotaiStore, Provider } from "jotai";
-import { join } from "node:path";
 
 const MapStateContext = createContext<StoreApi<MapState> | null>(null);
 

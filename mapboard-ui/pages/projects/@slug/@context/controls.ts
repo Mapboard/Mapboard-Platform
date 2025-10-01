@@ -7,6 +7,7 @@ import {
   NonIdealState,
   NumericInput,
   SegmentedControl,
+  Slider,
   Spinner,
   Switch,
 } from "@blueprintjs/core";
@@ -14,7 +15,8 @@ import { BasemapType, useMapActions, useMapState } from "./state";
 import { ItemSelect } from "@macrostrat/form-components";
 import { FeatureMode, MapLayer } from "./types";
 import { useAtom } from "jotai";
-import { overlayClipAtom } from "./style";
+import { overlayClipAtom, overlayOpacityAtom } from "./style";
+import { NullableSlider } from "@macrostrat/ui-components";
 
 const h = hyper.styled(styles);
 
@@ -31,6 +33,7 @@ export function LayerControlPanel() {
 
   return h("div.layer-control-panel.bp5-form", [
     h(OverlayHeader),
+    h(OpacitySlider),
     h(LayerList),
     h(SingleLayerViewOptions),
     h(Divider),
@@ -119,6 +122,22 @@ function TerrainExaggeration() {
       }),
     ],
   );
+}
+
+function OpacitySlider() {
+  const [value, setValue] = useAtom(overlayOpacityAtom);
+  const enabled = useMapState((state) => state.showOverlay);
+
+  return h(FormGroup, { label: "Opacity", inline: true, fill: true }, [
+    h(Slider, {
+      min: 0,
+      max: 1,
+      stepSize: 0.1,
+      value,
+      onChange: setValue,
+      disabled: !enabled,
+    }),
+  ]);
 }
 
 function OverlayHeader() {
