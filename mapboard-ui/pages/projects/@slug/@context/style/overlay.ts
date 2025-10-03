@@ -350,6 +350,11 @@ function getTileQueryParams(params: Record<string, any>) {
   return str;
 }
 
-function getMostRecentTimestamp(timestamps: SourceChangeTimestamps): number {
+function getMostRecentTimestamp(
+  timestamps: SourceChangeTimestamps | null,
+): number | null {
+  if (timestamps == null) {
+    return null;
+  }
   return Math.max(...Object.values(timestamps).map((x) => x ?? 0));
 }

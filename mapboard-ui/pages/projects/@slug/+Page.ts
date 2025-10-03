@@ -22,9 +22,8 @@ export function Page() {
 }
 
 function Contexts({ contexts }) {
-
   if (contexts == null) {
-    return h(Spinner)
+    return h(Spinner);
   }
   // Group contexts by type
   const ctxMap = contexts.reduce((acc, ctx) => {
@@ -37,9 +36,16 @@ function Contexts({ contexts }) {
   const maps = ctxMap["map"] ?? [];
   const crossSections = ctxMap["cross-section"] ?? [];
 
+  const project_slug = contexts[0]?.project_slug;
+
   return h("div.contexts", [
     h(ContextList, { name: "Maps", contexts: maps }),
     h(ContextList, { name: "Cross sections", contexts: crossSections }),
+    h(
+      "a.print-products",
+      { href: `./${project_slug}/print` },
+      "Print products",
+    ),
   ]);
 }
 
