@@ -14,7 +14,6 @@ export function BoundsLayer({
   // Zoom to bounds when they change
   zoomToBounds?: boolean;
 }) {
-  console.log("BoundsLayer", bounds, visible, zoomToBounds);
   useMapStyleOperator(
     (map) => {
       // Create a GeoJSON source for the bounds
@@ -57,7 +56,6 @@ export function BoundsLayer({
 
       const zoomBox = bbox(bounds);
 
-      console.log(bounds, zoomBox);
       if (zoomBox == null) return;
       map.fitBounds(zoomBox, { duration: 0, padding: 5 });
     },

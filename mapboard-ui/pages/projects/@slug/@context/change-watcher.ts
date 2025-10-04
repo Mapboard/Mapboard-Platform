@@ -15,6 +15,10 @@ type TopologyChangeMessage = {
 
 export const mapReloadTimestampAtom = atom<number>(0);
 
+export const incrementTimestampAtom = atom(null, (get, set) => {
+  set(mapReloadTimestampAtom, Date.now());
+});
+
 export function MapReloadWatcher({ baseURL }: { baseURL: string }) {
   const setMapReloadTimestamp = useSetAtom(mapReloadTimestampAtom);
 

@@ -8,13 +8,10 @@ import styles from "./manager.module.sass";
 import mapboxgl from "mapbox-gl";
 import hyper from "@macrostrat/hyper";
 import { renderToString } from "react-dom/server";
-import {
-  useMapActions,
-  useMapState
-} from "../state";
+import { useMapActions, useMapState } from "../state";
 import { useEffect, useRef, useState } from "react";
 import { DataField } from "@macrostrat/data-components";
-import {allFeatureModes, FeatureMode} from "../types";
+import { allFeatureModes, FeatureMode } from "../types";
 
 const h = hyper.styled(styles);
 
@@ -22,45 +19,45 @@ type BoxSelectionProps = {
   layer: string;
 };
 
-export function buildSelectionLayers(color: string = "#ff0000") {
+export function buildSelectionLayers(source, color: string = "#ff0000") {
   const filter = ["in", ["get", "id"], ["literal", []]];
   let layers = [
     {
       id: "lines-selected",
       type: "line",
-      source: "mapboard",
+      source,
       "source-layer": "lines",
       paint: {
         "line-color": color,
         "line-width": 3,
-        "line-opacity": 0.75
+        "line-opacity": 0.75,
       },
-      filter
+      filter,
     },
     {
       id: "lines-selected-endpoints",
       type: "circle",
-      source: "mapboard",
+      source,
       "source-layer": "endpoints",
       paint: {
         "circle-color": color,
-        "circle-radius": 3
+        "circle-radius": 3,
       },
-      filter
-    }
+      filter,
+    },
   ];
 
   for (const layer of ["polygons", "fills"]) {
     layers.push({
       id: `${layer}-selected`,
       type: "fill",
-      source: "mapboard",
+      source,
       "source-layer": layer,
       paint: {
         "fill-color": color,
-        "fill-opacity": 0.5
+        "fill-opacity": 0.5,
       },
-      filter
+      filter,
     });
   }
 
@@ -84,7 +81,7 @@ export function BoxSelectionManager(props: BoxSelectionProps) {
   const selectedFeatures = useMapState((state) => state.selection);
   const mapLayerIDMap = useMapState((state) => state.mapLayerIDMap);
   const selectionFeatureMode = useMapState(
-    (state) => state.selectionFeatureMode
+    (state) => state.selectionFeatureMode,
   );
 
   const [hoveredFeature, setHoveredFeature] = useState<any | null>(null);
@@ -113,7 +110,7 @@ export function BoxSelectionManager(props: BoxSelectionProps) {
     const _html = h("div.map-popover", [
       h("h3", f.id),
       h(DataField, { label: "Layer", value: mapLayer?.name }),
-      h(DataField, { label: "Type", value: f.type })
+      h(DataField, { label: "Type", value: f.type }),
     ]);
 
     // Change the cursor style as a UI indicator.
@@ -151,13 +148,13 @@ export function BoxSelectionManager(props: BoxSelectionProps) {
             map.setFilter(endpointsLayerID, [
               "in",
               ["get", "id"],
-              ["literal", selected]
+              ["literal", selected],
             ]);
           }
         }
       }
     },
-    [selectedFeatures]
+    [selectedFeatures],
   );
 
   useMapStyleOperator(
@@ -195,7 +192,7 @@ export function BoxSelectionManager(props: BoxSelectionProps) {
         const rect = canvas.getBoundingClientRect();
         return new mapboxgl.Point(
           e.clientX - rect.left - canvas.clientLeft,
-          e.clientY - rect.top - canvas.clientTop
+          e.clientY - rect.top - canvas.clientTop,
         );
       }
 
@@ -270,7 +267,7 @@ export function BoxSelectionManager(props: BoxSelectionProps) {
 
           const features = map.queryRenderedFeatures(bbox, {
             layers: [layerName],
-            filter
+            filter,
           });
 
           if (features.length >= 1000) {
@@ -281,12 +278,14 @@ export function BoxSelectionManager(props: BoxSelectionProps) {
           // to match features with unique FIPS codes to activate
           // the `counties-highlighted` layer.
           const fips = features.map((feature) => feature.properties.id);
-          const featureTypes = new Set<string>(features.map((f: any) => f.properties.type));
+          const featureTypes = new Set<string>(
+            features.map((f: any) => f.properties.type),
+          );
 
           selectFeatures({
             type: selectionFeatureMode,
             features: fips,
-            dataTypes: featureTypes
+            dataTypes: featureTypes,
           });
         }
 
@@ -295,7 +294,7 @@ export function BoxSelectionManager(props: BoxSelectionProps) {
 
       const listener = (e) => {
         const features = map.queryRenderedFeatures(e.point, {
-          layers: [`${layerName}-selected`]
+          layers: [`${layerName}-selected`],
         });
 
         const f: any = features[0]?.properties;
@@ -309,7 +308,7 @@ export function BoxSelectionManager(props: BoxSelectionProps) {
         map.off("mousemove", listener);
       };
     },
-    [activeLayer, selectionFeatureMode]
+    [activeLayer, selectionFeatureMode],
   );
 
   return null;

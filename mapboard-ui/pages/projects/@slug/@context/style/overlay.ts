@@ -1,18 +1,18 @@
 import { createLineSymbolLayers } from "./line-symbols";
 import { allFeatureModes, FeatureMode } from "../types";
-
-export interface SourceChangeTimestamps {
-  [key: FeatureMode]: number | null;
-}
+import {
+  LayerSpecification,
+  SourceSpecification,
+  StyleSpecification,
+} from "mapbox-gl";
 
 export interface CrossSectionConfig {
   layerID: number;
   enabled: boolean;
 }
 
-interface MapOverlayOptions {
+export interface MapOverlayOptions {
   selectedLayer: number | null;
-  sourceChangeTimestamps: SourceChangeTimestamps;
   enabledFeatureModes?: Set<FeatureMode>;
   showLineEndpoints?: boolean;
   showFacesWithNoUnit?: boolean;
@@ -22,6 +22,8 @@ interface MapOverlayOptions {
   // Restrict to bounds
   clipToContextBounds?: boolean;
   opacity?: number;
+  revision: number;
+  visible: boolean;
 }
 
 export function buildMapOverlayStyle(
@@ -32,13 +34,14 @@ export function buildMapOverlayStyle(
     showLineEndpoints = true,
     selectedLayer,
     enabledFeatureModes = allFeatureModes,
-    sourceChangeTimestamps,
     useSymbols = true,
     showFacesWithNoUnit = false,
     showTopologyPrimitives = false,
     clipToContextBounds = false,
     styleMode = "edit",
     opacity = 1.0,
+    revision,
+    visible = true,
   } = options ?? {};
 
   // Disable rivers and roads by default
@@ -65,7 +68,7 @@ export function buildMapOverlayStyle(
   let layers: mapboxgl.Layer[] = [];
 
   // Timestamp of the most recent change to a layer
-  const changed = getMostRecentTimestamp(sourceChangeTimestamps);
+  const changed = revision;
 
   if (selectedLayer != null) {
     params.set("map_layer", selectedLayer.toString());
@@ -114,7 +117,7 @@ export function buildMapOverlayStyle(
   sources["mapboard"] = {
     type: "vector",
     tiles: [baseURL + `/tile/${compositeTileset}/{z}/{x}/{y}${suffix}`],
-    volatile: true,
+    volatile: false,
   };
 
   if (featureModes.has(FeatureMode.Fill)) {
@@ -268,10 +271,34 @@ export function buildMapOverlayStyle(
     });
   }
 
+  layers.push(...overlayLayers);
+
+  if (revision != null) {
+    // rekey sources and layers to force reload
+    let sourcesNew: StyleSpecification["sources"] = {};
+    for (const [key, value] of Object.entries(sources)) {
+      const ix = `${key}-${revision}`;
+      sourcesNew[ix] = value;
+    }
+
+    sources = sourcesNew;
+    for (let layer of layers) {
+      layer.id = layer.id + `-${revision}`;
+      layer.source = `${layer.source}-${revision}`;
+    }
+  }
+
+  if (!visible) {
+    for (let layer of layers) {
+      layer.layout ??= {};
+      layer.layout.visibility = "none";
+    }
+  }
+
   return {
     version: 8,
     sources,
-    layers: [...layers, ...overlayLayers],
+    layers,
   };
 }
 
@@ -348,13 +375,4 @@ function getTileQueryParams(params: Record<string, any>) {
   }
 
   return str;
-}
-
-function getMostRecentTimestamp(
-  timestamps: SourceChangeTimestamps | null,
-): number | null {
-  if (timestamps == null) {
-    return null;
-  }
-  return Math.max(...Object.values(timestamps).map((x) => x ?? 0));
 }

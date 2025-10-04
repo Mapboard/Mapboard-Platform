@@ -1,12 +1,17 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useInDarkMode } from "@macrostrat/ui-components";
 import { BasemapType, useMapState } from "../state";
 import { mergeStyles } from "@macrostrat/mapbox-utils";
-import { buildMapOverlayStyle, CrossSectionConfig } from "./overlay";
+import { buildMapOverlayStyle, MapOverlayOptions } from "./overlay";
 import { buildSelectionLayers } from "../selection";
 import { atom, useAtom, useAtomValue } from "jotai";
 import { atomWithStorage } from "jotai/utils";
 import { mapReloadTimestampAtom } from "../change-watcher";
+import {
+  useMapRef,
+  useMapStatus,
+  useMapStyleOperator,
+} from "@macrostrat/mapbox-react";
 
 export { buildMapOverlayStyle };
 
@@ -59,7 +64,6 @@ export function useMapStyle(
 ) {
   const activeLayer = useMapState((state) => state.activeLayer);
   const basemapType = useMapState((state) => state.baseMap);
-  const changeTimestamps = useMapState((state) => state.lastChangeTime);
   const showLineEndpoints = useMapState((state) => state.showLineEndpoints);
   const enabledFeatureModes = useMapState((state) => state.enabledFeatureModes);
 
@@ -69,7 +73,8 @@ export function useMapStyle(
   const showTopologyPrimitives = useMapState((d) => d.showTopologyPrimitives);
   const styleMode = useMapState((d) => d.styleMode);
 
-  const timestamp = useAtomValue(mapReloadTimestampAtom);
+  const revision = useAtomValue(mapReloadTimestampAtom);
+  const [acceptedRevision, setAcceptedRevision] = useState<number>(revision);
 
   const baseStyleURL = useBaseMapStyle(basemapType);
 
@@ -78,18 +83,37 @@ export function useMapStyle(
 
   const overlayOpacity = useAtomValue(overlayOpacityAtom);
 
+  const mapRef = useMapRef();
+
+  // When loading completes, update accepted revision
+  useEffect(() => {
+    const map = mapRef.current;
+    if (map == null) return;
+    // Listen for source load
+    if (revision === acceptedRevision) return;
+    const callback = (evt) => {
+      const key = `mapboard-${revision}`;
+      if (evt.sourceId != key) return;
+      if (!evt.isSourceLoaded) return;
+      // Only tile requests, as this signifies that the source has actually loaded data
+      if (evt.tile == null) return;
+      console.log("Accepting revision", revision);
+      setAcceptedRevision(revision);
+    };
+    map.on("data", callback);
+    return () => {
+      map.off("data", callback);
+    };
+  }, [revision, acceptedRevision]);
+
   useEffect(() => {
     if (!showOverlay) {
       setOverlayStyle(null);
       return;
     }
 
-    console.log("change timestamps", changeTimestamps);
-
-    const style = buildMapOverlayStyle(baseURL, {
-      // We want to show all layers if in a cross-section view (at least for now
+    const styleOpts: MapOverlayOptions = {
       selectedLayer: isMapView ? activeLayer : null,
-      sourceChangeTimestamps: changeTimestamps,
       enabledFeatureModes,
       showLineEndpoints,
       showFacesWithNoUnit,
@@ -97,17 +121,45 @@ export function useMapStyle(
       styleMode,
       clipToContextBounds,
       opacity: overlayOpacity,
-    });
-    const selectionStyle: any = { layers: buildSelectionLayers() };
+    };
 
-    setOverlayStyle(mergeStyles(style, selectionStyle));
+    const style = buildMapOverlayStyle(baseURL, {
+      ...styleOpts,
+      revision: acceptedRevision,
+      visible: true,
+    });
+
+    let nextStyle = {};
+    if (revision !== acceptedRevision) {
+      nextStyle = buildMapOverlayStyle(baseURL, {
+        ...styleOpts,
+        revision,
+        visible: true,
+      });
+    }
+
+    console.log(
+      "Revisions",
+      revision,
+      acceptedRevision,
+      revision == acceptedRevision,
+    );
+
+    console.log(style, nextStyle);
+
+    const selectionStyle: any = {
+      layers: buildSelectionLayers(`mapboard-${acceptedRevision}`),
+    };
+
+    setOverlayStyle(mergeStyles(style, nextStyle, selectionStyle));
   }, [
     activeLayer,
-    changeTimestamps,
     showLineEndpoints,
     enabledFeatureModes,
     showFacesWithNoUnit,
     showOverlay,
+    revision,
+    acceptedRevision,
     showTopologyPrimitives,
     clipToContextBounds,
     overlayOpacity,

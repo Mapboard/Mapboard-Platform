@@ -85,11 +85,6 @@ function createMapStore(baseURL: string, initialState: InitialMapState) {
         showTopologyPrimitives: false,
         terrainExaggeration: 1,
         styleMode: "display",
-        lastChangeTime: {
-          line: null,
-          polygon: null,
-          topology: null,
-        },
         dataTypes: {
           line: null,
           polygon: null,
