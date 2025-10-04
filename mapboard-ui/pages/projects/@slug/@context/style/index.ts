@@ -6,6 +6,7 @@ import { buildMapOverlayStyle, CrossSectionConfig } from "./overlay";
 import { buildSelectionLayers } from "../selection";
 import { atom, useAtom, useAtomValue } from "jotai";
 import { atomWithStorage } from "jotai/utils";
+import { mapReloadTimestampAtom } from "../change-watcher";
 
 export { buildMapOverlayStyle };
 
@@ -68,6 +69,8 @@ export function useMapStyle(
   const showTopologyPrimitives = useMapState((d) => d.showTopologyPrimitives);
   const styleMode = useMapState((d) => d.styleMode);
 
+  const timestamp = useAtomValue(mapReloadTimestampAtom);
+
   const baseStyleURL = useBaseMapStyle(basemapType);
 
   const [overlayStyle, setOverlayStyle] = useAtom(overlayStyleAtom);
@@ -80,6 +83,9 @@ export function useMapStyle(
       setOverlayStyle(null);
       return;
     }
+
+    console.log("change timestamps", changeTimestamps);
+
     const style = buildMapOverlayStyle(baseURL, {
       // We want to show all layers if in a cross-section view (at least for now
       selectedLayer: isMapView ? activeLayer : null,

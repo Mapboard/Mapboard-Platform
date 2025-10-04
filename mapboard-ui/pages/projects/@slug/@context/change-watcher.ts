@@ -1,8 +1,8 @@
 /** Websocket watcher for topology changes */
 import { useCallback, useState } from "react";
 import useWebSocket, { ReadyState } from "react-use-websocket";
-import { useMapActions } from "./state";
 import { useEffect } from "react";
+import { atom, useSetAtom } from "jotai";
 
 type TopologyChangeMessage = {
   n_deleted: number;
@@ -13,8 +13,10 @@ type TopologyChangeMessage = {
   schema: string;
 };
 
+export const mapReloadTimestampAtom = atom<number>(0);
+
 export function MapReloadWatcher({ baseURL }: { baseURL: string }) {
-  const notifyChange = useMapActions((a) => a.notifyChange);
+  const setMapReloadTimestamp = useSetAtom(mapReloadTimestampAtom);
 
   const ws = useMapReloader(baseURL + "/topology/changes");
   useEffect(() => {
@@ -25,7 +27,7 @@ export function MapReloadWatcher({ baseURL }: { baseURL: string }) {
     const { n_deleted, n_created } =
       ws.lastJsonMessage as TopologyChangeMessage;
     if (n_deleted > 0 || n_created > 0) {
-      notifyChange("topo");
+      setMapReloadTimestamp(Date.now());
     }
     console.log("Received message", ws.lastJsonMessage);
   }, [ws.lastJsonMessage]);
