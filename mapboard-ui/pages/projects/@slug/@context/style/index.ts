@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { useInDarkMode } from "@macrostrat/ui-components";
 import { BasemapType, useMapState } from "../state";
 import { mergeStyles } from "@macrostrat/mapbox-utils";
