@@ -2,6 +2,7 @@ import hyper from "@macrostrat/hyper";
 import styles from "./map.module.scss";
 import {
   AnchorButton,
+  Button,
   Divider,
   FormGroup,
   NonIdealState,
@@ -14,9 +15,13 @@ import {
 import { BasemapType, useMapActions, useMapState } from "./state";
 import { ItemSelect } from "@macrostrat/form-components";
 import { FeatureMode, MapLayer } from "./types";
-import { useAtom } from "jotai";
+import { useAtom, useSetAtom } from "jotai";
 import { overlayClipAtom, overlayOpacityAtom } from "./style";
-import { NullableSlider } from "@macrostrat/ui-components";
+import {
+  incrementTimestampAtom,
+  mapReloadTimestampAtom,
+} from "./change-watcher";
+import { useMapStatus } from "@macrostrat/mapbox-react";
 
 const h = hyper.styled(styles);
 
@@ -42,7 +47,22 @@ export function LayerControlPanel() {
     h(TopologyPrimitivesSwitch),
     h(ClipToBoundsSwitch),
     h(StyleModeControl),
+    h(RefreshMapSwitch),
   ]);
+}
+
+function RefreshMapSwitch() {
+  const reloadTimestamp = useSetAtom(incrementTimestampAtom);
+  const isLoading = useMapStatus((s) => s.isLoading);
+
+  return h(
+    Button,
+    {
+      onClick: reloadTimestamp,
+      disabled: isLoading,
+    },
+    "Refresh map",
+  );
 }
 
 export function BackButton({ href, children, className }) {

@@ -2,7 +2,6 @@ import { BasemapType, FeatureSelection } from "./state";
 import { MapPosition } from "@macrostrat/mapbox-utils";
 import { SelectionActionType } from "./selection";
 import type { GeoJSONFeature, LngLat } from "mapbox-gl";
-import { SourceChangeTimestamps } from "./style/overlay";
 
 export interface RecoverableMapState {
   activeLayer: number | null | undefined;
@@ -135,7 +134,6 @@ export interface MapState extends StoredMapState {
   mapLayerIDMap: Map<number, MapLayer>;
   apiBaseURL: string;
   // Time that we last updated the map elements
-  lastChangeTime: SourceChangeTimestamps;
   dataTypes: {
     line: DataType[] | null;
     polygon: PolygonDataType[] | null;
