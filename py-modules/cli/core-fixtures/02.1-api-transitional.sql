@@ -54,3 +54,28 @@ FROM naukluft_map_data.polygon_type pt
 JOIN s1 ON
      s1.project_slug = 'naukluft'
       AND s1.data_schema = 'map_digitizer';
+
+CREATE OR REPLACE VIEW mapboard_api.stations AS
+SELECT
+  id,
+  (SELECT id FROM mapboard.project WHERE slug = 'naukluft') AS project_id,
+  'naukluft' AS project_slug,
+  ST_Transform(geometry, 4326) AS geometry,
+  type,
+  name,
+  notes,
+  altitude,
+  strike,
+  dip,
+  trend,
+  plunge,
+  overturned,
+  "date",
+  unit_id,
+  cleavage,
+  bedding,
+  lineation,
+  fold_axis,
+  source,
+  data
+FROM naukluft_map_data.stations;
