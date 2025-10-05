@@ -58,3 +58,7 @@ FROM
   mapboard.context c
   JOIN mapboard.project p
     ON c.project_id = p.id;
+
+
+CREATE OR REPLACE VIEW mapboard_api.stations AS
+SELECT * FROM naukluft_map_data.stations;

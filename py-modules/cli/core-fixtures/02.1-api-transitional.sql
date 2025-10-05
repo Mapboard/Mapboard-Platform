@@ -20,6 +20,7 @@ IMPORT FOREIGN SCHEMA cross_section
   FROM SERVER naukluft
   INTO naukluft_cross_sections;
 
+/* Mirror the map data schema to the mapboard database */
 DROP SCHEMA IF EXISTS naukluft_map_data CASCADE;
 CREATE SCHEMA IF NOT EXISTS naukluft_map_data;
 IMPORT FOREIGN SCHEMA map_digitizer
