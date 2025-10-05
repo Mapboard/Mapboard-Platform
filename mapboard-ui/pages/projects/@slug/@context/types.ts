@@ -134,6 +134,7 @@ export interface MapState extends StoredMapState {
   mapLayerIDMap: Map<number, MapLayer>;
   apiBaseURL: string;
   // Time that we last updated the map elements
+  context: { id: number; slug: string };
   dataTypes: {
     line: DataType[] | null;
     polygon: PolygonDataType[] | null;

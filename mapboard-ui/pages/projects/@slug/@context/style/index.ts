@@ -7,11 +7,13 @@ import { buildSelectionLayers } from "../selection";
 import { atom, useAtom, useAtomValue } from "jotai";
 import { atomWithStorage } from "jotai/utils";
 import { mapReloadTimestampAtom } from "../change-watcher";
+import { apiBaseURL } from "~/settings";
 import {
   useMapRef,
   useMapStatus,
   useMapStyleOperator,
 } from "@macrostrat/mapbox-react";
+import { StyleSpecification } from "mapbox-gl";
 
 export { buildMapOverlayStyle };
 
@@ -66,6 +68,7 @@ export function useMapStyle(
   const basemapType = useMapState((state) => state.baseMap);
   const showLineEndpoints = useMapState((state) => state.showLineEndpoints);
   const enabledFeatureModes = useMapState((state) => state.enabledFeatureModes);
+  const projectID = useMapState((d) => d.context.project_id);
 
   const showFacesWithNoUnit = useMapState((d) => d.showFacesWithNoUnit);
   const showOverlay = useMapState((d) => d.showOverlay);
@@ -138,20 +141,33 @@ export function useMapStyle(
       });
     }
 
-    console.log(
-      "Revisions",
-      revision,
-      acceptedRevision,
-      revision == acceptedRevision,
-    );
-
-    console.log(style, nextStyle);
+    const stationsStyle: Partial<StyleSpecification> = {
+      sources: {
+        stations: {
+          type: "geojson",
+          data: `${apiBaseURL}/stations.geojson?project_id=eq.${projectID}`,
+        },
+      },
+      layers: [
+        {
+          id: "stations",
+          type: "circle",
+          source: "stations",
+          paint: {
+            "circle-color": "#ff7f0e",
+            "circle-radius": 4,
+          },
+        },
+      ],
+    };
 
     const selectionStyle: any = {
       layers: buildSelectionLayers(`mapboard-${acceptedRevision}`),
     };
 
-    setOverlayStyle(mergeStyles(style, nextStyle, selectionStyle));
+    setOverlayStyle(
+      mergeStyles(style, nextStyle, stationsStyle, selectionStyle),
+    );
   }, [
     activeLayer,
     showLineEndpoints,

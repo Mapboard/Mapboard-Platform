@@ -289,7 +289,7 @@ function useRequestTransformer() {
       /** Common API to use for transforming requests for caching or modifying */
       const start =
         "https://api.mapbox.com/raster/v1/mapbox.mapbox-terrain-dem-v1";
-      if (resourceType !== "Tile" || !url.startsWith(start)) return;
+      if (resourceType !== "Tile" || !url.startsWith(start)) return { url };
       // We want to send this request to our elevation tiling backend, preserving query args
       const [baseURL, query, ...rest] = url.split("?");
 
