@@ -1,10 +1,22 @@
 import { useEffect } from "react";
 import { createSolidColorImage, loadImage } from "./pattern-images";
 import { useMapInitialized, useMapRef } from "@macrostrat/mapbox-react";
+import { pointSymbolIndex, setupPointSymbols } from "@macrostrat/map-styles";
 
 export function useStyleImageManager() {
   const isInitialized = useMapInitialized();
   const mapRef = useMapRef();
+
+  // Proactively load point symbols when the map is initialized
+  useEffect(() => {
+    const map = mapRef.current;
+    if (map == null || !isInitialized) return;
+    setupPointSymbols(map).catch((err) => {
+      console.error("Failed to set up point symbols:", err);
+    });
+  }, [isInitialized]);
+
+  // Handle pattern symbols by loading them only once they are reported missing
   useEffect(() => {
     const map = mapRef.current;
     if (map == null) return;
@@ -12,7 +24,7 @@ export function useStyleImageManager() {
     const styleImageMissing = (e) => {
       loadStyleImage(map, e.id)
         .catch((err) => {
-          console.error(`Failed to load pattern image for ${id}:`, err);
+          console.error(`Failed to load pattern image for ${e.id}:`, err);
         })
         .then(() => {});
     };
@@ -28,19 +40,23 @@ export function useStyleImageManager() {
 
 async function loadStyleImage(map: mapboxgl.Map, id: string) {
   const [prefix, name, ...rest] = id.split(":");
-  if (prefix == "line-symbol") {
+
+  console.log("Loading style image:", id, prefix, name, rest);
+
+  if (prefix == "point") {
+    await loadSymbolImage(map, "geologic-symbols/points/strabospot", id);
+  } else if (prefix == "line-symbol") {
     // Load line symbol image
-    await loadLineSymbolImage(map, id);
+    await loadSymbolImage(map, "geologic-symbols/lines/dev", id);
   } else {
     // Load pattern image
     await loadPatternImage(map, id);
   }
 }
 
-async function loadLineSymbolImage(map: mapboxgl.Map, id: string) {
+async function loadSymbolImage(map: mapboxgl.Map, set: string, id: string) {
   const [prefix, name, ...rest] = id.split(":");
-  const vizBaseURL = "//visualization-assets.s3.amazonaws.com";
-  const lineSymbolsURL = vizBaseURL + "/geologic-line-symbols/png";
+  const lineSymbolsURL = `https://dev.macrostrat.org/assets/web/${set}/png`;
   if (map.hasImage(id)) return;
   const image = await loadImage(lineSymbolsURL + `/${name}.png`);
   if (map.hasImage(id) || image == null) return;

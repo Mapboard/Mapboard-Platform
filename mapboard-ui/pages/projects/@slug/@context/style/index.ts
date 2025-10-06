@@ -8,12 +8,9 @@ import { atom, useAtom, useAtomValue } from "jotai";
 import { atomWithStorage } from "jotai/utils";
 import { mapReloadTimestampAtom } from "../change-watcher";
 import { apiBaseURL } from "~/settings";
-import {
-  useMapRef,
-  useMapStatus,
-  useMapStyleOperator,
-} from "@macrostrat/mapbox-react";
+import { useMapRef } from "@macrostrat/mapbox-react";
 import { StyleSpecification } from "mapbox-gl";
+import { createStationsLayer } from "./station-layers";
 
 export { buildMapOverlayStyle };
 
@@ -149,15 +146,17 @@ export function useMapStyle(
         },
       },
       layers: [
-        {
-          id: "stations",
-          type: "circle",
-          source: "stations",
-          paint: {
-            "circle-color": "#ff7f0e",
-            "circle-radius": 4,
-          },
-        },
+        // createStationsLayer({
+        //   id: "points",
+        //   sourceID: "stations",
+        //   showOrientations: false,
+        //   showAll: true,
+        // }),
+        createStationsLayer({
+          id: "orientations",
+          sourceID: "stations",
+          showOrientations: true,
+        }),
       ],
     };
 

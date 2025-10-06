@@ -13,6 +13,7 @@ export default defineConfig({
     alias: {
       "~": path.resolve("./shared"),
     },
+    // Load images from source
   },
   ssr: {
     noExternal: [

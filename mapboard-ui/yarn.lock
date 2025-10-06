@@ -1322,6 +1322,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@macrostrat/map-styles@npm:^1.2.2":
+  version: 1.2.2
+  resolution: "@macrostrat/map-styles@npm:1.2.2"
+  dependencies:
+    "@macrostrat/color-utils": "npm:1.1.1"
+    axios: "npm:^1.7.9"
+    mapbox-gl: "npm:^2.15.0||^3.0.0"
+  checksum: 10c0/cbcfb9de409c0672235926dde5d64ae3707d1b9d88b38c8a60ba19ce982798c7dcdb419bd6dfcce00c790e10ec8310c3d34a96f23f545b21682b4c2dfb0eddb4
+  languageName: node
+  linkType: hard
+
 "@macrostrat/mapbox-react@npm:^2.6.1":
   version: 2.6.1
   resolution: "@macrostrat/mapbox-react@npm:2.6.1"
@@ -8684,7 +8695,7 @@ __metadata:
     "@macrostrat/form-components": "npm:^0.2.2"
     "@macrostrat/hyper": "npm:^3.0.6"
     "@macrostrat/map-interface": "npm:^1.4.0"
-    "@macrostrat/map-styles": "npm:^1.2.1"
+    "@macrostrat/map-styles": "npm:^1.2.2"
     "@macrostrat/mapbox-react": "npm:^2.6.2"
     "@macrostrat/mapbox-utils": "npm:^1.6.0"
     "@macrostrat/style-system": "npm:^0.2.2"
