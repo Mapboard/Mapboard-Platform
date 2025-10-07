@@ -8,7 +8,6 @@ import { useMapStyle } from "../style";
 import { useStyleImageManager } from "../style/pattern-manager";
 import { SelectionDrawer } from "../selection";
 import type { RequestTransformFunction } from "mapbox-gl";
-import { CrossSectionsLayer } from "../cross-sections";
 import { useRequestTransformer } from "../transform-request";
 import { expandBounds, MapMarker } from "../map-utils";
 import { MapView } from "./maplibre-view";
