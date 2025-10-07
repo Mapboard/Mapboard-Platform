@@ -1,20 +1,10 @@
 import { useEffect } from "react";
 import { createSolidColorImage, loadImage } from "./pattern-images";
 import { useMapInitialized, useMapRef } from "@macrostrat/mapbox-react";
-import { pointSymbolIndex, setupPointSymbols } from "@macrostrat/map-styles";
 
 export function useStyleImageManager() {
   const isInitialized = useMapInitialized();
   const mapRef = useMapRef();
-
-  // Proactively load point symbols when the map is initialized
-  useEffect(() => {
-    const map = mapRef.current;
-    if (map == null || !isInitialized) return;
-    setupPointSymbols(map).catch((err) => {
-      console.error("Failed to set up point symbols:", err);
-    });
-  }, [isInitialized]);
 
   // Handle pattern symbols by loading them only once they are reported missing
   useEffect(() => {
@@ -41,7 +31,7 @@ export function useStyleImageManager() {
 async function loadStyleImage(map: mapboxgl.Map, id: string) {
   const [prefix, name, ...rest] = id.split(":");
 
-  console.log("Loading style image:", id, prefix, name, rest);
+  //console.log("Loading style image:", id, prefix, name, rest);
 
   if (prefix == "point") {
     await loadSymbolImage(map, "geologic-symbols/points/strabospot", id);
