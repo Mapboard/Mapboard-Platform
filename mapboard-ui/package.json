@@ -41,6 +41,7 @@
     "jsdom": "^26.1.0",
     "mapbox-gl": "^3.8.0",
     "maplibre-gl": "^5.7.1",
+    "maplibregl-mapbox-request-transformer": "^0.0.3",
     "md5": "^2.3.0",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",

@@ -6511,6 +6511,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"maplibregl-mapbox-request-transformer@npm:^0.0.3":
+  version: 0.0.3
+  resolution: "maplibregl-mapbox-request-transformer@npm:0.0.3"
+  checksum: 10c0/111eddeab9ab1f9a2a0b87689e6627b5c3e674b49a3a5aacef2655ae3a3c1b593e3877edb7f51c8291cac1f183ba67afea3224a74a62474f1c34572e713c2014
+  languageName: node
+  linkType: hard
+
 "markdown-extensions@npm:^2.0.0":
   version: 2.0.0
   resolution: "markdown-extensions@npm:2.0.0"
@@ -8730,6 +8737,7 @@ __metadata:
     jsdom: "npm:^26.1.0"
     mapbox-gl: "npm:^3.8.0"
     maplibre-gl: "npm:^5.7.1"
+    maplibregl-mapbox-request-transformer: "npm:^0.0.3"
     md5: "npm:^2.3.0"
     nodemon: "npm:^3.1.9"
     openapi-typescript: "npm:^5.4.2"

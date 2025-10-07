@@ -1,10 +1,6 @@
 // Import other components
 import hyper from "@macrostrat/hyper";
-import {
-  FloatingNavbar,
-  MapAreaContainer,
-  MapView,
-} from "@macrostrat/map-interface";
+import { FloatingNavbar, MapAreaContainer } from "@macrostrat/map-interface";
 import styles from "../map.module.scss";
 import { useMapActions, useMapState } from "../state";
 import { useMapRef } from "@macrostrat/mapbox-react";
@@ -15,6 +11,7 @@ import type { RequestTransformFunction } from "mapbox-gl";
 import { CrossSectionsLayer } from "../cross-sections";
 import { useRequestTransformer } from "../transform-request";
 import { expandBounds, MapMarker } from "../map-utils";
+import { MapView } from "./maplibre-view";
 
 export const h = hyper.styled(styles);
 
@@ -37,7 +34,7 @@ export function MapArea({
   focusedSourceTitle?: string;
   isMapView: boolean;
 }) {
-  const transformRequest = useRequestTransformer();
+  const transformRequest = useRequestTransformer(true);
 
   let projection = { name: "globe" };
   if (!isMapView) {
@@ -53,12 +50,13 @@ export function MapArea({
         height: "fit-content",
       }),
       contextPanel: null,
+      // Can't use controls with MapLibre
+      mapControls: null,
       fitViewport: false,
       detailPanel: h(SelectionDrawer),
       className: "mapboard-map",
     },
     [
-      h(CrossSectionsLayer),
       h(MapInner, {
         projection,
         boxZoom: false,
