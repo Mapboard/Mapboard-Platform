@@ -4,9 +4,8 @@ import { mapboxToken } from "~/settings";
 import type { Data } from "../+data";
 import { useData } from "vike-react/useData";
 import { MapStateProvider, useMapState } from "../state";
-import { bbox } from "@turf/bbox";
 import { MapLoadingButton } from "@macrostrat/map-interface";
-import { MapArea } from "../map";
+import { MapArea } from "./display-map";
 import { BoundsLayer } from "~/client-components";
 import { BackButton, LayerControlPanel } from "../controls";
 import { expandBounds } from "../map-utils";
@@ -32,7 +31,6 @@ function PageInner({ baseURL, context: ctx }) {
 
   const showMapArea = useMapState((state) => state.showMapArea);
 
-  // We might not have any bounds yet, though this should probably be required...
   const bounds = expandBounds(ctx.bounds);
 
   return h(

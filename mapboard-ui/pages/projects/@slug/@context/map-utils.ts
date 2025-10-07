@@ -1,12 +1,17 @@
 import { SphericalMercator } from "@mapbox/sphericalmercator";
 import {
+  BBox,
   Feature,
   FeatureCollection,
   Geometry,
   GeometryCollection,
-  BBox,
 } from "geojson";
 import { bbox } from "@turf/bbox";
+import { useMapActions, useMapState } from "./state";
+import { useStyleLayerIDs } from "./style";
+import { useMapRef, useMapStyleOperator } from "@macrostrat/mapbox-react";
+import { useRef } from "react";
+import { useMapMarker } from "@macrostrat/map-interface";
 
 const mercator = new SphericalMercator({
   size: 256,
@@ -68,4 +73,39 @@ export function expandBounds(
     center[1] + dy / 2,
   ];
   return mercator.convert(bbox2, "WGS84");
+}
+export function MapMarker() {
+  const position = useMapState((state) => state.inspect?.position);
+  const setPosition = useMapActions((a) => a.setInspectPosition);
+  const layerIDs = useStyleLayerIDs();
+
+  const mapRef = useMapRef();
+  const markerRef = useRef(null);
+
+  useMapMarker(mapRef, markerRef, position);
+
+  useMapStyleOperator(
+    (map) => {
+      map.removeInteraction("inspect-click");
+      map.addInteraction("inspect-click", {
+        type: "click",
+        handler(e) {
+          const r = 10;
+          const pt = e.point;
+
+          const bbox: [mapboxgl.PointLike, mapboxgl.PointLike] = [
+            [pt.x - r, pt.y - r],
+            [pt.x + r, pt.y + r],
+          ];
+          const tileFeatureData = map.queryRenderedFeatures(bbox, {
+            layers: layerIDs,
+          });
+          setPosition(e.lngLat, tileFeatureData);
+        },
+      });
+    },
+    [setPosition, layerIDs],
+  );
+
+  return null;
 }

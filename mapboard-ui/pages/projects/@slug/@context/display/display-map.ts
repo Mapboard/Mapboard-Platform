@@ -4,21 +4,17 @@ import {
   FloatingNavbar,
   MapAreaContainer,
   MapView,
-  PanelCard,
 } from "@macrostrat/map-interface";
-import styles from "./map.module.scss";
-import { useMapActions, useMapState } from "./state";
+import styles from "../map.module.scss";
+import { useMapActions, useMapState } from "../state";
 import { useMapRef } from "@macrostrat/mapbox-react";
-import { useMapStyle } from "./style";
-import { useStyleImageManager } from "./style/pattern-manager";
-import { BoxSelectionManager, SelectionDrawer } from "./selection";
-import { MapReloadWatcher } from "./change-watcher";
+import { useMapStyle } from "../style";
+import { useStyleImageManager } from "../style/pattern-manager";
+import { SelectionDrawer } from "../selection";
 import type { RequestTransformFunction } from "mapbox-gl";
-import { CrossSectionPanel, CrossSectionsLayer } from "./cross-sections";
-import { Allotment } from "allotment";
-import "allotment/dist/style.css";
-import { useRequestTransformer } from "./transform-request";
-import { BBox, expandBounds, MapMarker } from "./map-utils";
+import { CrossSectionsLayer } from "../cross-sections";
+import { useRequestTransformer } from "../transform-request";
+import { expandBounds, MapMarker } from "../map-utils";
 
 export const h = hyper.styled(styles);
 
@@ -41,19 +37,6 @@ export function MapArea({
   focusedSourceTitle?: string;
   isMapView: boolean;
 }) {
-  const isOpen = useMapState((state) => state.layerPanelIsOpen);
-
-  const activeCrossSection = useMapState((state) => state.activeCrossSection);
-  const setActiveCrossSection = useMapState(
-    (state) => state.setActiveCrossSection,
-  );
-
-  /** Add a cross section assistant panel if a cross section is active */
-  let bottomPanel = null;
-  if (activeCrossSection != null) {
-    bottomPanel = h(CrossSectionPanel, { id: activeCrossSection });
-  }
-
   const transformRequest = useRequestTransformer();
 
   let projection = { name: "globe" };
@@ -61,7 +44,7 @@ export function MapArea({
     projection = { name: "mercator" };
   }
 
-  const mainArea = h(
+  return h(
     MapAreaContainer,
     {
       navbar: h(FloatingNavbar, {
@@ -69,8 +52,7 @@ export function MapArea({
         width: "fit-content",
         height: "fit-content",
       }),
-      contextPanel: h.if(contextPanel != null)(PanelCard, null, contextPanel),
-      contextPanelOpen: isOpen,
+      contextPanel: null,
       fitViewport: false,
       detailPanel: h(SelectionDrawer),
       className: "mapboard-map",
@@ -88,43 +70,8 @@ export function MapArea({
         isMapView,
         transformRequest,
       }),
-      h(BoxSelectionManager),
       h(MapMarker),
-      h(MapReloadWatcher, { baseURL }),
       children,
-    ],
-  );
-
-  return h(
-    Allotment,
-    {
-      vertical: true,
-      onVisibleChange(paneIndex, visible) {
-        // When the bottom panel is closed, clear the active cross-section
-        if (paneIndex === 1 && !visible) {
-          setActiveCrossSection(null);
-        }
-      },
-    },
-    [
-      h(
-        Allotment.Pane,
-        {
-          preferredSize: "80%",
-          minSize: 300,
-        },
-        mainArea,
-      ),
-      h(
-        Allotment.Pane,
-        {
-          preferredSize: "20%",
-          minSize: 100,
-          snap: true,
-          visible: activeCrossSection != null,
-        },
-        bottomPanel,
-      ),
     ],
   );
 }
@@ -162,7 +109,7 @@ export function MapInner({
   }
 
   if (fitBounds) {
-    maxBounds = expandBounds(bounds, aspectRatio);
+    maxBounds = expandBounds(bounds, { aspectRatio });
   }
 
   let _bounds = null;
