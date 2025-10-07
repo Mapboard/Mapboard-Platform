@@ -25,7 +25,6 @@ function defaultInitializeMap(container, args: MapboxOptionsExt = {}) {
     container,
     maxZoom: 18,
     trackResize: false,
-    antialias: true,
     // This is a legacy option for Mapbox GL v2
     // @ts-ignore
     optimizeForTerrain: true,
@@ -61,6 +60,8 @@ function prepareStyleForMaplibre(
     ...style,
     layers: style.layers.filter((d) => d.type !== "sky"),
   };
+
+  delete newStyle.sources["terrain"];
 
   return newStyle;
 }

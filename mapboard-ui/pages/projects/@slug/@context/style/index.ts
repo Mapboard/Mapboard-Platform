@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useInDarkMode } from "@macrostrat/ui-components";
 import { BasemapType, useMapState } from "../state";
-import { mergeStyles } from "@macrostrat/mapbox-utils";
+import { getMapboxStyle, mergeStyles } from "@macrostrat/mapbox-utils";
 import { buildMapOverlayStyle, MapOverlayOptions } from "./overlay";
 import { buildSelectionLayers } from "../selection";
 import { atom, useAtom, useAtomValue } from "jotai";
@@ -84,6 +84,17 @@ export function useMapStyle(
   const overlayOpacity = useAtomValue(overlayOpacityAtom);
 
   const mapRef = useMapRef();
+
+  const [baseStyle, setBaseStyle] = useState<StyleSpecification | null>(null);
+  useEffect(() => {
+    if (baseStyleURL == null) return;
+    getMapboxStyle(baseStyleURL, {
+      access_token: mapboxToken,
+    }).then((baseStyle) => {
+      console.log(baseStyle);
+      setBaseStyle(baseStyle);
+    });
+  }, [baseStyleURL]);
 
   // When loading completes, update accepted revision
   useEffect(() => {
@@ -214,18 +225,18 @@ export function useMapStyle(
       },
       // Use the new imports syntax for basemap styles.
       // This allows us to provide our own sprites
-      imports: [
-        {
-          id: "basemap",
-          url: baseStyleURL,
-        },
-      ],
+      // imports: [
+      //   {
+      //     id: "basemap",
+      //     url: baseStyleURL,
+      //   },
+      // ],
     };
 
-    const style = mergeStyles(overlayStyle, mainStyle);
+    const style = mergeStyles(baseStyle, overlayStyle, mainStyle);
     console.log("Setting style", style);
     return style;
-  }, [baseStyleURL, overlayStyle, exaggeration]);
+  }, [baseStyle, overlayStyle, exaggeration]);
 }
 
 const color = "#e350a3";

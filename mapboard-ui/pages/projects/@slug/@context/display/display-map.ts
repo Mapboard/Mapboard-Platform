@@ -67,7 +67,6 @@ export function MapArea({
         isMapView,
         transformRequest,
       }),
-      h(MapMarker),
       children,
     ],
   );
