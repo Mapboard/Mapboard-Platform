@@ -13,7 +13,6 @@ import { MapPosition } from "@macrostrat/mapbox-utils";
 import { getMapPadding } from "@macrostrat/map-interface";
 import { useAsyncEffect } from "@macrostrat/ui-components";
 import { setMapPosition } from "@macrostrat/mapbox-utils";
-import mapboxgl from "mapbox-gl";
 import { mapboxToken } from "~/settings";
 
 const h = hyper.styled(styles);
@@ -47,14 +46,14 @@ function defaultInitializeMap(container, args: MapboxOptionsExt = {}) {
   });
   map.addControl(scale, "bottom-right");
 
-  map.addControl(
-    new maplibre.NavigationControl({
-      visualizePitch: true,
-      showZoom: true,
-      showCompass: true,
-    }),
-  );
-
+  // map.addControl(
+  //   new maplibre.NavigationControl({
+  //     visualizePitch: true,
+  //     showZoom: true,
+  //     showCompass: true,
+  //   }),
+  // );
+  //
   return map;
 }
 

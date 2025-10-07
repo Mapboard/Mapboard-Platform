@@ -6481,6 +6481,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"maplibre-contour@npm:^0.1.0":
+  version: 0.1.0
+  resolution: "maplibre-contour@npm:0.1.0"
+  checksum: 10c0/f72254a69adfae85c9dc25e8f9487ee99413862d129d0fe926cffd9cedf73d7c453ffebfc2259f9afa4e0d9f00c4c10571bf60abd84a94b4bdba9285a4da597b
+  languageName: node
+  linkType: hard
+
 "maplibre-gl@npm:^5.7.1":
   version: 5.7.1
   resolution: "maplibre-gl@npm:5.7.1"
@@ -8736,6 +8743,7 @@ __metadata:
     jotai-zustand: "npm:^0.6.0"
     jsdom: "npm:^26.1.0"
     mapbox-gl: "npm:^3.8.0"
+    maplibre-contour: "npm:^0.1.0"
     maplibre-gl: "npm:^5.7.1"
     maplibregl-mapbox-request-transformer: "npm:^0.0.3"
     md5: "npm:^2.3.0"

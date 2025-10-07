@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useInDarkMode } from "@macrostrat/ui-components";
 import { BasemapType, useMapState } from "../state";
 import { getMapboxStyle, mergeStyles } from "@macrostrat/mapbox-utils";
@@ -11,6 +11,10 @@ import { apiBaseURL } from "~/settings";
 import { useMapRef } from "@macrostrat/mapbox-react";
 import { StyleSpecification } from "mapbox-gl";
 import { createStationsLayer } from "./station-layers";
+import mlcontour from "maplibre-contour";
+import { useDEMTileURL } from "../transform-request";
+import maplibre from "maplibre-gl";
+import { DemSource } from "maplibre-contour/dist/dem-source";
 
 export { buildMapOverlayStyle };
 
@@ -241,6 +245,8 @@ export function useMapStyle(
   }, [baseStyle, overlayStyle, exaggeration]);
 }
 
+const demSourceAtom = atom<DemSource | null>(null);
+
 export function useDisplayStyle(
   baseURL: string,
   { mapboxToken, isMapView = true }: MapStyleOptions,
@@ -260,7 +266,7 @@ export function useDisplayStyle(
   const revision = useAtomValue(mapReloadTimestampAtom);
   const [acceptedRevision, setAcceptedRevision] = useState<number>(revision);
 
-  const baseStyleURL = "mapbox://styles/jczaplewski/ckxcu9zmu4aln14mfg4monlv3";
+  const baseStyleURL = "mapbox://styles/jczaplewski/cmggy9lqq005l01ryhb5o2eo4";
 
   const [overlayStyle, setOverlayStyle] = useAtom(overlayStyleAtom);
   const clipToContextBounds = useAtomValue(overlayClipAtom);
@@ -375,6 +381,25 @@ export function useDisplayStyle(
     overlayOpacity,
   ]);
 
+  const [demSource, setDemSource] = useAtom(demSourceAtom);
+
+  const demURL = useDEMTileURL();
+
+  useEffect(() => {
+    if (demURL == null) return null;
+    const src = new mlcontour.DemSource({
+      url: demURL,
+      encoding: "mapbox", // "mapbox" or "terrarium" default="terrarium"
+      maxzoom: 14,
+      worker: true, // offload isoline computation to a web worker to reduce jank
+      cacheSize: 50, // number of most-recent tiles to cache
+      timeoutMs: 20_000, // timeout on fetch requests
+    });
+    src.setupMaplibre(maplibre);
+    console.log(src);
+    setDemSource(src);
+  }, [demURL]);
+
   return useMemo(() => {
     if (baseStyleURL == null || overlayStyle == null) {
       return null;
@@ -398,14 +423,10 @@ export function useDisplayStyle(
       sources: {
         terrain: {
           type: "raster-dem",
-          url: "mapbox://mapbox.mapbox-terrain-dem-v1",
+          url: demURL, //"mapbox://mapbox.mapbox-terrain-dem-v1",
           tileSize: 512,
           maxzoom: 14,
         },
-      },
-      terrain: {
-        source: "terrain",
-        exaggeration,
       },
       // Use the new imports syntax for basemap styles.
       // This allows us to provide our own sprites
@@ -417,9 +438,82 @@ export function useDisplayStyle(
       // ],
     };
 
-    console.log(baseStyle);
+    console.log("DEM Source", demSource);
 
-    const style = mergeStyles(baseStyle, overlayStyle, mainStyle);
+    let contourStyle = null;
+    if (demSource != null) {
+      contourStyle = {
+        sources: {
+          contour: {
+            type: "vector",
+            tiles: [
+              demSource.contourProtocolUrl({
+                //multiplier: 1.001,
+                thresholds: {
+                  // zoom: [minor, major]
+                  // 9: [200, 2000],
+                  // 11: [50, 5000],
+                  // 12: [20, 200],
+                  // 15: [5, 50],
+                  10: 100,
+                  12: 10,
+                },
+                contourLayer: "contours",
+                elevationKey: "ele",
+                levelKey: "level",
+                extent: 4096,
+                buffer: 1,
+              }),
+            ],
+            maxzoom: 14,
+          },
+          terrain: {
+            type: "raster-dem",
+            url: demSource.sharedDemProtocolUrl, //"mapbox://mapbox.mapbox-terrain-dem-v1",
+            tileSize: 256,
+            maxzoom: 14,
+          },
+        },
+        layers: [
+          {
+            id: "contour-lines",
+            type: "line",
+            source: "contour",
+            "source-layer": "contours",
+            paint: {
+              "line-color": "#777",
+              // level = highest index in thresholds array the elevation is a multiple of
+              "line-width": 0.25, //["match", ["get", "level"], 1, 1, 0.5],
+            },
+          },
+          {
+            id: "contour-labels",
+            type: "symbol",
+            source: "contour",
+            "source-layer": "contours",
+            filter: [">", ["get", "level"], 0],
+            layout: {
+              "symbol-placement": "line",
+              "text-size": 10,
+              "text-field": [
+                "concat",
+                ["number-format", ["get", "ele"], {}],
+                "'",
+              ],
+              "text-font": ["Noto Sans Bold"],
+            },
+            paint: {
+              "text-halo-color": "white",
+              "text-halo-width": 1,
+            },
+          },
+        ],
+      };
+    }
+
+    console.log(contourStyle);
+
+    const style = mergeStyles(baseStyle, mainStyle, contourStyle); //, overlayStyle);
 
     const oldRasterID = "mapbox://mapbox.terrain-rgb";
     delete style.sources[oldRasterID];
@@ -433,7 +527,10 @@ export function useDisplayStyle(
       return l;
     });
 
+    delete style.terrain;
+    delete style.projection;
+
     console.log("Setting style", style);
     return style;
-  }, [baseStyle, overlayStyle, exaggeration]);
+  }, [baseStyle, overlayStyle, exaggeration, demSource]);
 }

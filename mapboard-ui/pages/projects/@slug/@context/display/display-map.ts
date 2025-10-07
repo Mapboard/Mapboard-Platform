@@ -84,6 +84,9 @@ export function MapInner({
 
   const mapRef = useMapRef();
 
+  const setMapPosition = useMapActions((a) => a.setMapPosition);
+  const mapPosition = useMapState((state) => state.mapPosition);
+
   useStyleImageManager();
 
   const style = useDisplayStyle(baseURL, {
@@ -102,15 +105,25 @@ export function MapInner({
   }
 
   if (fitBounds) {
-    maxBounds = expandBounds(bounds, { aspectRatio });
+    maxBounds = expandBounds(bounds);
+  }
+
+  let _bounds = null;
+  let _mapPosition = null;
+  if (mapPosition == null) {
+    _bounds = bounds;
+  } else {
+    _mapPosition = mapPosition;
   }
 
   return h(MapView, {
     maxBounds,
-    bounds: bounds,
+    bounds: _bounds,
+    mapPosition: _mapPosition,
     mapboxToken,
     style,
     loadingIgnoredSources: ["crossSectionCursor"],
+    onMapMoved: setMapPosition,
     ...rest,
   });
 }
