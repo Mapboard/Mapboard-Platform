@@ -1,31 +1,21 @@
 // Import other components
 import hyper from "@macrostrat/hyper";
-import {
-  FloatingNavbar,
-  MapAreaContainer,
-  MapView,
-  PanelCard,
-  useMapMarker,
-} from "@macrostrat/map-interface";
+import { FloatingNavbar, MapAreaContainer, MapView, PanelCard, useMapMarker } from "@macrostrat/map-interface";
 import styles from "./map.module.scss";
 import { useMapActions, useMapState } from "./state";
-import { SphericalMercator } from "@mapbox/sphericalmercator";
 import { useMapRef, useMapStyleOperator } from "@macrostrat/mapbox-react";
 import { useMapStyle, useStyleLayerIDs } from "./style";
 import { useStyleImageManager } from "./style/pattern-manager";
 import { BoxSelectionManager } from "./selection";
 import { MapReloadWatcher } from "./change-watcher";
 import { SelectionDrawer } from "./selection/control-panel";
-import { useMemo, useRef } from "react";
+import { useRef } from "react";
 import type { RequestTransformFunction } from "mapbox-gl";
 import { CrossSectionPanel, CrossSectionsLayer } from "./cross-sections";
 import { Allotment } from "allotment";
 import "allotment/dist/style.css";
-
-const mercator = new SphericalMercator({
-  size: 256,
-  antimeridian: true,
-});
+import { useRequestTransformer } from "./transform-request";
+import { BBox, expandBounds } from "./map-utils";
 
 export const h = hyper.styled(styles);
 
@@ -228,41 +218,6 @@ export function MapInner({
   });
 }
 
-type BBox = [number, number, number, number];
-
-function expandBounds(bounds: BBox, aspectRatio = 1, margin = 0.1) {
-  // Make bounds square and expand to ensure that the entire cross-section can be viewed
-  if (bounds == null) {
-    return null;
-  }
-  const webMercatorBBox = mercator.convert(bounds, "900913");
-  const [minX, minY, maxX, maxY] = webMercatorBBox;
-
-  const center = [(minX + maxX) / 2, (minY + maxY) / 2];
-  let dx = maxX - minX;
-  let dy = maxY - minY;
-
-  const m = (Math.max(dx, dy) * margin) / 2;
-
-  dx += m;
-  dy += m;
-
-  let bbox2: BBox;
-  if (dx > dy) {
-    dy = dx / aspectRatio;
-  } else {
-    dx = dy * aspectRatio;
-  }
-
-  bbox2 = [
-    center[0] - dx / 2,
-    center[1] - dy / 2,
-    center[0] + dx / 2,
-    center[1] + dy / 2,
-  ];
-  return mercator.convert(bbox2, "WGS84");
-}
-
 enum ExistingLayersAction {
   Replace = "replace",
   Merge = "merge",
@@ -274,42 +229,3 @@ type StyleUpdateConfig = {
   removeLayers?: string[];
 };
 
-function useRequestTransformer() {
-  const baseLayers = useMapState((state) => state.baseLayers);
-  // Check if there's a DEM layer in the base layers
-  return useMemo(() => {
-    const dem = baseLayers?.find((layer) => layer.type === "dem");
-
-    if (dem == null) {
-      return null;
-    }
-    console.log("Using DEM layer for request transformation", dem);
-
-    return (url, resourceType) => {
-      /** Common API to use for transforming requests for caching or modifying */
-      const start =
-        "https://api.mapbox.com/raster/v1/mapbox.mapbox-terrain-dem-v1";
-      if (resourceType !== "Tile" || !url.startsWith(start)) return { url };
-      // We want to send this request to our elevation tiling backend, preserving query args
-      const [baseURL, query, ...rest] = url.split("?");
-
-      if (rest.length > 0) {
-        console.warn(
-          "Unexpected URL format, expected no additional path segments after query string",
-          rest,
-        );
-      }
-
-      // This depends on the "elevation-tiler" dependency
-      let newURL = "/dem-tiles/tiles" + baseURL.slice(start.length);
-      let queryArgs = new URLSearchParams(query);
-
-      queryArgs.set("x-overlay-layer", dem.url);
-      queryArgs.set("x-fallback-layer", start);
-
-      return {
-        url: newURL + "?" + queryArgs.toString(),
-      };
-    };
-  }, [baseLayers]);
-}

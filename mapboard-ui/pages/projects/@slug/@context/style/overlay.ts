@@ -222,7 +222,7 @@ export function buildMapOverlayStyle(
     baseLineWidth,
   ];
 
-  let lineFilter = ["all", filter];
+  let lineFilter = ["all", ["!", ["get", "covered"]], filter];
 
   if (selectedLayer == null) {
     lineFilter.push(["!=", ["get", "layer"], "none"]);

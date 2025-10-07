@@ -1,16 +1,15 @@
 import hyper from "@macrostrat/hyper";
-import styles from "./map.module.scss";
+import styles from "../map.module.scss";
 import { mapboxToken } from "~/settings";
 import type { Data } from "../+data";
 import { useData } from "vike-react/useData";
-import { MapStateProvider, useMapState } from "./state";
+import { MapStateProvider, useMapState } from "../state";
 import { bbox } from "@turf/bbox";
 import { MapLoadingButton } from "@macrostrat/map-interface";
-import { MapArea } from "./map";
-import { ToasterContext } from "@macrostrat/ui-components";
+import { MapArea } from "../map";
 import { BoundsLayer } from "~/client-components";
-import { BackButton, LayerControlPanel } from "./controls";
-import { expandBounds } from "./map-utils";
+import { BackButton, LayerControlPanel } from "../controls";
+import { expandBounds } from "../map-utils";
 
 const h = hyper.styled(styles);
 
@@ -22,12 +21,9 @@ export function Page() {
   const baseURL = `${domain}/api/project/${ctx.project_slug}/context/${ctx.slug}`;
 
   return h(
-    ToasterContext,
-    h(
-      MapStateProvider,
-      { baseURL, baseLayers: ctx.layers, defaultLayer: 22, context: ctx },
-      h(PageInner, { baseURL, context: ctx }),
-    ),
+    MapStateProvider,
+    { baseURL, baseLayers: ctx.layers, defaultLayer: 22, context: ctx },
+    h(PageInner, { baseURL, context: ctx }),
   );
 }
 
@@ -35,6 +31,9 @@ function PageInner({ baseURL, context: ctx }) {
   const isMapContext = ctx.type === "map";
 
   const showMapArea = useMapState((state) => state.showMapArea);
+
+  // We might not have any bounds yet, though this should probably be required...
+  const bounds = expandBounds(ctx.bounds);
 
   return h(
     "div.map-viewer",
@@ -44,7 +43,7 @@ function PageInner({ baseURL, context: ctx }) {
         mapboxToken,
         title: ctx.name,
         baseURL,
-        bounds: expandBounds(ctx.bounds),
+        bounds,
         headerElement: h(ContextHeader, ctx),
         contextPanel: h(LayerControlPanel),
         isMapView: isMapContext,
@@ -65,7 +64,7 @@ function ContextHeader({ project_name, project_slug, name }) {
         { href: `/projects/${project_slug}`, className: "back-to-project" },
         project_name,
       ),
-      h("h2", name),
+      h("h2", "Display map"),
     ]),
     h("div.settings-toggle", [
       h(MapLoadingButton, {
