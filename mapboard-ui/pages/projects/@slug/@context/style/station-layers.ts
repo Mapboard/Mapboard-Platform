@@ -118,7 +118,7 @@ export function pointLayoutProperties(showLabels: boolean = false) {
     "icon-image": iconImage,
     "icon-rotate": ["coalesce", ["get", "strike"], ["get", "trend"], 0],
     "icon-rotation-alignment": "map",
-    "icon-size": 0.2,
+    "icon-size": 0.15,
     // "symbol-spacing": 1,
     "icon-padding": 0,
     "text-field": [

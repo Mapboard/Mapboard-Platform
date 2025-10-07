@@ -4,7 +4,7 @@ import { FloatingNavbar, MapAreaContainer } from "@macrostrat/map-interface";
 import styles from "../map.module.scss";
 import { useMapActions, useMapState } from "../state";
 import { useMapRef } from "@macrostrat/mapbox-react";
-import { useMapStyle } from "../style";
+import { useDisplayStyle, useMapStyle } from "../style";
 import { useStyleImageManager } from "../style/pattern-manager";
 import { SelectionDrawer } from "../selection";
 import type { RequestTransformFunction } from "mapbox-gl";
@@ -84,12 +84,9 @@ export function MapInner({
 
   const mapRef = useMapRef();
 
-  const setMapPosition = useMapActions((a) => a.setMapPosition);
-  const mapPosition = useMapState((state) => state.mapPosition);
-
   useStyleImageManager();
 
-  const style = useMapStyle(baseURL, {
+  const style = useDisplayStyle(baseURL, {
     isMapView,
     mapboxToken,
   });
@@ -108,21 +105,11 @@ export function MapInner({
     maxBounds = expandBounds(bounds, { aspectRatio });
   }
 
-  let _bounds = null;
-  let _mapPosition = null;
-  if (mapPosition == null) {
-    _bounds = bounds;
-  } else {
-    _mapPosition = mapPosition;
-  }
-
   return h(MapView, {
     maxBounds,
-    bounds: _bounds,
-    mapPosition: _mapPosition,
+    bounds: bounds,
     mapboxToken,
     style,
-    onMapMoved: setMapPosition,
     loadingIgnoredSources: ["crossSectionCursor"],
     ...rest,
   });

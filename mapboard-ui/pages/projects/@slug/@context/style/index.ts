@@ -26,6 +26,8 @@ export function useBaseMapStyle(basemapType: BasemapType) {
     baseStyle = isEnabled
       ? "mapbox://styles/jczaplewski/ckfxmukdy0ej619p7vqy19kow"
       : "mapbox://styles/jczaplewski/ckxcu9zmu4aln14mfg4monlv3";
+
+    //     // mapbox://styles/jczaplewski/cmggy9lqq005l01ryhb5o2eo4
   }
   return baseStyle;
 }
@@ -212,7 +214,7 @@ export function useMapStyle(
         },
       ],
       sources: {
-        "mapbox-dem": {
+        terrain: {
           type: "raster-dem",
           url: "mapbox://mapbox.mapbox-terrain-dem-v1",
           tileSize: 512,
@@ -220,7 +222,7 @@ export function useMapStyle(
         },
       },
       terrain: {
-        source: "mapbox-dem",
+        source: "terrain",
         exaggeration,
       },
       // Use the new imports syntax for basemap styles.
@@ -239,4 +241,199 @@ export function useMapStyle(
   }, [baseStyle, overlayStyle, exaggeration]);
 }
 
-const color = "#e350a3";
+export function useDisplayStyle(
+  baseURL: string,
+  { mapboxToken, isMapView = true }: MapStyleOptions,
+) {
+  const activeLayer = useMapState((state) => state.activeLayer);
+  const basemapType = useMapState((state) => state.baseMap);
+  const showLineEndpoints = useMapState((state) => state.showLineEndpoints);
+  const enabledFeatureModes = useMapState((state) => state.enabledFeatureModes);
+  const projectID = useMapState((d) => d.context.project_id);
+
+  const showFacesWithNoUnit = useMapState((d) => d.showFacesWithNoUnit);
+  const showOverlay = useMapState((d) => d.showOverlay);
+  const exaggeration = useMapState((d) => d.terrainExaggeration);
+  const showTopologyPrimitives = useMapState((d) => d.showTopologyPrimitives);
+  const styleMode = useMapState((d) => d.styleMode);
+
+  const revision = useAtomValue(mapReloadTimestampAtom);
+  const [acceptedRevision, setAcceptedRevision] = useState<number>(revision);
+
+  const baseStyleURL = "mapbox://styles/jczaplewski/ckxcu9zmu4aln14mfg4monlv3";
+
+  const [overlayStyle, setOverlayStyle] = useAtom(overlayStyleAtom);
+  const clipToContextBounds = useAtomValue(overlayClipAtom);
+
+  const overlayOpacity = useAtomValue(overlayOpacityAtom);
+
+  const mapRef = useMapRef();
+
+  const [baseStyle, setBaseStyle] = useState<StyleSpecification | null>(null);
+  useEffect(() => {
+    if (baseStyleURL == null) return;
+    getMapboxStyle(baseStyleURL, {
+      access_token: mapboxToken,
+    }).then((baseStyle) => {
+      console.log(baseStyle);
+      setBaseStyle(baseStyle);
+    });
+  }, [baseStyleURL]);
+
+  // When loading completes, update accepted revision
+  useEffect(() => {
+    const map = mapRef.current;
+    if (map == null) return;
+    // Listen for source load
+    if (revision === acceptedRevision) return;
+    const callback = (evt) => {
+      const key = `mapboard-${revision}`;
+      if (evt.sourceId != key) return;
+      if (!evt.isSourceLoaded) return;
+      // Only tile requests, as this signifies that the source has actually loaded data
+      if (evt.tile == null) return;
+      console.log("Accepting revision", revision);
+      setAcceptedRevision(revision);
+    };
+    map.on("data", callback);
+    return () => {
+      map.off("data", callback);
+    };
+  }, [revision, acceptedRevision]);
+
+  useEffect(() => {
+    if (!showOverlay) {
+      setOverlayStyle(null);
+      return;
+    }
+
+    const styleOpts: MapOverlayOptions = {
+      selectedLayer: isMapView ? activeLayer : null,
+      enabledFeatureModes,
+      showLineEndpoints,
+      showFacesWithNoUnit,
+      showTopologyPrimitives,
+      styleMode,
+      clipToContextBounds,
+      opacity: overlayOpacity,
+    };
+
+    const style = buildMapOverlayStyle(baseURL, {
+      ...styleOpts,
+      revision: acceptedRevision,
+      visible: true,
+    });
+
+    let nextStyle = {};
+    if (revision !== acceptedRevision) {
+      nextStyle = buildMapOverlayStyle(baseURL, {
+        ...styleOpts,
+        revision,
+        visible: true,
+      });
+    }
+
+    const stationsStyle: Partial<StyleSpecification> = {
+      sources: {
+        stations: {
+          type: "geojson",
+          data: `${apiBaseURL}/stations.geojson?project_id=eq.${projectID}`,
+        },
+      },
+      layers: [
+        // createStationsLayer({
+        //   id: "points",
+        //   sourceID: "stations",
+        //   showOrientations: false,
+        //   showAll: true,
+        // }),
+        createStationsLayer({
+          id: "orientations",
+          sourceID: "stations",
+          showOrientations: true,
+        }),
+      ],
+    };
+
+    const selectionStyle: any = {
+      layers: buildSelectionLayers(`mapboard-${acceptedRevision}`),
+    };
+
+    setOverlayStyle(
+      mergeStyles(style, nextStyle, stationsStyle, selectionStyle),
+    );
+  }, [
+    activeLayer,
+    showLineEndpoints,
+    enabledFeatureModes,
+    showFacesWithNoUnit,
+    showOverlay,
+    revision,
+    acceptedRevision,
+    showTopologyPrimitives,
+    clipToContextBounds,
+    overlayOpacity,
+  ]);
+
+  return useMemo(() => {
+    if (baseStyleURL == null || overlayStyle == null) {
+      return null;
+    }
+
+    const mainStyle: mapboxgl.StyleSpecification = {
+      version: 8,
+      name: "Mapboard",
+      layers: [
+        // We need to add this so that the style doesn't randomly reload
+        {
+          id: "sky",
+          type: "sky",
+          paint: {
+            "sky-type": "atmosphere",
+            "sky-atmosphere-sun": [0.0, 0.0],
+            "sky-atmosphere-sun-intensity": 15,
+          },
+        },
+      ],
+      sources: {
+        terrain: {
+          type: "raster-dem",
+          url: "mapbox://mapbox.mapbox-terrain-dem-v1",
+          tileSize: 512,
+          maxzoom: 14,
+        },
+      },
+      terrain: {
+        source: "terrain",
+        exaggeration,
+      },
+      // Use the new imports syntax for basemap styles.
+      // This allows us to provide our own sprites
+      // imports: [
+      //   {
+      //     id: "basemap",
+      //     url: baseStyleURL,
+      //   },
+      // ],
+    };
+
+    console.log(baseStyle);
+
+    const style = mergeStyles(baseStyle, overlayStyle, mainStyle);
+
+    const oldRasterID = "mapbox://mapbox.terrain-rgb";
+    delete style.sources[oldRasterID];
+    style.layers = style.layers.map((l) => {
+      if (l.source === oldRasterID) {
+        return {
+          ...l,
+          source: "terrain",
+        };
+      }
+      return l;
+    });
+
+    console.log("Setting style", style);
+    return style;
+  }, [baseStyle, overlayStyle, exaggeration]);
+}

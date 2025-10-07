@@ -27,7 +27,6 @@ function defaultInitializeMap(container, args: MapboxOptionsExt = {}) {
     trackResize: false,
     // This is a legacy option for Mapbox GL v2
     // @ts-ignore
-    optimizeForTerrain: true,
     ...rest,
   });
 
@@ -48,6 +47,14 @@ function defaultInitializeMap(container, args: MapboxOptionsExt = {}) {
   });
   map.addControl(scale, "bottom-right");
 
+  map.addControl(
+    new maplibre.NavigationControl({
+      visualizePitch: true,
+      showZoom: true,
+      showCompass: true,
+    }),
+  );
+
   return map;
 }
 
@@ -61,7 +68,7 @@ function prepareStyleForMaplibre(
     layers: style.layers.filter((d) => d.type !== "sky"),
   };
 
-  delete newStyle.sources["terrain"];
+  //delete newStyle.sources["terrain"];
 
   return newStyle;
 }

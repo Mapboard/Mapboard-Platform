@@ -29,8 +29,6 @@ export function Page() {
 function PageInner({ baseURL, context: ctx }) {
   const isMapContext = ctx.type === "map";
 
-  const showMapArea = useMapState((state) => state.showMapArea);
-
   const bounds = expandBounds(ctx.bounds);
 
   return h(
@@ -46,7 +44,7 @@ function PageInner({ baseURL, context: ctx }) {
         contextPanel: h(LayerControlPanel),
         isMapView: isMapContext,
       },
-      [h(BoundsLayer, { bounds: ctx.bounds, visible: showMapArea })],
+      h(BoundsLayer, { bounds: ctx.bounds, visible: true }),
     ),
   );
 }
