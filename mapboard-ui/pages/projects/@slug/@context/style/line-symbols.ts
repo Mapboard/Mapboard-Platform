@@ -26,16 +26,11 @@ export function createLineSymbolLayers(filter) {
       symbolSpacing: 200,
     }),
     builder.createLayer("faults", {
-      types: [
-        "left-lateral-fault",
-        "right-lateral-fault",
-        "normal-fault",
-        "reverse-fault",
-      ],
-      symbolSpacing: 50,
+      types: ["left-lateral-fault", "right-lateral-fault", "normal-fault"],
+      symbolSpacing: 100,
     }),
     builder.createLayer("thrust-fault", {
-      types: ["thrust-fault"],
+      types: ["thrust-fault", "reverse-fault"],
       symbolSpacing: [
         "interpolate",
         ["exponential", 2],
@@ -47,16 +42,7 @@ export function createLineSymbolLayers(filter) {
         24,
         300,
       ],
-      iconOffset: [
-        "interpolate",
-        ["exponential", 2],
-        ["zoom"],
-        0,
-        ["literal", [0, 0]],
-        24,
-        ["literal", [0, 0]],
-      ],
-      filter: ["!=", ["get", "source_layer"], 8], // exclude nappe bounding surface
+      iconOffset: [0, 0],
     }),
   ];
 }
@@ -65,7 +51,7 @@ class SymbolLayerBuilder {
   index: LineSymbolIndex;
   filter: any;
 
-  constructor(index: LineSymbolIndex, filter: any) {
+  constructor(index: LineSymbolIndex, filter: any = null) {
     this.index = index;
     this.filter = filter;
   }
@@ -82,6 +68,14 @@ class SymbolLayerBuilder {
       "thrust-fault": "#000000",
       "normal-fault": "#000000",
     };
+
+    let filterStack = ["all", ["in", ["get", "type"], ["literal", types]]];
+    if (this.filter != null) {
+      filterStack.push(this.filter);
+    }
+    if (opts.filter != null) {
+      filterStack.push(opts.filter);
+    }
 
     return {
       type: "symbol",
@@ -114,7 +108,7 @@ class SymbolLayerBuilder {
       paint: {
         "icon-color": matchStatement("type", colorMap, ["get", "color"]),
       },
-      filter: ["all", ["in", ["get", "type"], ["literal", types]], this.filter],
+      filter: filterStack,
       source: "mapboard",
       "source-layer": "lines",
     };

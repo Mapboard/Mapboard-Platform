@@ -307,7 +307,7 @@ export function buildDisplayOverlayStyle(
   let lineWidth: any = [
     "case",
     ["==", ["get", "source_layer"], 8],
-    2.5,
+    3,
     [
       "in",
       ["get", "type"],
@@ -322,6 +322,9 @@ export function buildDisplayOverlayStyle(
     ["!", ["get", "covered"]],
     ["!=", ["get", "type"], "mapboard:arbitrary"],
   ];
+
+  const lineSymbolFilter = [...lineFilter, ["!=", ["get", "source_layer"], 8]];
+  // exclude nappe bounding surface
 
   let layers = [
     ...buildFillLayers({
@@ -341,10 +344,13 @@ export function buildDisplayOverlayStyle(
         "line-width": lineWidth,
         "line-opacity": 0.8,
       },
+      layout: {
+        "line-cap": "round",
+        "line-join": "round",
+      },
       filter: lineFilter,
     },
-
-    ...createLineSymbolLayers(lineFilter),
+    ...createLineSymbolLayers(lineSymbolFilter),
   ];
 
   return {
