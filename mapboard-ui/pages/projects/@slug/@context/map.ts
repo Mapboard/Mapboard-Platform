@@ -143,12 +143,14 @@ export function MapInner({
 
   const setMapPosition = useMapActions((a) => a.setMapPosition);
   const mapPosition = useMapState((state) => state.mapPosition);
+  const projectID = useMapState((d) => d.context.project_id);
 
   useStyleImageManager();
 
   const style = useMapStyle(baseURL, {
     isMapView,
     mapboxToken,
+    projectID,
   });
   if (style == null) {
     return null;

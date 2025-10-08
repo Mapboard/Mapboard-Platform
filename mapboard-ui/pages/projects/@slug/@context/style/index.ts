@@ -43,6 +43,7 @@ export function useBaseMapStyle(basemapType: BasemapType) {
 interface MapStyleOptions {
   mapboxToken: string;
   isMapView: boolean;
+  projectID: number;
 }
 
 const overlayStyleAtom = atom<mapboxgl.StyleSpecification | null>(null);
@@ -69,13 +70,12 @@ export const overlayOpacityAtom = atomWithStorage<number>(
 
 export function useMapStyle(
   baseURL: string,
-  { mapboxToken, isMapView = true }: MapStyleOptions,
+  { mapboxToken, isMapView = true, projectID }: MapStyleOptions,
 ) {
   const activeLayer = useMapState((state) => state.activeLayer);
   const basemapType = useMapState((state) => state.baseMap);
   const showLineEndpoints = useMapState((state) => state.showLineEndpoints);
   const enabledFeatureModes = useMapState((state) => state.enabledFeatureModes);
-  const projectID = useMapState((d) => d.context.project_id);
 
   const showFacesWithNoUnit = useMapState((d) => d.showFacesWithNoUnit);
   const showOverlay = useMapState((d) => d.showOverlay);
@@ -251,10 +251,8 @@ export function useMapStyle(
 
 export function useDisplayStyle(
   baseURL: string,
-  { mapboxToken, showOverlay = true }: MapStyleOptions,
+  { mapboxToken, showOverlay = true, projectID }: MapStyleOptions,
 ) {
-  const projectID = useMapState((d) => d.context.project_id);
-
   const baseStyleURL = "mapbox://styles/jczaplewski/cmggy9lqq005l01ryhb5o2eo4";
 
   const [overlayStyle, setOverlayStyle] = useState(null);
