@@ -38,9 +38,9 @@ export function createLineSymbolLayers(filter) {
         0, // stop
         3, // size
         15,
-        150,
+        120,
         24,
-        300,
+        250,
       ],
       iconOffset: [0, 0],
     }),

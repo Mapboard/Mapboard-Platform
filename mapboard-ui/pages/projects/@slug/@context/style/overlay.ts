@@ -307,13 +307,13 @@ export function buildDisplayOverlayStyle(
   let lineWidth: any = [
     "case",
     ["==", ["get", "source_layer"], 8],
-    3,
+    2, // special case for NNC bounding surface
     [
       "in",
       ["get", "type"],
       ["literal", ["thrust-fault", "normal-fault", "fault"]],
     ],
-    1,
+    1.2,
     0.5,
   ];
 
