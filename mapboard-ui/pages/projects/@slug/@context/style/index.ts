@@ -249,33 +249,15 @@ export function useMapStyle(
   }, [baseStyle, overlayStyle, exaggeration]);
 }
 
-const demSourceAtom = atom<DemSource | null>(null);
-
 export function useDisplayStyle(
   baseURL: string,
-  { mapboxToken, isMapView = true }: MapStyleOptions,
+  { mapboxToken, showOverlay = true }: MapStyleOptions,
 ) {
-  const activeLayer = useMapState((state) => state.activeLayer);
-  const showLineEndpoints = useMapState((state) => state.showLineEndpoints);
-  const enabledFeatureModes = useMapState((state) => state.enabledFeatureModes);
   const projectID = useMapState((d) => d.context.project_id);
-
-  const showFacesWithNoUnit = useMapState((d) => d.showFacesWithNoUnit);
-  const showOverlay = useMapState((d) => d.showOverlay);
-  const showTopologyPrimitives = useMapState((d) => d.showTopologyPrimitives);
-  const styleMode = "display";
-
-  const revision = useAtomValue(mapReloadTimestampAtom);
-  const [acceptedRevision, setAcceptedRevision] = useState<number>(revision);
 
   const baseStyleURL = "mapbox://styles/jczaplewski/cmggy9lqq005l01ryhb5o2eo4";
 
   const [overlayStyle, setOverlayStyle] = useState(null);
-  const clipToContextBounds = true;
-
-  const overlayOpacity = 0.8;
-
-  const mapRef = useMapRef();
 
   const [baseStyle, setBaseStyle] = useState<StyleSpecification | null>(null);
   useEffect(() => {
@@ -293,18 +275,8 @@ export function useDisplayStyle(
       return;
     }
 
-    const styleOpts: MapOverlayOptions = {
-      selectedLayer: isMapView ? activeLayer : null,
-      enabledFeatureModes,
-      showLineEndpoints,
-      showFacesWithNoUnit,
-      styleMode,
-      clipToContextBounds,
-      opacity: overlayOpacity,
-    };
-
     const style = buildDisplayOverlayStyle(baseURL, {
-      ...styleOpts,
+      selectedLayer: 22, // composite layer
     });
 
     const stationsStyle: Partial<StyleSpecification> = {
@@ -325,24 +297,11 @@ export function useDisplayStyle(
     };
 
     setOverlayStyle(mergeStyles(style, stationsStyle));
-  }, [
-    activeLayer,
-    showLineEndpoints,
-    enabledFeatureModes,
-    showFacesWithNoUnit,
-    showOverlay,
-    revision,
-    acceptedRevision,
-    showTopologyPrimitives,
-    clipToContextBounds,
-    overlayOpacity,
-  ]);
-
-  const [demSource, setDemSource] = useAtom(demSourceAtom);
+  }, [showOverlay]);
 
   const demURL = useDEMTileURL();
 
-  useEffect(() => {
+  const demSource = useMemo(() => {
     if (demURL == null) return null;
     const src = new mlcontour.DemSource({
       url: demURL,
@@ -354,7 +313,7 @@ export function useDisplayStyle(
     });
     src.setupMaplibre(maplibre);
     console.log(src);
-    setDemSource(src);
+    return src;
   }, [demURL]);
 
   return useMemo(() => {

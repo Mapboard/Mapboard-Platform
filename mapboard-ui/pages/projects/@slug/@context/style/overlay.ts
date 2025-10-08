@@ -276,13 +276,9 @@ export function buildDisplayOverlayStyle(
 ): mapboxgl.StyleSpecification {
   const { selectedLayer } = options ?? {};
 
-  let filter: any = ["literal", true];
-
   let params = new URLSearchParams();
 
   let sources: Record<string, mapboxgl.SourceSpecification> = {};
-
-  let layers: mapboxgl.Layer[] = [];
 
   params.set("map_layer", selectedLayer.toString());
 
@@ -296,14 +292,6 @@ export function buildDisplayOverlayStyle(
     tiles: [baseURL + `/tile/fills,lines/{z}/{x}/{y}${suffix}`],
     volatile: false,
   };
-
-  layers.push(
-    ...buildFillLayers({
-      opacity: 0.8,
-      filter: ["has", "unit"],
-      source: "mapboard",
-    }),
-  );
 
   let lineColor = [
     "case",
@@ -332,25 +320,32 @@ export function buildDisplayOverlayStyle(
   let lineFilter = [
     "all",
     ["!", ["get", "covered"]],
-    filter,
     ["!=", ["get", "type"], "mapboard:arbitrary"],
   ];
 
-  // A single layer for all lines
-  layers.push({
-    id: "lines",
-    type: "line",
-    source: "mapboard",
-    "source-layer": "lines",
-    paint: {
-      "line-color": lineColor,
-      "line-width": lineWidth,
-      "line-opacity": 0.8,
-    },
-    filter: lineFilter,
-  });
+  let layers = [
+    ...buildFillLayers({
+      opacity: 0.6,
+      filter: ["has", "unit"],
+      source: "mapboard",
+    }),
 
-  layers.push(...createLineSymbolLayers(lineFilter));
+    // A single layer for all lines
+    {
+      id: "lines",
+      type: "line",
+      source: "mapboard",
+      "source-layer": "lines",
+      paint: {
+        "line-color": lineColor,
+        "line-width": lineWidth,
+        "line-opacity": 0.8,
+      },
+      filter: lineFilter,
+    },
+
+    ...createLineSymbolLayers(lineFilter),
+  ];
 
   return {
     version: 8,
