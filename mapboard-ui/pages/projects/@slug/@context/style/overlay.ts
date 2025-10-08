@@ -131,7 +131,7 @@ export function buildMapOverlayStyle(
     layers.push(
       ...buildFillLayers({
         opacity: selectedLayerOpacity(0.5, 0.3),
-        filters: topoFilters,
+        filter: ["all", ...topoFilters],
         source: "mapboard",
       }),
     );
@@ -274,30 +274,9 @@ export function buildDisplayOverlayStyle(
   baseURL: string,
   options: MapOverlayOptions,
 ): mapboxgl.StyleSpecification {
-  const {
-    showLineEndpoints = true,
-    selectedLayer,
-    enabledFeatureModes = allFeatureModes,
-    useSymbols = true,
-    showFacesWithNoUnit = false,
-    showTopologyPrimitives = false,
-    clipToContextBounds = false,
-    styleMode = "edit",
-    opacity = 1.0,
-    revision,
-    visible = true,
-  } = options ?? {};
-
-  // Disable rivers and roads by default
-  let disabledLayers: number[] = [];
-
-  let featureModes: Set<FeatureMode> = enabledFeatureModes;
+  const { selectedLayer } = options ?? {};
 
   let filter: any = ["literal", true];
-
-  if (selectedLayer == null) {
-    filter = ["!", ["in", ["get", "map_layer"], ["literal", disabledLayers]]];
-  }
 
   let params = new URLSearchParams();
 
@@ -318,16 +297,10 @@ export function buildDisplayOverlayStyle(
     volatile: false,
   };
 
-  let topoFilters = [filter];
-
-  if (!showFacesWithNoUnit || styleMode === "display") {
-    topoFilters.push(["has", "unit"]);
-  }
-
   layers.push(
     ...buildFillLayers({
       opacity: 0.8,
-      filters: topoFilters,
+      filter: ["has", "unit"],
       source: "mapboard",
     }),
   );
@@ -343,10 +316,7 @@ export function buildDisplayOverlayStyle(
     ["get", "color"],
   ];
 
-  let baseLineWidth = 0.5;
-
-  let lineWidth: any = baseLineWidth;
-  lineWidth = [
+  let lineWidth: any = [
     "case",
     ["==", ["get", "layer"], 8],
     3,
@@ -355,19 +325,16 @@ export function buildDisplayOverlayStyle(
       ["get", "type"],
       ["literal", ["thrust-fault", "normal-fault", "fault"]],
     ],
-    2 * baseLineWidth,
-    baseLineWidth,
+    1,
+    0.5,
   ];
 
-  let lineFilter = ["all", ["!", ["get", "covered"]], filter];
-
-  if (selectedLayer == null) {
-    lineFilter.push(["!=", ["get", "layer"], "none"]);
-  }
-
-  if (styleMode === "display") {
-    lineFilter.push(["!=", ["get", "type"], "mapboard:arbitrary"]);
-  }
+  let lineFilter = [
+    "all",
+    ["!", ["get", "covered"]],
+    filter,
+    ["!=", ["get", "type"], "mapboard:arbitrary"],
+  ];
 
   // A single layer for all lines
   layers.push({
@@ -383,31 +350,7 @@ export function buildDisplayOverlayStyle(
     filter: lineFilter,
   });
 
-  if (useSymbols) {
-    layers.push(...createLineSymbolLayers(lineFilter));
-  }
-
-  if (revision != null) {
-    // rekey sources and layers to force reload
-    let sourcesNew: StyleSpecification["sources"] = {};
-    for (const [key, value] of Object.entries(sources)) {
-      const ix = `${key}-${revision}`;
-      sourcesNew[ix] = value;
-    }
-
-    sources = sourcesNew;
-    for (let layer of layers) {
-      layer.id = layer.id + `-${revision}`;
-      layer.source = `${layer.source}-${revision}`;
-    }
-  }
-
-  if (!visible) {
-    for (let layer of layers) {
-      layer.layout ??= {};
-      layer.layout.visibility = "none";
-    }
-  }
+  layers.push(...createLineSymbolLayers(lineFilter));
 
   return {
     version: 8,
@@ -416,7 +359,7 @@ export function buildDisplayOverlayStyle(
   };
 }
 
-function buildFillLayers({ opacity, filters, source = "mapboard" }): any {
+function buildFillLayers({ opacity, filter, source = "mapboard" }): any {
   return [
     {
       id: "fills-without-symbols",
@@ -428,7 +371,7 @@ function buildFillLayers({ opacity, filters, source = "mapboard" }): any {
         "fill-opacity": opacity,
         "fill-outline-color": "transparent",
       },
-      filter: ["all", ["!", ["has", "symbol"]], ...filters],
+      filter: ["all", ["!", ["has", "symbol"]], filter],
     },
     {
       id: "fills-with-symbols",
@@ -455,7 +398,7 @@ function buildFillLayers({ opacity, filters, source = "mapboard" }): any {
         "fill-opacity": opacity,
         "fill-outline-color": "transparent",
       },
-      filter: ["all", ["has", "symbol"], ...filters],
+      filter: ["all", ["has", "symbol"], filter],
     },
   ];
 }
