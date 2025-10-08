@@ -10,7 +10,10 @@ import {
 import { buildSelectionLayers } from "../selection";
 import { atom, useAtom, useAtomValue } from "jotai";
 import { atomWithStorage } from "jotai/utils";
-import { mapReloadTimestampAtom } from "../change-watcher";
+import {
+  acceptedRevisionAtom,
+  mapReloadTimestampAtom,
+} from "../change-watcher";
 import { apiBaseURL } from "~/settings";
 import { useMapRef } from "@macrostrat/mapbox-react";
 import { StyleSpecification } from "mapbox-gl";
@@ -84,7 +87,7 @@ export function useMapStyle(
   const styleMode = useMapState((d) => d.styleMode);
 
   const revision = useAtomValue(mapReloadTimestampAtom);
-  const [acceptedRevision, setAcceptedRevision] = useState<number>(revision);
+  const [acceptedRevision, setAcceptedRevision] = useAtom(acceptedRevisionAtom);
 
   const baseStyleURL = useBaseMapStyle(basemapType);
 

@@ -12,6 +12,8 @@ import { useMapActions, useMapState } from "../state";
 import { useEffect, useRef, useState } from "react";
 import { DataField } from "@macrostrat/data-components";
 import { allFeatureModes, FeatureMode } from "../types";
+import { acceptedRevisionAtom } from "../change-watcher";
+import { useAtomValue } from "jotai";
 
 const h = hyper.styled(styles);
 
@@ -64,14 +66,21 @@ export function buildSelectionLayers(source, color: string = "#ff0000") {
   return layers;
 }
 
-export function layerNameForFeatureMode(mode: FeatureMode) {
+export function layerNameForFeatureMode(
+  mode: FeatureMode,
+  revision: number | null = null,
+) {
+  let suffix = "";
+  if (revision != null) {
+    suffix = `-${revision}`;
+  }
   switch (mode) {
     case FeatureMode.Line:
-      return "lines";
+      return "lines" + suffix;
     case FeatureMode.Polygon:
-      return "polygons";
+      return "polygons" + suffix;
     case FeatureMode.Fill:
-      return "fills";
+      return "fills" + suffix;
   }
 }
 
@@ -83,6 +92,8 @@ export function BoxSelectionManager(props: BoxSelectionProps) {
   const selectionFeatureMode = useMapState(
     (state) => state.selectionFeatureMode,
   );
+
+  const acceptedRevision = useAtomValue(acceptedRevisionAtom);
 
   const [hoveredFeature, setHoveredFeature] = useState<any | null>(null);
   const [hoverLocation, setHoverLocation] =
@@ -139,22 +150,24 @@ export function BoxSelectionManager(props: BoxSelectionProps) {
         const layerID = `${lyr}-selected`;
         let selected = selectedFeatureType == type ? features : [];
 
+        const selectionFilter: any = [
+          "in",
+          ["get", "id"],
+          ["literal", selected],
+        ];
+
         if (map.getLayer(layerID) != null) {
-          map.setFilter(layerID, ["in", ["get", "id"], ["literal", selected]]);
+          map.setFilter(layerID, selectionFilter);
         }
         if (type == FeatureMode.Line) {
           const endpointsLayerID = `${lyr}-endpoints-selected`;
           if (map.getLayer(endpointsLayerID) != null) {
-            map.setFilter(endpointsLayerID, [
-              "in",
-              ["get", "id"],
-              ["literal", selected],
-            ]);
+            map.setFilter(endpointsLayerID, selectionFilter);
           }
         }
       }
     },
-    [selectedFeatures],
+    [selectedFeatures, acceptedRevision],
   );
 
   useMapStyleOperator(
@@ -245,7 +258,11 @@ export function BoxSelectionManager(props: BoxSelectionProps) {
         if (e.keyCode === 27) finish();
       }
 
-      const layerName = layerNameForFeatureMode(selectionFeatureMode);
+      const baseLayerName = layerNameForFeatureMode(selectionFeatureMode);
+      const layerName = layerNameForFeatureMode(
+        selectionFeatureMode,
+        acceptedRevision,
+      );
 
       function finish(bbox) {
         // Remove these events now that finish has been called.
@@ -294,7 +311,7 @@ export function BoxSelectionManager(props: BoxSelectionProps) {
 
       const listener = (e) => {
         const features = map.queryRenderedFeatures(e.point, {
-          layers: [`${layerName}-selected`],
+          layers: [`${baseLayerName}-selected`],
         });
 
         const f: any = features[0]?.properties;
@@ -308,7 +325,7 @@ export function BoxSelectionManager(props: BoxSelectionProps) {
         map.off("mousemove", listener);
       };
     },
-    [activeLayer, selectionFeatureMode],
+    [activeLayer, selectionFeatureMode, acceptedRevision],
   );
 
   return null;

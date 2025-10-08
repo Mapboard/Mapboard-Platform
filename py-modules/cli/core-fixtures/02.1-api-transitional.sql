@@ -75,10 +75,12 @@ SELECT
   horizontal,
   "date",
   unit_id,
+  unit_name,
   cleavage,
   bedding,
   lineation,
   fold_axis,
+  fault,
   source,
   data
 FROM naukluft_map_data.stations;

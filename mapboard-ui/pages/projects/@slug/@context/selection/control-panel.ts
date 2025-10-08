@@ -128,8 +128,6 @@ export function SelectionDrawer() {
     });
   }
 
-  console.log(selection);
-
   const { type, features } = selection;
   const count = features.length;
   let typeName = layerNameForFeatureMode(type);

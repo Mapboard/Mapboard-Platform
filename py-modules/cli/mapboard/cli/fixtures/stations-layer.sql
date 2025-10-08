@@ -18,11 +18,13 @@ CREATE TABLE {data_schema}.stations (
   trend numeric,
   plunge numeric,
   "date" date,
+  unit_name text,
   unit_id text REFERENCES {data_schema}.polygon_type(id),
   cleavage boolean,
   bedding boolean,
   lineation boolean,
   fold_axis boolean,
+  fault boolean,
   source text,
   data jsonb,
   overturned boolean,
@@ -46,11 +48,13 @@ INSERT INTO {data_schema}.stations (
   plunge,
   overturned,
   "date",
+  unit_name,
   unit_id,
   cleavage,
   bedding,
   lineation,
-  fold_axis
+  fold_axis,
+  fault
 )
 SELECT DISTINCT ON (geometry, date, strike, dip, trend, plunge, overturned, plane_type)
   geometry,
@@ -66,10 +70,12 @@ SELECT DISTINCT ON (geometry, date, strike, dip, trend, plunge, overturned, plan
   plunge,
   overturned,
   "date",
+  unit_name,
   unit_id,
   cleavage,
   bedding,
   lineation,
-  fold_axis
+  fold_axis,
+  fault
 FROM mapping.orientation;
 

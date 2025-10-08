@@ -84,10 +84,17 @@ export function pointLayoutProperties(showLabels: boolean = false) {
 
   const iconImage = [
     "case",
-    ["get", "lineation"],
-    "point:lineation_general",
+    ["get", "fault"],
+    [
+      "case",
+      ["get", "vertical"],
+      "point:fault_surface_vertical",
+      "point:fault_surface_inclined",
+    ],
     ["get", "fold_axis"],
     "point:fold_axis",
+    ["get", "lineation"],
+    "point:lineation_general",
     ["get", "bedding"],
     [
       "case",
