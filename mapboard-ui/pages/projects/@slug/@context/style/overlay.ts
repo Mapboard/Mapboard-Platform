@@ -274,9 +274,7 @@ export function buildDisplayOverlayStyle(
   baseURL: string,
   options: MapOverlayOptions,
 ): mapboxgl.StyleSpecification {
-  const { selectedLayer, opacity = 1.0 } = options ?? {};
-
-  let filter: any = ["literal", true];
+  const { selectedLayer } = options ?? {};
 
   let params = new URLSearchParams();
 
@@ -297,12 +295,10 @@ export function buildDisplayOverlayStyle(
     volatile: false,
   };
 
-  let topoFilters = [filter, ["has", "unit"]];
-
   layers.push(
     ...buildFillLayers({
       opacity: 0.8,
-      filters: topoFilters,
+      filters: ["has", "unit"],
       source: "mapboard",
     }),
   );

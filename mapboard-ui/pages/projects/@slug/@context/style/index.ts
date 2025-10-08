@@ -322,6 +322,7 @@ export function useDisplayStyle(
           id: "orientations",
           sourceID: "stations",
           showOrientations: true,
+          showAll: false,
         }),
       ],
     };
@@ -371,6 +372,7 @@ export function useDisplayStyle(
     const mainStyle: mapboxgl.StyleSpecification = {
       version: 8,
       name: "Mapboard",
+      glyphs: "mapbox://fonts/openmaptiles/{fontstack}/{range}.pbf",
       layers: [
         // We need to add this so that the style doesn't randomly reload
         {
@@ -489,6 +491,9 @@ export function useDisplayStyle(
 
     delete style.terrain;
     delete style.projection;
+
+    // Deleting glyphs property means we try to use local fonts
+    //delete style.glyphs;
 
     console.log("Setting style", style);
     return style;

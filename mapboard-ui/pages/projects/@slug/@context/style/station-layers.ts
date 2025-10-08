@@ -37,9 +37,14 @@ export function createStationsLayer(
     layout: {
       ...baseLayout,
       // Stack symbols at the same location
-      "text-ignore-placement": showAll,
+      //"text-ignore-placement": true,
       "icon-allow-overlap": showAll,
       "icon-ignore-placement": showAll,
+    },
+    paint: {
+      "text-halo-color": "rgba(255,255,255, 0.5)",
+      "text-halo-width": 1,
+      "text-halo-blur": 1,
     },
   };
 }
@@ -52,10 +57,10 @@ export function pointLayoutProperties(showLabels: boolean = false) {
     "rotation",
     [
       "case",
-      ["has", "strike"],
-      ["get", "strike"],
-      ["has", "trend"],
+      ["any", ["get", "fold_axis"], ["get", "lineation"]],
       ["get", "trend"],
+      ["has", "strike"],
+      ["+", ["get", "strike"], 90],
       0,
     ],
 
@@ -65,20 +70,15 @@ export function pointLayoutProperties(showLabels: boolean = false) {
       // Symbol rotation between 60-120 or 240-300
       [
         "any",
-        [
-          "all",
-          [">=", ["var", "rotation"], 60],
-          ["<=", ["var", "rotation"], 120],
-        ],
-        [
-          "all",
-          [">=", ["var", "rotation"], 240],
-          ["<=", ["var", "rotation"], 300],
-        ],
+        [">=", ["var", "rotation"], 315],
+        ["<=", ["var", "rotation"], 45],
       ],
-      ["literal", [2, 0]], // Need to specifiy 'literal' to return an array in expressions
-      // Default
-      ["literal", [0.75, 0]],
+      "bottom",
+      [">=", ["var", "rotation"], 225],
+      "right",
+      [">=", ["var", "rotation"], 135],
+      "top",
+      "left",
     ],
   ];
 
@@ -113,27 +113,32 @@ export function pointLayoutProperties(showLabels: boolean = false) {
     "point:point",
   ];
   return {
-    "text-anchor": "left",
-    "text-offset": labelOffset,
+    "text-anchor": labelOffset,
+    "text-radial-offset": [
+      "case",
+      ["any", ["get", "fold_axis"], ["get", "lineation"]],
+      1.5,
+      0.8,
+    ],
     "icon-image": iconImage,
     "icon-rotate": ["coalesce", ["get", "strike"], ["get", "trend"], 0],
     "icon-rotation-alignment": "map",
     "icon-size": 0.15,
-    // "symbol-spacing": 1,
-    "icon-padding": 0,
+    "symbol-spacing": 1,
+    "text-font": ["PT Serif Regular"],
+    "text-size": 12,
+    "text-justify": "auto",
     "text-field": [
-      "case",
-      ["any", ["get", "vertical"], ["get", "horizontal"]],
-      "",
-      ["any", ["has", "dip"], ["has", "plunge"]],
+      "to-string",
       [
-        "to-string",
+        "round",
         [
-          "round",
-          ["number", ["coalesce", ["get", "dip"], ["get", "plunge"], 0]],
+          "case",
+          ["any", ["get", "fold_axis"], ["get", "lineation"]],
+          ["get", "plunge"],
+          ["get", "dip"],
         ],
       ],
-      "",
     ],
     "symbol-sort-key": [
       "case",
@@ -147,10 +152,6 @@ export function pointLayoutProperties(showLabels: boolean = false) {
       3,
       4,
     ],
-
-    //"text-field": isShowSpotLabelsOn ? getPointLabel() : "",
-    // "symbol-spacing": 1,
-    //"icon-padding": 0,
   };
 }
 
