@@ -5,6 +5,7 @@ import {
   SourceSpecification,
   StyleSpecification,
 } from "mapbox-gl";
+import maplibre from "maplibre-gl";
 
 export interface CrossSectionConfig {
   layerID: number;
@@ -127,46 +128,13 @@ export function buildMapOverlayStyle(
       topoFilters.push(["has", "unit"]);
     }
 
-    layers.push({
-      id: "fills-without-symbols",
-      type: "fill",
-      source: "mapboard",
-      "source-layer": "fills",
-      paint: {
-        "fill-color": ["get", "color"],
-        "fill-opacity": selectedLayerOpacity(0.5, 0.3),
-        "fill-outline-color": "transparent",
-      },
-      filter: ["all", ["!", ["has", "symbol"]], ...topoFilters],
-    });
-
-    layers.push({
-      id: "fills-with-symbols",
-      type: "fill",
-      source: "mapboard",
-      "source-layer": "fills",
-      paint: {
-        "fill-pattern": [
-          "image",
-          [
-            "case",
-            ["has", "symbol"],
-            [
-              "concat",
-              ["get", "symbol"],
-              ":",
-              ["get", "symbol_color"],
-              ":",
-              ["get", "color"],
-            ],
-            ["concat", "color:", ["get", "color"]],
-          ],
-        ],
-        "fill-opacity": selectedLayerOpacity(0.5, 0.3),
-        "fill-outline-color": "transparent",
-      },
-      filter: ["all", ["has", "symbol"], ...topoFilters],
-    });
+    layers.push(
+      ...buildFillLayers({
+        opacity: selectedLayerOpacity(0.5, 0.3),
+        filters: topoFilters,
+        source: "mapboard",
+      }),
+    );
   }
 
   if (featureModes.has(FeatureMode.Polygon)) {
@@ -196,7 +164,7 @@ export function buildMapOverlayStyle(
     ["get", "color"],
   ];
 
-  let baseLineWidth = 1;
+  let baseLineWidth = 0.5;
   if (styleMode === "display") {
     // In display mode, we use a smaller base line width
     baseLineWidth = 0.5;
@@ -300,6 +268,142 @@ export function buildMapOverlayStyle(
     sources,
     layers,
   };
+}
+
+export function buildDisplayOverlayStyle(
+  baseURL: string,
+  options: MapOverlayOptions,
+): mapboxgl.StyleSpecification {
+  const { selectedLayer, opacity = 1.0 } = options ?? {};
+
+  let filter: any = ["literal", true];
+
+  let params = new URLSearchParams();
+
+  let sources: Record<string, mapboxgl.SourceSpecification> = {};
+
+  let layers: mapboxgl.Layer[] = [];
+
+  params.set("map_layer", selectedLayer.toString());
+
+  const suffix = getTileQueryParams({
+    map_layer: selectedLayer,
+    clip: true,
+  });
+
+  sources["mapboard"] = {
+    type: "vector",
+    tiles: [baseURL + `/tile/fills,lines/{z}/{x}/{y}${suffix}`],
+    volatile: false,
+  };
+
+  let topoFilters = [filter, ["has", "unit"]];
+
+  layers.push(
+    ...buildFillLayers({
+      opacity: 0.8,
+      filters: topoFilters,
+      source: "mapboard",
+    }),
+  );
+
+  let lineColor = [
+    "case",
+    [
+      "in",
+      ["get", "type"],
+      ["literal", ["thrust-fault", "normal-fault", "fault"]],
+    ],
+    "#000000",
+    ["get", "color"],
+  ];
+
+  let baseLineWidth = 0.5;
+
+  let displayCases: any = [["==", ["get", "layer"], 8], 3];
+
+  let lineWidth: any = baseLineWidth;
+  lineWidth = [
+    "case",
+    ...displayCases,
+    [
+      "in",
+      ["get", "type"],
+      ["literal", ["thrust-fault", "normal-fault", "fault"]],
+    ],
+    2 * baseLineWidth,
+    baseLineWidth,
+  ];
+
+  let lineFilter = ["all", ["!", ["get", "covered"]], filter];
+
+  lineFilter.push(["!=", ["get", "type"], "mapboard:arbitrary"]);
+
+  // A single layer for all lines
+  layers.push({
+    id: "lines",
+    type: "line",
+    source: "mapboard",
+    "source-layer": "lines",
+    paint: {
+      "line-color": lineColor,
+      "line-width": lineWidth,
+      "line-opacity": 1,
+    },
+    filter: lineFilter,
+  });
+
+  layers.push(...createLineSymbolLayers(lineFilter));
+
+  return {
+    version: 8,
+    sources,
+    layers,
+  };
+}
+
+function buildFillLayers({ opacity, filters, source = "mapboard" }): any {
+  return [
+    {
+      id: "fills-without-symbols",
+      type: "fill",
+      source,
+      "source-layer": "fills",
+      paint: {
+        "fill-color": ["get", "color"],
+        "fill-opacity": opacity,
+        "fill-outline-color": "transparent",
+      },
+      filter: ["all", ["!", ["has", "symbol"]], ...filters],
+    },
+    {
+      id: "fills-with-symbols",
+      type: "fill",
+      source,
+      "source-layer": "fills",
+      paint: {
+        "fill-pattern": [
+          "image",
+          [
+            "case",
+            ["has", "symbol"],
+            [
+              "concat",
+              ["get", "symbol"],
+              ":",
+              ["get", "symbol_color"],
+              ":",
+              ["get", "color"],
+            ],
+            ["concat", "color:", ["get", "color"]],
+          ],
+        ],
+        "fill-opacity": opacity,
+        "fill-outline-color": "transparent",
+      },
+      filter: ["all", ["has", "symbol"], ...filters],
+    },
+  ];
 }
 
 export function buildTopologyLayers() {
