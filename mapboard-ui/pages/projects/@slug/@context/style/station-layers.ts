@@ -60,7 +60,7 @@ export function pointLayoutProperties(showLabels: boolean = false) {
       ["any", ["get", "fold_axis"], ["get", "lineation"]],
       ["get", "trend"],
       ["has", "strike"],
-      ["+", ["get", "strike"], 90],
+      ["get", "strike"],
       0,
     ],
 
@@ -73,12 +73,12 @@ export function pointLayoutProperties(showLabels: boolean = false) {
         [">=", ["var", "rotation"], 315],
         ["<=", ["var", "rotation"], 45],
       ],
-      "bottom",
-      [">=", ["var", "rotation"], 225],
-      "right",
-      [">=", ["var", "rotation"], 135],
-      "top",
       "left",
+      [">=", ["var", "rotation"], 225],
+      "bottom",
+      [">=", ["var", "rotation"], 135],
+      "right",
+      "top",
     ],
   ];
 
@@ -114,12 +114,7 @@ export function pointLayoutProperties(showLabels: boolean = false) {
   ];
   return {
     "text-anchor": labelOffset,
-    "text-radial-offset": [
-      "case",
-      ["any", ["get", "fold_axis"], ["get", "lineation"]],
-      1.5,
-      0.8,
-    ],
+    "text-radial-offset": 0.8,
     "icon-image": iconImage,
     "icon-rotate": ["coalesce", ["get", "strike"], ["get", "trend"], 0],
     "icon-rotation-alignment": "map",

@@ -274,7 +274,30 @@ export function buildDisplayOverlayStyle(
   baseURL: string,
   options: MapOverlayOptions,
 ): mapboxgl.StyleSpecification {
-  const { selectedLayer } = options ?? {};
+  const {
+    showLineEndpoints = true,
+    selectedLayer,
+    enabledFeatureModes = allFeatureModes,
+    useSymbols = true,
+    showFacesWithNoUnit = false,
+    showTopologyPrimitives = false,
+    clipToContextBounds = false,
+    styleMode = "edit",
+    opacity = 1.0,
+    revision,
+    visible = true,
+  } = options ?? {};
+
+  // Disable rivers and roads by default
+  let disabledLayers: number[] = [];
+
+  let featureModes: Set<FeatureMode> = enabledFeatureModes;
+
+  let filter: any = ["literal", true];
+
+  if (selectedLayer == null) {
+    filter = ["!", ["in", ["get", "map_layer"], ["literal", disabledLayers]]];
+  }
 
   let params = new URLSearchParams();
 
@@ -295,10 +318,16 @@ export function buildDisplayOverlayStyle(
     volatile: false,
   };
 
+  let topoFilters = [filter];
+
+  if (!showFacesWithNoUnit || styleMode === "display") {
+    topoFilters.push(["has", "unit"]);
+  }
+
   layers.push(
     ...buildFillLayers({
       opacity: 0.8,
-      filters: ["has", "unit"],
+      filters: topoFilters,
       source: "mapboard",
     }),
   );
@@ -316,12 +345,11 @@ export function buildDisplayOverlayStyle(
 
   let baseLineWidth = 0.5;
 
-  let displayCases: any = [["==", ["get", "layer"], 8], 3];
-
   let lineWidth: any = baseLineWidth;
   lineWidth = [
     "case",
-    ...displayCases,
+    ["==", ["get", "layer"], 8],
+    3,
     [
       "in",
       ["get", "type"],
@@ -333,7 +361,13 @@ export function buildDisplayOverlayStyle(
 
   let lineFilter = ["all", ["!", ["get", "covered"]], filter];
 
-  lineFilter.push(["!=", ["get", "type"], "mapboard:arbitrary"]);
+  if (selectedLayer == null) {
+    lineFilter.push(["!=", ["get", "layer"], "none"]);
+  }
+
+  if (styleMode === "display") {
+    lineFilter.push(["!=", ["get", "type"], "mapboard:arbitrary"]);
+  }
 
   // A single layer for all lines
   layers.push({
@@ -344,12 +378,36 @@ export function buildDisplayOverlayStyle(
     paint: {
       "line-color": lineColor,
       "line-width": lineWidth,
-      "line-opacity": 1,
+      "line-opacity": 0.8,
     },
     filter: lineFilter,
   });
 
-  layers.push(...createLineSymbolLayers(lineFilter));
+  if (useSymbols) {
+    layers.push(...createLineSymbolLayers(lineFilter));
+  }
+
+  if (revision != null) {
+    // rekey sources and layers to force reload
+    let sourcesNew: StyleSpecification["sources"] = {};
+    for (const [key, value] of Object.entries(sources)) {
+      const ix = `${key}-${revision}`;
+      sourcesNew[ix] = value;
+    }
+
+    sources = sourcesNew;
+    for (let layer of layers) {
+      layer.id = layer.id + `-${revision}`;
+      layer.source = `${layer.source}-${revision}`;
+    }
+  }
+
+  if (!visible) {
+    for (let layer of layers) {
+      layer.layout ??= {};
+      layer.layout.visibility = "none";
+    }
+  }
 
   return {
     version: 8,

@@ -270,8 +270,8 @@ export function useDisplayStyle(
 
   const baseStyleURL = "mapbox://styles/jczaplewski/cmggy9lqq005l01ryhb5o2eo4";
 
-  const [overlayStyle, setOverlayStyle] = useAtom(overlayStyleAtom);
-  const clipToContextBounds = useAtomValue(overlayClipAtom);
+  const [overlayStyle, setOverlayStyle] = useState(null);
+  const clipToContextBounds = true;
 
   const overlayOpacity = 0.8;
 
@@ -298,16 +298,13 @@ export function useDisplayStyle(
       enabledFeatureModes,
       showLineEndpoints,
       showFacesWithNoUnit,
-      showTopologyPrimitives,
       styleMode,
       clipToContextBounds,
       opacity: overlayOpacity,
     };
 
-    const style = buildMapOverlayStyle(baseURL, {
+    const style = buildDisplayOverlayStyle(baseURL, {
       ...styleOpts,
-      revision: acceptedRevision,
-      visible: true,
     });
 
     const stationsStyle: Partial<StyleSpecification> = {
@@ -327,11 +324,7 @@ export function useDisplayStyle(
       ],
     };
 
-    const selectionStyle: any = {
-      layers: buildSelectionLayers(`mapboard-${acceptedRevision}`),
-    };
-
-    setOverlayStyle(mergeStyles(style, stationsStyle, selectionStyle));
+    setOverlayStyle(mergeStyles(style, stationsStyle));
   }, [
     activeLayer,
     showLineEndpoints,
@@ -459,8 +452,6 @@ export function useDisplayStyle(
         ],
       };
     }
-
-    console.log(contourStyle);
 
     let style = mergeStyles(baseStyle, mainStyle, contourStyle, overlayStyle);
 
