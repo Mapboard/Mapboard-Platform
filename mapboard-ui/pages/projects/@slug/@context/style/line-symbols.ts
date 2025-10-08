@@ -24,6 +24,7 @@ export function createLineSymbolLayers(filter) {
     builder.createLayer("fold-axes", {
       types: ["anticline-hinge", "syncline-hinge"],
       symbolSpacing: 200,
+      symbolPlacement: "line-center",
     }),
     builder.createLayer("faults", {
       types: ["left-lateral-fault", "right-lateral-fault", "normal-fault"],
@@ -59,6 +60,7 @@ class SymbolLayerBuilder {
   createLayer(id: string, opts) {
     const {
       symbolSpacing = 30,
+      symbolPlacement = "line",
       iconOffset = [0, 0],
       types = Object.keys(this.index),
     } = opts;
@@ -85,7 +87,7 @@ class SymbolLayerBuilder {
         "icon-pitch-alignment": "map",
         "icon-allow-overlap": true,
         "symbol-avoid-edges": false,
-        "symbol-placement": "line",
+        "symbol-placement": symbolPlacement,
         "symbol-spacing": symbolSpacing,
         "icon-offset": iconOffset,
         "icon-rotate": 0,

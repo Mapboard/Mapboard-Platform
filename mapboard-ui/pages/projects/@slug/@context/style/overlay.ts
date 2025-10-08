@@ -306,12 +306,23 @@ export function buildDisplayOverlayStyle(
 
   let lineWidth: any = [
     "case",
+    // special case for NNC bounding surface
     ["==", ["get", "source_layer"], 8],
-    2, // special case for NNC bounding surface
+    2,
+    // faults and structures
     [
       "in",
       ["get", "type"],
-      ["literal", ["thrust-fault", "normal-fault", "fault"]],
+      [
+        "literal",
+        [
+          "thrust-fault",
+          "normal-fault",
+          "fault",
+          "anticline-hinge",
+          "syncline-hinge",
+        ],
+      ],
     ],
     1.2,
     0.5,
@@ -319,7 +330,7 @@ export function buildDisplayOverlayStyle(
 
   let lineFilter = [
     "all",
-    ["!", ["get", "covered"]],
+    ["!", ["coalesce", ["get", "covered"], false]],
     ["!=", ["get", "type"], "mapboard:arbitrary"],
   ];
 
@@ -342,11 +353,27 @@ export function buildDisplayOverlayStyle(
       paint: {
         "line-color": lineColor,
         "line-width": lineWidth,
-        "line-opacity": 0.8,
+        "line-opacity": 1,
       },
       layout: {
         "line-cap": "round",
         "line-join": "round",
+        "line-sort-key": [
+          "case",
+          [
+            "in",
+            ["get", "type"],
+            ["literal", ["anticline-hinge", "syncline-hinge"]],
+          ],
+          2,
+          [
+            "in",
+            ["get", "type"],
+            ["literal", ["thrust-fault", "normal-fault", "fault"]],
+          ],
+          1,
+          0,
+        ],
       },
       filter: lineFilter,
     },
