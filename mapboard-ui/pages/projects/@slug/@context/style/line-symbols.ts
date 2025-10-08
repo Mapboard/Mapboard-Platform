@@ -32,7 +32,7 @@ export function createLineSymbolLayers(filter) {
         "normal-fault",
         "reverse-fault",
       ],
-      symbolSpacing: 30,
+      symbolSpacing: 50,
     }),
     builder.createLayer("thrust-fault", {
       types: ["thrust-fault"],
@@ -56,6 +56,7 @@ export function createLineSymbolLayers(filter) {
         24,
         ["literal", [0, 0]],
       ],
+      filter: ["!=", ["get", "source_layer"], 8], // exclude nappe bounding surface
     }),
   ];
 }

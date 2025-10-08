@@ -306,8 +306,8 @@ export function buildDisplayOverlayStyle(
 
   let lineWidth: any = [
     "case",
-    ["==", ["get", "layer"], 8],
-    3,
+    ["==", ["get", "source_layer"], 8],
+    2.5,
     [
       "in",
       ["get", "type"],
