@@ -85,15 +85,7 @@ SELECT
   data
 FROM naukluft_map_data.stations;
 
-SELECT id,
-       project_id,
-       name,
-       parent AS parent_id,
-       parent_geom geometry
-FROM mapboard.context
-WHERE type = 'cross-section'
-  AND parent_geom IS NOT null;
-
+DROP VIEW IF EXISTS mapboard_api.piercing_points;
 CREATE OR REPLACE VIEW mapboard_api.piercing_points AS
 WITH cross_sections AS (
   SELECT id,
@@ -108,9 +100,9 @@ WITH cross_sections AS (
   WHERE type = 'cross-section'
    AND parent_geom IS NOT null
 )
-
 SELECT
   s1.project_id,
+  p.slug project_slug,
   s1.parent_id,
   s1.id,
   s2.id other_id,
@@ -124,4 +116,6 @@ JOIN cross_sections s2
   ON ST_Intersects(s1.geometry, s2.geometry)
  AND s1.id != s2.id
  AND s1.project_id = s2.project_id
- AND s1.parent_id = s2.parent_id;
+ AND s1.parent_id = s2.parent_id
+JOIN mapboard.project p
+  ON s1.project_id = p.id;
