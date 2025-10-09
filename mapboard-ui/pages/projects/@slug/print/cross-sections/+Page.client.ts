@@ -4,7 +4,10 @@ import hyper from "@macrostrat/hyper";
 
 import React, { useEffect, useMemo, useRef } from "react";
 import styles from "./+Page.client.module.sass";
-import { useStyleImageManager } from "../../@context/style/pattern-manager";
+import {
+  setupStyleImageManager,
+  useStyleImageManager,
+} from "../../@context/style/pattern-manager";
 import {
   MapboxMapProvider,
   useMapDispatch,
@@ -71,7 +74,11 @@ export function CrossSectionMapView(props: MapViewProps) {
   const { project_slug, slug } = data;
   const baseURL = `${domain}/api/project/${project_slug}/context/${slug}`;
 
-  const { pixelSize, bounds } = computeTiledBounds(data);
+  const tileBounds = computeTiledBounds(data, {
+    metersPerPixel: 20,
+  });
+
+  const { pixelSize, bounds } = tileBounds;
 
   const baseStyle = useMemo(() => {
     return buildCrossSectionStyle(baseURL, {
@@ -84,37 +91,29 @@ export function CrossSectionMapView(props: MapViewProps) {
   useEffect(() => {
     /** Manager to update map style */
     if (baseStyle == null || ref.current == null) return;
-    let map = mapRef.current;
 
-    if (map != null) {
-      dispatch({ type: "set-style-loaded", payload: false });
-      map.setStyle(baseStyle);
-    } else {
-      const map = new maplibre.Map({
-        container: ref.current,
-        bounds: lngLatBounds(bounds),
-        style: baseStyle,
-        trackResize: false,
-        attributionControl: false,
-        interactive: false,
-        maxZoom: 22,
-        pitchWithRotate: false,
-        dragRotate: false,
-        touchPitch: false,
-        boxZoom: false,
+    const container = document.createElement("div");
 
-        //pixelRatio: ,
-      });
+    const map = new maplibre.Map({
+      container,
+      bounds: lngLatBounds(bounds),
+      style: baseStyle,
+      trackResize: false,
+      attributionControl: false,
+      interactive: false,
+      maxZoom: 22,
+      pitchWithRotate: false,
+      dragRotate: false,
+      touchPitch: false,
+      boxZoom: false,
 
-      dispatch({ type: "set-map", payload: map });
-      map.setPadding(getMapPadding(ref, parentRef), { animate: false });
-      //onMapLoaded?.(map);
-    }
+      //pixelRatio: ,
+    });
+
+    setupStyleImageManager(map);
+
+    renderTiledMap(ref.current, tileBounds, map).then(() => {});
   }, [baseStyle]);
-
-  useStyleImageManager();
-
-  const scale = 20;
 
   return h(
     "div.map-view-container.main-view.cross-section-map",
@@ -162,6 +161,46 @@ interface MapTile {
     width: number;
     height: number;
   };
+  pixelOffset: {
+    top: number;
+    left: number;
+  };
+}
+
+async function renderTiledMap(
+  element: HTMLDivElement,
+  config: TileBoundsResult,
+  map: maplibre.Map,
+) {
+  const { tiles } = config;
+  element.style.position = "relative";
+  element.style.width = config.pixelSize.width + "px";
+  element.style.height = config.pixelSize.height + "px";
+
+  for (const tile of tiles) {
+    const { bounds, pixelSize, pixelOffset } = tile;
+    map.resize({ width: pixelSize.width, height: pixelSize.height });
+    map.fitBounds(lngLatBounds(bounds), { duration: 0, padding: 0 });
+    await new Promise((resolve) => {
+      map.once("render", () => {
+        resolve(null);
+      });
+      map.triggerRepaint();
+    });
+    // Export map to image
+    const dataUrl = map.getCanvas().toDataURL("image/png");
+    const img = new Image();
+    img.src = dataUrl;
+    img.width = pixelSize.width;
+    img.height = pixelSize.height;
+    img.style.position = "absolute";
+    img.style.top = pixelOffset.top + "px";
+    img.style.left = pixelOffset.left + "px";
+    await new Promise((resolve) => {
+      img.onload = () => resolve(null);
+    });
+    element.appendChild(img);
+  }
 }
 
 function computeTiledBounds(
@@ -207,6 +246,10 @@ function computeTiledBounds(
         pixelSize: {
           width: tileWidth,
           height: tileHeight,
+        },
+        pixelOffset: {
+          left: sx,
+          top: sy,
         },
       });
 

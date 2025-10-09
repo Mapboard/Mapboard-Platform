@@ -10,22 +10,25 @@ export function useStyleImageManager() {
   useEffect(() => {
     const map = mapRef.current;
     if (map == null) return;
-
-    const styleImageMissing = (e) => {
-      loadStyleImage(map, e.id)
-        .catch((err) => {
-          console.error(`Failed to load pattern image for ${e.id}:`, err);
-        })
-        .then(() => {});
-    };
-
-    // Register the event listener for missing images
-    map.on("styleimagemissing", styleImageMissing);
-    return () => {
-      // Clean up the event listener when the component unmounts
-      map.off("styleimagemissing", styleImageMissing);
-    };
+    return setupStyleImageManager(map);
   }, [isInitialized]);
+}
+
+export function setupStyleImageManager(map: any): () => void {
+  const styleImageMissing = (e) => {
+    loadStyleImage(map, e.id)
+      .catch((err) => {
+        console.error(`Failed to load pattern image for ${e.id}:`, err);
+      })
+      .then(() => {});
+  };
+
+  // Register the event listener for missing images
+  map.on("styleimagemissing", styleImageMissing);
+  return () => {
+    // Clean up the event listener when the component unmounts
+    map.off("styleimagemissing", styleImageMissing);
+  };
 }
 
 async function loadStyleImage(map: mapboxgl.Map, id: string) {
