@@ -2,18 +2,19 @@ import { useData } from "vike-react/useData";
 import type { CrossSectionData } from "./+data";
 import hyper from "@macrostrat/hyper";
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import styles from "./+Page.client.module.sass";
-import {
-  addImageToMap,
-  setupStyleImageManager,
-} from "../../@context/style/pattern-manager";
+import { setupStyleImageManager } from "../../@context/style/pattern-manager";
 import maplibre from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { SphericalMercator } from "@mapbox/sphericalmercator";
-import svg from "./thrust-fault-movement.svg";
 
 import { buildCrossSectionStyle } from "./style";
+import { AxisBottom, AxisLeft } from "@visx/axis";
+import { scaleLinear } from "@visx/scale";
+import { expandInnerSize } from "@macrostrat/ui-components";
+import html2pdf from "html2pdf.js";
+import { Button } from "@blueprintjs/core";
 
 const h = hyper.styled(styles);
 
@@ -25,12 +26,56 @@ const mercator = new SphericalMercator({
 export function Page() {
   const crossSections = useData<CrossSectionData[]>() ?? [];
 
-  return h(
-    "div.cross-sections",
-    crossSections.map((ctx) => {
-      return h(CrossSection, { key: ctx.id, data: ctx });
-    }),
-  );
+  const ref = useRef<HTMLDivElement>(null);
+
+  return h("div.main", [
+    h("div.controls", [
+      h(PrintButton, { elementRef: ref, filename: "cross-sections.pdf" }),
+    ]),
+    h(
+      "div.cross-sections",
+      { ref },
+      crossSections.map((ctx) => {
+        return h(CrossSection, { key: ctx.id, data: ctx });
+      }),
+    ),
+  ]);
+}
+
+function PrintButton({
+  elementRef,
+  disabled,
+  filename,
+}: {
+  elementRef: React.RefObject<HTMLElement>;
+  filename?: string;
+  disabled?: boolean;
+}) {
+  const handlePrint = () => {
+    const el = elementRef.current;
+    if (el == null) return;
+
+    const size = el.getBoundingClientRect();
+    const orientation = size.width > size.height ? "landscape" : "portrait";
+
+    const ppi = 96 * 2;
+
+    const width = size.width / 96; // Convert from px to in (assuming 96 ppi for screen)
+    const height = size.height / 96;
+
+    html2pdf(el, {
+      filename,
+      html2canvas: {
+        scale: ppi / 96,
+      },
+      jsPDF: {
+        orientation,
+        unit: "in",
+        format: [width, height],
+      },
+    });
+  };
+  return h(Button, { icon: "print", disabled: disabled, onClick: handlePrint });
 }
 
 function CrossSection(props: { data: CrossSectionData }) {
@@ -62,26 +107,90 @@ export function CrossSectionMapView(props: MapViewProps) {
   const { project_slug, slug } = data;
   const baseURL = `${domain}/api/project/${project_slug}/context/${slug}`;
 
+  const tileBounds = useMemo(() => {
+    return computeTiledBounds(data, {
+      metersPerPixel: 15,
+    });
+  }, [data]);
+
+  const { bounds, metersPerPixel, pixelSize } = tileBounds;
+
+  const elevationScale = scaleLinear({
+    domain: [bounds[1] - data.offset_y, bounds[3] - data.offset_y],
+    range: [pixelSize.height, 0],
+    clamp: true,
+  });
+
+  const distanceScale = scaleLinear({
+    domain: [-data.offset_x, data.length - data.offset_x].map((d) => d / 1000),
+    range: [0, pixelSize.width],
+    clamp: true,
+  });
+
   // Not sure why this is needed, really, but it prevents double rendering
   const renderCounter = useRef(0);
-
   useEffect(() => {
     /** Manager to update map style */
     if (ref.current == null) return;
     renderCounter.current += 1;
     if (renderCounter.current > 1) return;
     // Compute tiled bounds
-    const tileBounds = computeTiledBounds(data, {
-      metersPerPixel: 15,
-    });
+
     const baseStyle = buildCrossSectionStyle(baseURL);
     renderTiledMap(ref.current, tileBounds, baseStyle).then(() => {});
-  }, [ref.current]);
+  }, [ref.current, tileBounds]);
 
-  return h("div.map-view-container.main-view.cross-section-map", [
-    h("div.mapbox-map.map-view", { ref }),
-    children,
-  ]);
+  const { width, height, paddingTop, paddingLeft } = expandInnerSize({
+    innerHeight: pixelSize.height,
+    innerWidth: pixelSize.width,
+    padding: 40,
+    paddingLeft: 60,
+  });
+
+  return h(
+    "div.map-view-container.main-view.cross-section-map",
+    {
+      style: { width: width + "px", height: height + "px" },
+    },
+    [
+      h("div.mapbox-map.map-view", {
+        ref,
+        style: {
+          paddingTop: paddingTop + "px",
+          paddingLeft: paddingLeft + "px",
+        },
+      }),
+      h("svg.scales", { width, height }, [
+        h(
+          "g.axis-group",
+          { transform: `translate(${paddingLeft} ${paddingTop})` },
+          [
+            h(ElevationAxis, { scale: elevationScale, left: -5 }),
+            h(DistanceAxis, {
+              scale: distanceScale,
+              top: pixelSize.height + 5,
+            }),
+          ],
+        ),
+      ]),
+    ],
+  );
+}
+
+function ElevationAxis({ scale, left = 0 }) {
+  return h(AxisLeft, { scale, numTicks: 4, left });
+}
+
+function DistanceAxis({ scale, top = 0 }) {
+  // Ticks every 2 km regardless of length
+  const dx = scale.domain()[1] - scale.domain()[0];
+  const numTicks = Math.ceil(dx / 2);
+
+  return h(AxisBottom, {
+    scale,
+    numTicks,
+    top,
+  });
 }
 
 function lngLatBounds(bounds: MercatorBBox): maplibre.LngLatBoundsLike {
@@ -165,17 +274,15 @@ async function renderTiledMap(
         resolve(null);
       });
     });
-    const dataUrl = map.getCanvas().toDataURL("image/png");
     const img = new Image();
+    imageContainer.appendChild(img);
     setSize(img, tile);
+    const dataUrl = map.getCanvas().toDataURL("image/png");
     img.src = dataUrl;
+
     await new Promise((resolve) => {
       img.onload = () => resolve(null);
     });
-
-    console.log(tile, img);
-
-    imageContainer.appendChild(img);
   }
 
   // Clean up

@@ -1,6 +1,22 @@
+.main
+  position: relative
+
+.controls
+  position: fixed
+  top: 1em
+  right: 1em
+  z-index: 10
+  display: flex
+  gap: 0.5em
+
+  // don't print the controls
+  @media print
+    display: none
+
 .cross-sections
   padding: 2em
   --cross-section-scale: 1
+  page-break-after: always
 
 .cross-section-map-container
   width: var(--cross-section-width)
@@ -14,6 +30,21 @@
   //transform: scale(calc(1 / var(--cross-section-scale)))
   //transform-origin: top left
   position: relative
-  :global(.maplibregl-map)
-    height: 100%
-    width: 100%
+  &>*
+    position: absolute
+    top: 0
+    left: 0
+
+// dark mode styles
+@media (prefers-color-scheme: dark)
+  .cross-sections
+    color: #ddd
+  .cross-section-map
+    filter: invert(1) hue-rotate(180deg)
+
+// Styles to print as a poster-sized page
+@media print
+  @page
+    size: A2 landscape
+    margin: 2cm
+

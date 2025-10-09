@@ -27,6 +27,16 @@ export function buildCrossSectionStyle(
 
   let layers = [
     {
+      id: "basement",
+      type: "fill",
+      source,
+      "source-layer": "fills",
+      paint: {
+        "fill-color": "#ffeeee",
+      },
+      filter: ["all", fillFilter, ["==", ["get", "unit"], "basement"]],
+    },
+    {
       id: "fills-without-symbols",
       type: "fill",
       source,
@@ -36,7 +46,12 @@ export function buildCrossSectionStyle(
         "fill-opacity": 0.8,
         "fill-outline-color": "transparent",
       },
-      filter: ["all", ["!", ["has", "symbol"]], fillFilter],
+      filter: [
+        "all",
+        ["!", ["has", "symbol"]],
+        ["!=", ["get", "unit"], "basement"],
+        fillFilter,
+      ],
     },
     {
       id: "fills-with-symbols",
