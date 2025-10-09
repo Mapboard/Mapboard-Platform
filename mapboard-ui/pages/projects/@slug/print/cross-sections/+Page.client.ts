@@ -2,24 +2,13 @@ import { useData } from "vike-react/useData";
 import type { CrossSectionData } from "./+data";
 import hyper from "@macrostrat/hyper";
 
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import styles from "./+Page.client.module.sass";
-import {
-  setupStyleImageManager,
-  useStyleImageManager,
-} from "../../@context/style/pattern-manager";
-import {
-  MapboxMapProvider,
-  useMapDispatch,
-  useMapRef,
-} from "@macrostrat/mapbox-react";
-import { bbox } from "@turf/bbox";
+import { setupStyleImageManager } from "../../@context/style/pattern-manager";
 import { buildCrossSectionStyle } from "../../@context/cross-sections/style";
 import maplibre from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { getMapPadding } from "@macrostrat/map-interface";
 import { SphericalMercator } from "@mapbox/sphericalmercator";
-import { StyleLoadedReporter } from "~/maplibre-utils";
 
 const h = hyper.styled(styles);
 
@@ -44,14 +33,11 @@ function CrossSection(props: { data: CrossSectionData }) {
 
   return h("div.cross-section", {}, [
     h("h2.cross-section-title", data.name),
-    h(
-      MapboxMapProvider,
-      h("div.cross-section-map-container", [
-        h(CrossSectionMapView, {
-          data,
-        }),
-      ]),
-    ),
+    h("div.cross-section-map-container", [
+      h(CrossSectionMapView, {
+        data,
+      }),
+    ]),
   ]);
 }
 
@@ -64,72 +50,39 @@ interface MapViewProps {
 export function CrossSectionMapView(props: MapViewProps) {
   const { data, children, className, ...rest } = props;
 
-  const dispatch = useMapDispatch();
-  let mapRef = useMapRef();
   const ref = useRef<HTMLDivElement>();
-  const parentRef = useRef<HTMLDivElement>();
 
   console.log("Cross section", data);
   let domain = document.location.origin;
   const { project_slug, slug } = data;
   const baseURL = `${domain}/api/project/${project_slug}/context/${slug}`;
 
-  const tileBounds = computeTiledBounds(data, {
-    metersPerPixel: 20,
-  });
+  // Not sure why this is needed, really, but it prevents double rendering
+  const renderCounter = useRef(0);
 
-  const { pixelSize, bounds } = tileBounds;
-
-  const baseStyle = useMemo(() => {
-    return buildCrossSectionStyle(baseURL, {
+  useEffect(() => {
+    /** Manager to update map style */
+    if (ref.current == null) return;
+    renderCounter.current += 1;
+    if (renderCounter.current > 1) return;
+    console.log("Render cross section map", renderCounter.current, ref.current);
+    // Compute tiled bounds
+    const tileBounds = computeTiledBounds(data, {
+      metersPerPixel: 10,
+    });
+    const baseStyle = buildCrossSectionStyle(baseURL, {
       showFacesWithNoUnit: true,
       showLineEndpoints: false,
       showTopologyPrimitives: false,
     });
-  }, [baseURL]);
 
-  useEffect(() => {
-    /** Manager to update map style */
-    if (baseStyle == null || ref.current == null) return;
+    renderTiledMap(ref.current, tileBounds, baseStyle).then(() => {});
+  }, [ref.current]);
 
-    const container = document.createElement("div");
-
-    const map = new maplibre.Map({
-      container,
-      bounds: lngLatBounds(bounds),
-      style: baseStyle,
-      trackResize: false,
-      attributionControl: false,
-      interactive: false,
-      maxZoom: 22,
-      pitchWithRotate: false,
-      dragRotate: false,
-      touchPitch: false,
-      boxZoom: false,
-
-      //pixelRatio: ,
-    });
-
-    setupStyleImageManager(map);
-
-    renderTiledMap(ref.current, tileBounds, map).then(() => {});
-  }, [baseStyle]);
-
-  return h(
-    "div.map-view-container.main-view.cross-section-map",
-    {
-      ref: parentRef,
-      style: {
-        "--cross-section-width": `${pixelSize.width}px`,
-        "--cross-section-height": `${pixelSize.height}px`,
-      },
-    },
-    [
-      h("div.mapbox-map.map-view", { ref }),
-      h(StyleLoadedReporter, { onStyleLoaded: null }),
-      children,
-    ],
-  );
+  return h("div.map-view-container.main-view.cross-section-map", [
+    h("div.mapbox-map.map-view", { ref }),
+    children,
+  ]);
 }
 
 function lngLatBounds(bounds: MercatorBBox): maplibre.LngLatBoundsLike {
@@ -170,37 +123,73 @@ interface MapTile {
 async function renderTiledMap(
   element: HTMLDivElement,
   config: TileBoundsResult,
-  map: maplibre.Map,
+  style: any,
 ) {
-  const { tiles } = config;
-  element.style.position = "relative";
-  element.style.width = config.pixelSize.width + "px";
-  element.style.height = config.pixelSize.height + "px";
+  const { tiles, bounds } = config;
 
-  for (const tile of tiles) {
-    const { bounds, pixelSize, pixelOffset } = tile;
-    map.resize({ width: pixelSize.width, height: pixelSize.height });
+  const container = document.createElement("div");
+  container.className = "map-container";
+  element.appendChild(container);
+
+  const map = new maplibre.Map({
+    container,
+    bounds: lngLatBounds(bounds),
+    style,
+    trackResize: false,
+    attributionControl: false,
+    interactive: false,
+    maxZoom: 22,
+    pitchWithRotate: false,
+    dragRotate: false,
+    touchPitch: false,
+    boxZoom: false,
+  });
+  setupStyleImageManager(map);
+
+  const imageContainer = document.createElement("div");
+  imageContainer.className = "image-container";
+  element.appendChild(imageContainer);
+
+  imageContainer.style.position = "relative";
+  imageContainer.style.width = config.pixelSize.width + "px";
+  imageContainer.style.height = config.pixelSize.height + "px";
+
+  for await (const tile of tiles) {
+    const { bounds, pixelSize } = tile;
+    container.style.position = "absolute";
+    setSize(container, tile);
+    map.resize();
     map.fitBounds(lngLatBounds(bounds), { duration: 0, padding: 0 });
     await new Promise((resolve) => {
-      map.once("render", () => {
+      map.once("idle", () => {
         resolve(null);
       });
-      map.triggerRepaint();
     });
-    // Export map to image
     const dataUrl = map.getCanvas().toDataURL("image/png");
     const img = new Image();
+    setSize(img, tile);
     img.src = dataUrl;
-    img.width = pixelSize.width;
-    img.height = pixelSize.height;
-    img.style.position = "absolute";
-    img.style.top = pixelOffset.top + "px";
-    img.style.left = pixelOffset.left + "px";
     await new Promise((resolve) => {
       img.onload = () => resolve(null);
     });
-    element.appendChild(img);
+
+    console.log(tile, img);
+
+    imageContainer.appendChild(img);
   }
+
+  // Clean up
+  map.remove();
+  container.remove();
+}
+
+function setSize(element: HTMLDivElement, config: MapTile) {
+  const { pixelSize } = config;
+  element.style.width = pixelSize.width + "px";
+  element.style.height = pixelSize.height + "px";
+  element.style.position = "absolute";
+  element.style.top = config.pixelOffset.top + "px";
+  element.style.left = config.pixelOffset.left + "px";
 }
 
 function computeTiledBounds(
