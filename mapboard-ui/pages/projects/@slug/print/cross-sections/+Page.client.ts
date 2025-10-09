@@ -356,10 +356,10 @@ function computeTiledBounds(
   data: CrossSectionData,
   options: TileComputationOptions = {},
 ): TileBoundsResult {
-  const ll: [number, number] = [data.offset_x, data.offset_y];
+  const ll: [number, number] = [data.offset_x, data.offset_y + 500];
   const ur: [number, number] = [
     data.offset_x + data.length,
-    data.offset_y + 2500,
+    data.offset_y + 2200,
   ];
 
   const bounds: MercatorBBox = [...ll, ...ur];
