@@ -4,13 +4,13 @@ import { FloatingNavbar, MapAreaContainer } from "@macrostrat/map-interface";
 import styles from "../map.module.scss";
 import { useMapActions, useMapState } from "../state";
 import { useMapRef } from "@macrostrat/mapbox-react";
-import { useDisplayStyle, useMapStyle } from "../style";
 import { useStyleImageManager } from "../style/pattern-manager";
 import { SelectionDrawer } from "../selection";
 import type { RequestTransformFunction } from "mapbox-gl";
 import { useRequestTransformer } from "../transform-request";
 import { expandBounds, MapMarker } from "../map-utils";
 import { MapView } from "./maplibre-view";
+import { useDisplayStyle } from "./style";
 
 export const h = hyper.styled(styles);
 

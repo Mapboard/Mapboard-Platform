@@ -33,6 +33,7 @@ def apply_fixtures(
 ):
     _create_tables(database)
     database.instance_params["tms_srid"] = Literal(3857)
+    database.instance_params["srid"] = Literal(database.instance_params["srid"])
 
     fixtures = Path(__file__).parent / "fixtures"
     files = list(fixtures.rglob("*.sql"))
