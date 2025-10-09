@@ -103,10 +103,6 @@ export function useDisplayStyle(
           tileSize: 512,
           maxzoom: 14,
         },
-        crossSections: {
-          type: "geojson",
-          data: `${apiBaseURL}/cross-sections.geojson?project_id=eq.${projectID}`,
-        },
       },
     };
 
@@ -175,7 +171,86 @@ export function useDisplayStyle(
       };
     }
 
-    let style = mergeStyles(baseStyle, mainStyle, contourStyle, overlayStyle);
+    const crossSectionsStyle = {
+      sources: {
+        crossSections: {
+          type: "geojson",
+          data: `${apiBaseURL}/cross_sections.geojson?project_id=eq.${projectID}&order=name.asc&is_public=eq.true`,
+        },
+        crossSectionEndpoints: {
+          type: "geojson",
+          data: `${apiBaseURL}/cross_section_endpoints.geojson?project_id=eq.${projectID}&is_public=eq.true`,
+        },
+      },
+      layers: [
+        {
+          id: "cross-section-lines",
+          type: "line",
+          source: "crossSections",
+          paint: {
+            "line-color": "#444",
+            "line-width": 2,
+            "line-opacity": 1,
+          },
+        },
+        {
+          id: "cross-section-endpoints",
+          type: "circle",
+          source: "crossSectionEndpoints",
+          paint: {
+            "circle-color": "#444",
+            "circle-radius": 3,
+            "circle-opacity": 1,
+          },
+        },
+        {
+          id: "cross-section-start-labels",
+          type: "symbol",
+          source: "crossSectionEndpoints",
+          layout: {
+            "text-field": ["get", "name"],
+            "text-font": ["PT Sans Bold"],
+            "text-size": 16,
+            "text-radial-offset": 0.5,
+            "text-allow-overlap": false,
+            "text-variable-anchor": ["right", "top", "bottom", "left"],
+          },
+          paint: {
+            "text-halo-color": "rgba(255,255,255, 0.5)",
+            "text-halo-width": 1,
+            "text-color": "#444",
+          },
+          filter: ["==", ["get", "end_type"], "start"],
+        },
+        {
+          id: "cross-section-end-labels",
+          type: "symbol",
+          source: "crossSectionEndpoints",
+          layout: {
+            "text-field": ["concat", ["get", "name"], "'"],
+            "text-font": ["PT Sans Bold"],
+            "text-size": 16,
+            "text-radial-offset": 0.5,
+            "text-allow-overlap": false,
+            "text-variable-anchor": ["left", "bottom", "top", "right"],
+          },
+          paint: {
+            "text-halo-color": "rgba(255,255,255, 0.5)",
+            "text-halo-width": 1,
+            "text-color": "#444",
+          },
+          filter: ["==", ["get", "end_type"], "end"],
+        },
+      ],
+    };
+
+    let style = mergeStyles(
+      baseStyle,
+      mainStyle,
+      contourStyle,
+      overlayStyle,
+      crossSectionsStyle,
+    );
 
     for (const [key, source] of Object.entries(style.sources)) {
       if (

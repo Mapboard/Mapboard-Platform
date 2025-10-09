@@ -99,6 +99,27 @@ FROM mapboard.context
 WHERE type = 'cross-section'
   AND parent_geom IS NOT null;
 
+CREATE OR REPLACE VIEW mapboard_api.cross_section_endpoints AS
+SELECT
+  cs.id,
+  cs.project_id,
+  cs.name,
+  cs.parent_id,
+  cs.is_public,
+  'start' AS end_type,
+  ST_StartPoint(geometry) geometry
+FROM mapboard_api.cross_sections cs
+UNION ALL
+SELECT
+  cs.id,
+  cs.project_id,
+  cs.name,
+  cs.parent_id,
+  cs.is_public,
+  'end' AS end_type,
+  ST_EndPoint(geometry) geometry
+FROM mapboard_api.cross_sections cs;
+
 DROP VIEW IF EXISTS mapboard_api.piercing_points;
 CREATE OR REPLACE VIEW mapboard_api.piercing_points AS
 WITH cross_sections AS (
