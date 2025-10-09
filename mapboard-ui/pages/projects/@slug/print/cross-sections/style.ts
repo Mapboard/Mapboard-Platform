@@ -1,4 +1,3 @@
-import { createLineSymbolLayers } from "../../@context/style/line-symbols";
 import type maplibre from "maplibre-gl";
 
 export function buildCrossSectionStyle(
