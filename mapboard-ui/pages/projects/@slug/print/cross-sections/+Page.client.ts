@@ -16,7 +16,6 @@ import maplibre from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { MapPosition } from "@macrostrat/mapbox-utils";
 import { getMapPadding } from "@macrostrat/map-interface";
-import { useAsyncEffect } from "@macrostrat/ui-components";
 import { SphericalMercator } from "@mapbox/sphericalmercator";
 import { StyleLoadedReporter } from "~/maplibre-utils";
 
@@ -66,10 +65,26 @@ function CrossSection(props: { data: ArrayElement<Data> }) {
     },
     [
       h("h2.cross-section-title", data.name),
-      h(CrossSectionMapArea, {
-        baseURL,
-        bounds,
-      }),
+      h(
+        MapboxMapProvider,
+        h("div.cross-section-map-container", [
+          h(MapView, {
+            bounds,
+            baseURL,
+            enableTerrain: false,
+            maxZoom: 22,
+            pitchWithRotate: false,
+            antialias: false,
+            dragRotate: false,
+            touchPitch: false,
+            projection: { name: "mercator" },
+            boxZoom: false,
+            isMapView: false,
+            className: "cross-section-map",
+            initializeMap,
+          }),
+        ]),
+      ),
     ],
   );
 }
@@ -84,74 +99,6 @@ function computeCrossSectionBounds(data) {
     width: data.length,
     height: ur[1] - ll[1],
   };
-}
-
-function CrossSectionMapArea({
-  mapboxToken = null,
-  baseURL = null,
-  bounds = null,
-}: {
-  headerElement?: React.ReactElement;
-  children?: React.ReactNode;
-  mapboxToken?: string | null;
-  baseURL: string;
-  bounds: any;
-}) {
-  return h(
-    MapboxMapProvider,
-    h("div.cross-section-map-container", [
-      h(MapInner, {
-        projection: { name: "mercator" },
-        boxZoom: false,
-        mapboxToken,
-        bounds,
-        baseURL,
-        isMapView: false,
-      }),
-    ]),
-  );
-}
-
-function MapInner({ baseURL, bounds, ...rest }) {
-  const mapRef = useMapRef();
-
-  useStyleImageManager();
-
-  const style = useMemo(() => {
-    return buildCrossSectionStyle(baseURL, {
-      showFacesWithNoUnit: true,
-      showLineEndpoints: false,
-      showTopologyPrimitives: false,
-    });
-  }, [baseURL]);
-
-  return h(MapView, {
-    bounds,
-    style,
-    enableTerrain: false,
-    maxZoom: 22,
-    pitchWithRotate: false,
-    antialias: false,
-    dragRotate: false,
-    touchPitch: false,
-    className: "cross-section-map",
-    initializeMap,
-    ...rest,
-  });
-}
-
-function initializeMap(container: HTMLElement, args: MapboxOptionsExt) {
-  const { mapPosition, ...rest } = args;
-
-  return new maplibre.Map({
-    container,
-    maxZoom: 18,
-    trackResize: false,
-    attributionControl: false,
-    interactive: false,
-    //pixelRatio: ,
-    ...rest,
-  });
 }
 
 type MapboxCoreOptions = Omit<maplibre.MapOptions, "container">;
@@ -186,9 +133,8 @@ export interface MapboxOptionsExt extends MapboxCoreOptions {
 
 export function MapView(props: MapViewProps) {
   const {
-    style,
+    baseURL,
     mapPosition,
-    initializeMap = defaultInitializeMap,
     children,
     infoMarkerPosition,
     onMapLoaded = null,
@@ -207,7 +153,13 @@ export function MapView(props: MapViewProps) {
   const ref = useRef<HTMLDivElement>();
   const parentRef = useRef<HTMLDivElement>();
 
-  const [baseStyle, setBaseStyle] = useState<maplibre.Style>(null);
+  const baseStyle = useMemo(() => {
+    return buildCrossSectionStyle(baseURL, {
+      showFacesWithNoUnit: true,
+      showLineEndpoints: false,
+      showTopologyPrimitives: false,
+    });
+  }, [baseURL]);
 
   useEffect(() => {
     /** Manager to update map style */
@@ -231,14 +183,25 @@ export function MapView(props: MapViewProps) {
     }
   }, [baseStyle]);
 
-  useAsyncEffect(async () => {
-    /** Manager to update map style */
-    setBaseStyle(style as mapboxgl.StyleSpecification);
-  }, [style]);
+  useStyleImageManager();
 
   return h("div.map-view-container.main-view", { ref: parentRef, className }, [
     h("div.mapbox-map.map-view", { ref }),
     h(StyleLoadedReporter, { onStyleLoaded }),
     children,
   ]);
+}
+
+function initializeMap(container: HTMLElement, args: MapboxOptionsExt) {
+  const { mapPosition, ...rest } = args;
+
+  return new maplibre.Map({
+    container,
+    maxZoom: 18,
+    trackResize: false,
+    attributionControl: false,
+    interactive: false,
+    //pixelRatio: ,
+    ...rest,
+  });
 }
