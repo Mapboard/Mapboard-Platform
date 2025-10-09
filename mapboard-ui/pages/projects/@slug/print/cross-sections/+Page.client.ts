@@ -178,19 +178,56 @@ export function CrossSectionMapView(props: MapViewProps) {
 }
 
 function ElevationAxis({ scale, left = 0 }) {
-  return h(AxisLeft, { scale, numTicks: 4, left });
+  const tickLength = 5;
+  return h("g.elevation-axis", [
+    h(
+      "text",
+      {
+        x: left - tickLength,
+        y: -15,
+        style: {
+          textAnchor: "middle",
+        },
+        fontSize: 12,
+      },
+      "Elevation (m)",
+    ),
+    h(AxisLeft, { scale, numTicks: 4, left, tickLength }),
+  ]);
 }
 
 function DistanceAxis({ scale, top = 0 }) {
   // Ticks every 2 km regardless of length
   const dx = scale.domain()[1] - scale.domain()[0];
-  const numTicks = Math.ceil(dx / 2);
+  const numTicks = Math.ceil(dx);
+
+  // only label every 5th km
 
   return h(AxisBottom, {
     scale,
     numTicks,
     top,
+    tickComponent: DistanceTick,
   });
+}
+
+function DistanceTick(props) {
+  const { formattedValue, x, y } = props;
+  const val = Number(formattedValue);
+  if (val % 5 !== 0) return null;
+  return h(
+    "g",
+    { transform: `translate(${x} ${y})` },
+    h(
+      "text",
+      {
+        style: { textAnchor: "middle" },
+        fontSize: 10,
+        dy: "0.5em",
+      },
+      `${val} km`,
+    ),
+  );
 }
 
 function lngLatBounds(bounds: MercatorBBox): maplibre.LngLatBoundsLike {
