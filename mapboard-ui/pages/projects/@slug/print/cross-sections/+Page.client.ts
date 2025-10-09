@@ -1,8 +1,8 @@
 import { useData } from "vike-react/useData";
-import type { Data } from "./+data";
+import type { CrossSectionData } from "./+data";
 import hyper from "@macrostrat/hyper";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import styles from "./+Page.client.module.sass";
 import { useStyleImageManager } from "../../@context/style/pattern-manager";
 import {
@@ -14,7 +14,6 @@ import { bbox } from "@turf/bbox";
 import { buildCrossSectionStyle } from "../../@context/cross-sections/style";
 import maplibre from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { MapPosition } from "@macrostrat/mapbox-utils";
 import { getMapPadding } from "@macrostrat/map-interface";
 import { SphericalMercator } from "@mapbox/sphericalmercator";
 import { StyleLoadedReporter } from "~/maplibre-utils";
@@ -27,7 +26,7 @@ const mercator = new SphericalMercator({
 });
 
 export function Page() {
-  const crossSections = useData<Data>() ?? [];
+  const crossSections = useData<CrossSectionData[]>() ?? [];
 
   return h(
     "div.cross-sections",
@@ -37,16 +36,83 @@ export function Page() {
   );
 }
 
-type ArrayElement<A> = A extends readonly (infer T)[] ? T : never;
-
-function CrossSection(props: { data: ArrayElement<Data> }) {
+function CrossSection(props: { data: CrossSectionData }) {
   const { data } = props;
+
+  return h("div.cross-section", {}, [
+    h("h2.cross-section-title", data.name),
+    h(
+      MapboxMapProvider,
+      h("div.cross-section-map-container", [
+        h(CrossSectionMapView, {
+          data,
+        }),
+      ]),
+    ),
+  ]);
+}
+
+interface MapViewProps {
+  data: CrossSectionData;
+  children?: React.ReactNode;
+  className?: string;
+}
+
+export function CrossSectionMapView(props: MapViewProps) {
+  const { data, children, className, ...rest } = props;
+
+  const dispatch = useMapDispatch();
+  let mapRef = useMapRef();
+  const ref = useRef<HTMLDivElement>();
+  const parentRef = useRef<HTMLDivElement>();
+
   console.log("Cross section", data);
   let domain = document.location.origin;
   const { project_slug, slug } = data;
   const baseURL = `${domain}/api/project/${project_slug}/context/${slug}`;
 
   const { width, height, bounds } = computeCrossSectionBounds(data);
+
+  const baseStyle = useMemo(() => {
+    return buildCrossSectionStyle(baseURL, {
+      showFacesWithNoUnit: true,
+      showLineEndpoints: false,
+      showTopologyPrimitives: false,
+    });
+  }, [baseURL]);
+
+  useEffect(() => {
+    /** Manager to update map style */
+    if (baseStyle == null || ref.current == null) return;
+    let map = mapRef.current;
+
+    if (map != null) {
+      dispatch({ type: "set-style-loaded", payload: false });
+      map.setStyle(baseStyle);
+    } else {
+      const map = new maplibre.Map({
+        container: ref.current,
+        bounds,
+        style: baseStyle,
+        trackResize: false,
+        attributionControl: false,
+        interactive: false,
+        maxZoom: 22,
+        pitchWithRotate: false,
+        dragRotate: false,
+        touchPitch: false,
+        boxZoom: false,
+
+        //pixelRatio: ,
+      });
+
+      dispatch({ type: "set-map", payload: map });
+      map.setPadding(getMapPadding(ref, parentRef), { animate: false });
+      //onMapLoaded?.(map);
+    }
+  }, [baseStyle]);
+
+  useStyleImageManager();
 
   const scale = 20;
 
@@ -56,35 +122,18 @@ function CrossSection(props: { data: ArrayElement<Data> }) {
   };
 
   return h(
-    "div.cross-section",
+    "div.map-view-container.main-view.cross-section-map",
     {
+      ref: parentRef,
       style: {
         "--cross-section-width": `${size.width}px`,
         "--cross-section-height": `${size.height}px`,
       },
     },
     [
-      h("h2.cross-section-title", data.name),
-      h(
-        MapboxMapProvider,
-        h("div.cross-section-map-container", [
-          h(MapView, {
-            bounds,
-            baseURL,
-            enableTerrain: false,
-            maxZoom: 22,
-            pitchWithRotate: false,
-            antialias: false,
-            dragRotate: false,
-            touchPitch: false,
-            projection: { name: "mercator" },
-            boxZoom: false,
-            isMapView: false,
-            className: "cross-section-map",
-            initializeMap,
-          }),
-        ]),
-      ),
+      h("div.mapbox-map.map-view", { ref }),
+      h(StyleLoadedReporter, { onStyleLoaded: null }),
+      children,
     ],
   );
 }
@@ -99,109 +148,4 @@ function computeCrossSectionBounds(data) {
     width: data.length,
     height: ur[1] - ll[1],
   };
-}
-
-type MapboxCoreOptions = Omit<maplibre.MapOptions, "container">;
-
-export interface MapViewProps extends MapboxCoreOptions {
-  showLineSymbols?: boolean;
-  children?: React.ReactNode;
-  infoMarkerPosition?: mapboxgl.LngLatLike;
-  mapPosition?: MapPosition;
-  initializeMap?: (
-    container: HTMLElement,
-    args: MapboxOptionsExt,
-  ) => mapboxgl.Map;
-  onMapLoaded?: (map: mapboxgl.Map) => void;
-  onStyleLoaded?: (map: mapboxgl.Map) => void;
-  onMapMoved?: (mapPosition: MapPosition, map: mapboxgl.Map) => void;
-  /** This map sets its own viewport, rather than being positioned by a parent.
-   * This is a hack to ensure that the map can overflow its "safe area" when false */
-  standalone?: boolean;
-  /** Overlay styles to apply to the map: a list of mapbox style objects or fragments to
-   * overlay on top of the main map style at runtime */
-  overlayStyles?: Partial<mapboxgl.StyleSpecification>[];
-  /** A function to transform the map style before it is loaded */
-  loadingIgnoredSources?: string[];
-  id?: string;
-  className?: string;
-}
-
-export interface MapboxOptionsExt extends MapboxCoreOptions {
-  mapPosition?: MapPosition;
-}
-
-export function MapView(props: MapViewProps) {
-  const {
-    baseURL,
-    mapPosition,
-    children,
-    infoMarkerPosition,
-    onMapLoaded = null,
-    onStyleLoaded = null,
-    onMapMoved = null,
-    standalone = false,
-    overlayStyles,
-    trackResize = true,
-    loadingIgnoredSources = ["elevationMarker", "crossSectionEndpoints"],
-    className,
-    ...rest
-  } = props;
-
-  const dispatch = useMapDispatch();
-  let mapRef = useMapRef();
-  const ref = useRef<HTMLDivElement>();
-  const parentRef = useRef<HTMLDivElement>();
-
-  const baseStyle = useMemo(() => {
-    return buildCrossSectionStyle(baseURL, {
-      showFacesWithNoUnit: true,
-      showLineEndpoints: false,
-      showTopologyPrimitives: false,
-    });
-  }, [baseURL]);
-
-  useEffect(() => {
-    /** Manager to update map style */
-    if (baseStyle == null) return;
-    let map = mapRef.current;
-
-    let newStyle: mapboxgl.StyleSpecification = baseStyle;
-
-    if (map != null) {
-      dispatch({ type: "set-style-loaded", payload: false });
-      map.setStyle(newStyle);
-    } else {
-      const map = initializeMap(ref.current, {
-        style: newStyle,
-        mapPosition,
-        ...rest,
-      });
-      dispatch({ type: "set-map", payload: map });
-      map.setPadding(getMapPadding(ref, parentRef), { animate: false });
-      onMapLoaded?.(map);
-    }
-  }, [baseStyle]);
-
-  useStyleImageManager();
-
-  return h("div.map-view-container.main-view", { ref: parentRef, className }, [
-    h("div.mapbox-map.map-view", { ref }),
-    h(StyleLoadedReporter, { onStyleLoaded }),
-    children,
-  ]);
-}
-
-function initializeMap(container: HTMLElement, args: MapboxOptionsExt) {
-  const { mapPosition, ...rest } = args;
-
-  return new maplibre.Map({
-    container,
-    maxZoom: 18,
-    trackResize: false,
-    attributionControl: false,
-    interactive: false,
-    //pixelRatio: ,
-    ...rest,
-  });
 }

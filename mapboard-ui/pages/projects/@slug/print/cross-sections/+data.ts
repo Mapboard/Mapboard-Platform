@@ -1,12 +1,17 @@
 import { postgrest } from "~/utils/api-client";
 import type { PageContextServer } from "vike/types";
-import type { definitions } from "~/types/project-api";
+import type { LineString } from "geojson";
 
-export type Data = Awaited<ReturnType<typeof data>>;
-
-type ExtProject = definitions["project"] & {
-  contexts: definitions["context"][];
-};
+export interface CrossSectionData {
+  id: number;
+  name: string;
+  project_slug: string;
+  slug: string;
+  offset_x: number;
+  offset_y: number;
+  length: number;
+  parent_geom: LineString;
+}
 
 export const data = async (pageContext: PageContextServer) => {
   const ctxRequest = postgrest
@@ -18,5 +23,5 @@ export const data = async (pageContext: PageContextServer) => {
     .order("name", { ascending: true })
     .eq("project_slug", pageContext.routeParams.slug);
 
-  return (await ctxRequest).data;
+  return (await ctxRequest).data as CrossSectionData[];
 };

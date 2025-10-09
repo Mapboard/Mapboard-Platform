@@ -7,6 +7,7 @@ import {
 import { useCallback, useEffect } from "react";
 import maplibre from "maplibre-gl";
 import { CameraPosition, MapPosition } from "@macrostrat/mapbox-utils";
+import { debounce } from "underscore";
 
 export function StyleLoadedReporter({ onStyleLoaded = null }) {
   /** Check back every 0.1 seconds to see if the map has loaded.
