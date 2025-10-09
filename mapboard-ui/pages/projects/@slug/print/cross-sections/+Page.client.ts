@@ -9,16 +9,16 @@ import {
   MapboxMapProvider,
   useMapDispatch,
   useMapRef,
-  useMapStatus,
 } from "@macrostrat/mapbox-react";
 import { bbox } from "@turf/bbox";
 import { buildCrossSectionStyle } from "../../@context/cross-sections/style";
 import maplibre from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { MapPosition, setMapPosition } from "@macrostrat/mapbox-utils";
+import { MapPosition } from "@macrostrat/mapbox-utils";
 import { getMapPadding } from "@macrostrat/map-interface";
 import { useAsyncEffect } from "@macrostrat/ui-components";
 import { SphericalMercator } from "@mapbox/sphericalmercator";
+import { StyleLoadedReporter } from "~/maplibre-utils";
 
 const h = hyper.styled(styles);
 
@@ -150,7 +150,6 @@ function initializeMap(container: HTMLElement, args: MapboxOptionsExt) {
     attributionControl: false,
     interactive: false,
     //pixelRatio: ,
-    maxCanvasSize: [10000, 1000],
     ...rest,
   });
 }
@@ -242,29 +241,4 @@ export function MapView(props: MapViewProps) {
     h(StyleLoadedReporter, { onStyleLoaded }),
     children,
   ]);
-}
-
-function StyleLoadedReporter({ onStyleLoaded = null }) {
-  /** Check back every 0.1 seconds to see if the map has loaded.
-   * We do it this way because mapboxgl loading events are unreliable */
-  const isStyleLoaded = useMapStatus((state) => state.isStyleLoaded);
-  const mapRef = useMapRef();
-  const dispatch = useMapDispatch();
-
-  useEffect(() => {
-    if (isStyleLoaded) return;
-    const interval = setInterval(() => {
-      const map = mapRef.current;
-      if (map == null) return;
-      if (map.isStyleLoaded()) {
-        // Wait a tick before setting the style loaded state
-        dispatch({ type: "set-style-loaded", payload: true });
-        onStyleLoaded?.(map);
-        clearInterval(interval);
-      }
-    }, 50);
-    return () => clearInterval(interval);
-  }, [isStyleLoaded]);
-
-  return null;
 }

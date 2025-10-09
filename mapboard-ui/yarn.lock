@@ -3505,6 +3505,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/underscore@npm:^1":
+  version: 1.13.0
+  resolution: "@types/underscore@npm:1.13.0"
+  checksum: 10c0/240d3f36f694e177b1896c464b1254249e64b51a2afc703a1dda61f0c544d6e3b081ac4d955fb057e873982a62a7ba78e3a0aaa252c9d766f6cbe5e85283bc04
+  languageName: node
+  linkType: hard
+
 "@types/unist@npm:*, @types/unist@npm:^3.0.0":
   version: 3.0.3
   resolution: "@types/unist@npm:3.0.3"
@@ -8728,6 +8735,7 @@ __metadata:
     "@types/react": "npm:^18.0.0"
     "@types/react-dom": "npm:^18.0.0"
     "@types/swagger-ui-react": "npm:^5"
+    "@types/underscore": "npm:^1"
     "@universal-middleware/core": "npm:^0.4.0"
     "@universal-middleware/express": "npm:^0.4.1"
     "@vitejs/plugin-react": "npm:^4.3.4"
@@ -8760,6 +8768,7 @@ __metadata:
     swagger-ui-react: "npm:^5.19.0"
     tsx: "npm:^4.19.3"
     typescript: "npm:^5.7.3"
+    underscore: "npm:^1.13.7"
     vike: "npm:^0.4.223"
     vike-react: "npm:^0.5.13"
     vite: "npm:^6.1.0"
