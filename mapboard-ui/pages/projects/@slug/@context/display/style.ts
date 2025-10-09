@@ -103,6 +103,10 @@ export function useDisplayStyle(
           tileSize: 512,
           maxzoom: 14,
         },
+        crossSections: {
+          type: "geojson",
+          data: `${apiBaseURL}/cross-sections.geojson?project_id=eq.${projectID}`,
+        },
       },
     };
 

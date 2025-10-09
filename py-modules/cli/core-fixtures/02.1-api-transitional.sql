@@ -85,6 +85,20 @@ SELECT
   data
 FROM naukluft_map_data.stations;
 
+CREATE OR REPLACE VIEW mapboard_api.cross_sections AS
+SELECT id,
+       project_id,
+       replace(name, 'Section ', '') AS name,
+       parent AS parent_id,
+       is_public,
+       offset_x,
+       offset_y,
+       ST_Length(parent_geom) length,
+       ST_Transform(ST_LineMerge(parent_geom), 4236) geometry -- we store multilinestrings for some reason
+FROM mapboard.context
+WHERE type = 'cross-section'
+  AND parent_geom IS NOT null;
+
 DROP VIEW IF EXISTS mapboard_api.piercing_points;
 CREATE OR REPLACE VIEW mapboard_api.piercing_points AS
 WITH cross_sections AS (
@@ -92,10 +106,8 @@ WITH cross_sections AS (
          project_id,
          replace(name, 'Section ', '') AS name,
          parent AS parent_id,
-         ST_Transform(
-           ST_LineMerge(parent_geom), -- we store multilinestrings for some reason
-            32733
-         ) geometry
+         is_public,
+         ST_LineMerge(parent_geom) geometry -- we store multilinestrings for some reason
   FROM mapboard.context
   WHERE type = 'cross-section'
    AND parent_geom IS NOT null
@@ -108,6 +120,7 @@ SELECT
   s2.id other_id,
   s1.name,
   s2.name other_name,
+  (s1.is_public AND s2.is_public) is_public,
   ST_Intersection(s1.geometry, s2.geometry) geometry,
   ST_Length(s1.geometry) * ST_LineLocatePoint(s1.geometry, ST_Intersection(s1.geometry, s2.geometry)) distance,
   ST_Length(s2.geometry) * ST_LineLocatePoint(s2.geometry, ST_Intersection(s1.geometry, s2.geometry)) other_distance

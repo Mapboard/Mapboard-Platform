@@ -40,12 +40,16 @@ CREATE TABLE IF NOT EXISTS mapboard.context (
   srid        integer REFERENCES spatial_ref_sys (srid) DEFAULT 4326,
   tolerance   numeric NOT NULL DEFAULT 0.00001,
   bounds      geometry(MultiPolygon),
+  is_public   boolean DEFAULT true,
   parent      integer REFERENCES mapboard.context (id),
   parent_geom geometry(Geometry),
   offset_x    numeric DEFAULT 0,
   offset_y    numeric DEFAULT 0,
   UNIQUE (project_id, slug)
 );
+
+ALTER TABLE mapboard.context
+  ADD COLUMN IF NOT EXISTS is_public boolean DEFAULT true;
 
 
 ALTER TABLE mapboard.project
@@ -71,11 +75,14 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER check_bounds_overlap
-  BEFORE INSERT OR UPDATE
-  ON mapboard.context
-  FOR EACH ROW
-EXECUTE FUNCTION mapboard.check_bounds_overlap();
+-- CREATE TRIGGER check_bounds_overlap
+--   BEFORE INSERT OR UPDATE
+--   ON mapboard.context
+--   FOR EACH ROW
+-- EXECUTE FUNCTION mapboard.check_bounds_overlap();
+
+-- Overlapping contexts are OK, actually...
+DROP TRIGGER IF EXISTS check_bounds_overlap ON mapboard.context;
 
 /** Base layers
  Table that defines standardized base layers for mapboard contexts.

@@ -154,6 +154,117 @@ export interface paths {
       };
     };
   };
+  "/cross_sections": {
+    get: {
+      parameters: {
+        query: {
+          id?: parameters["rowFilter.cross_sections.id"];
+          project_id?: parameters["rowFilter.cross_sections.project_id"];
+          name?: parameters["rowFilter.cross_sections.name"];
+          parent_id?: parameters["rowFilter.cross_sections.parent_id"];
+          is_public?: parameters["rowFilter.cross_sections.is_public"];
+          offset_x?: parameters["rowFilter.cross_sections.offset_x"];
+          offset_y?: parameters["rowFilter.cross_sections.offset_y"];
+          length?: parameters["rowFilter.cross_sections.length"];
+          geometry?: parameters["rowFilter.cross_sections.geometry"];
+          /** Filtering Columns */
+          select?: parameters["select"];
+          /** Ordering */
+          order?: parameters["order"];
+          /** Limiting and Pagination */
+          offset?: parameters["offset"];
+          /** Limiting and Pagination */
+          limit?: parameters["limit"];
+        };
+        header: {
+          /** Limiting and Pagination */
+          Range?: parameters["range"];
+          /** Limiting and Pagination */
+          "Range-Unit"?: parameters["rangeUnit"];
+          /** Preference */
+          Prefer?: parameters["preferCount"];
+        };
+      };
+      responses: {
+        /** OK */
+        200: {
+          schema: definitions["cross_sections"][];
+        };
+        /** Partial Content */
+        206: unknown;
+      };
+    };
+    post: {
+      parameters: {
+        body: {
+          /** cross_sections */
+          cross_sections?: definitions["cross_sections"];
+        };
+        query: {
+          /** Filtering Columns */
+          select?: parameters["select"];
+        };
+        header: {
+          /** Preference */
+          Prefer?: parameters["preferPost"];
+        };
+      };
+      responses: {
+        /** Created */
+        201: unknown;
+      };
+    };
+    delete: {
+      parameters: {
+        query: {
+          id?: parameters["rowFilter.cross_sections.id"];
+          project_id?: parameters["rowFilter.cross_sections.project_id"];
+          name?: parameters["rowFilter.cross_sections.name"];
+          parent_id?: parameters["rowFilter.cross_sections.parent_id"];
+          is_public?: parameters["rowFilter.cross_sections.is_public"];
+          offset_x?: parameters["rowFilter.cross_sections.offset_x"];
+          offset_y?: parameters["rowFilter.cross_sections.offset_y"];
+          length?: parameters["rowFilter.cross_sections.length"];
+          geometry?: parameters["rowFilter.cross_sections.geometry"];
+        };
+        header: {
+          /** Preference */
+          Prefer?: parameters["preferReturn"];
+        };
+      };
+      responses: {
+        /** No Content */
+        204: never;
+      };
+    };
+    patch: {
+      parameters: {
+        query: {
+          id?: parameters["rowFilter.cross_sections.id"];
+          project_id?: parameters["rowFilter.cross_sections.project_id"];
+          name?: parameters["rowFilter.cross_sections.name"];
+          parent_id?: parameters["rowFilter.cross_sections.parent_id"];
+          is_public?: parameters["rowFilter.cross_sections.is_public"];
+          offset_x?: parameters["rowFilter.cross_sections.offset_x"];
+          offset_y?: parameters["rowFilter.cross_sections.offset_y"];
+          length?: parameters["rowFilter.cross_sections.length"];
+          geometry?: parameters["rowFilter.cross_sections.geometry"];
+        };
+        body: {
+          /** cross_sections */
+          cross_sections?: definitions["cross_sections"];
+        };
+        header: {
+          /** Preference */
+          Prefer?: parameters["preferReturn"];
+        };
+      };
+      responses: {
+        /** No Content */
+        204: never;
+      };
+    };
+  };
   "/stations": {
     get: {
       parameters: {
@@ -420,6 +531,7 @@ export interface paths {
           other_id?: parameters["rowFilter.piercing_points.other_id"];
           name?: parameters["rowFilter.piercing_points.name"];
           other_name?: parameters["rowFilter.piercing_points.other_name"];
+          is_public?: parameters["rowFilter.piercing_points.is_public"];
           geometry?: parameters["rowFilter.piercing_points.geometry"];
           distance?: parameters["rowFilter.piercing_points.distance"];
           other_distance?: parameters["rowFilter.piercing_points.other_distance"];
@@ -587,6 +699,38 @@ export interface definitions {
     /** Format: bigint */
     n_contexts?: number;
   };
+  cross_sections: {
+    /**
+     * Format: integer
+     * @description Note:
+     * This is a Primary Key.<pk/>
+     */
+    id?: number;
+    /**
+     * Format: integer
+     * @description Note:
+     * This is a Foreign Key to `polygon_type.project_id`.<fk table='polygon_type' column='project_id'/>
+     */
+    project_id?: number;
+    /** Format: text */
+    name?: string;
+    /**
+     * Format: integer
+     * @description Note:
+     * This is a Foreign Key to `context.id`.<fk table='context' column='id'/>
+     */
+    parent_id?: number;
+    /** Format: boolean */
+    is_public?: boolean;
+    /** Format: numeric */
+    offset_x?: number;
+    /** Format: numeric */
+    offset_y?: number;
+    /** Format: double precision */
+    length?: number;
+    /** Format: public.geometry */
+    geometry?: string;
+  };
   stations: {
     /** Format: integer */
     id?: number;
@@ -680,6 +824,8 @@ export interface definitions {
     name?: string;
     /** Format: text */
     other_name?: string;
+    /** Format: boolean */
+    is_public?: boolean;
     /** Format: public.geometry */
     geometry?: string;
     /** Format: double precision */
@@ -784,6 +930,17 @@ export interface parameters {
   "rowFilter.project.main_context": string;
   "rowFilter.project.main_context_slug": string;
   "rowFilter.project.n_contexts": string;
+  /** @description cross_sections */
+  "body.cross_sections": definitions["cross_sections"];
+  "rowFilter.cross_sections.id": string;
+  "rowFilter.cross_sections.project_id": string;
+  "rowFilter.cross_sections.name": string;
+  "rowFilter.cross_sections.parent_id": string;
+  "rowFilter.cross_sections.is_public": string;
+  "rowFilter.cross_sections.offset_x": string;
+  "rowFilter.cross_sections.offset_y": string;
+  "rowFilter.cross_sections.length": string;
+  "rowFilter.cross_sections.geometry": string;
   /** @description stations */
   "body.stations": definitions["stations"];
   "rowFilter.stations.id": string;
@@ -826,6 +983,7 @@ export interface parameters {
   "rowFilter.piercing_points.other_id": string;
   "rowFilter.piercing_points.name": string;
   "rowFilter.piercing_points.other_name": string;
+  "rowFilter.piercing_points.is_public": string;
   "rowFilter.piercing_points.geometry": string;
   "rowFilter.piercing_points.distance": string;
   "rowFilter.piercing_points.other_distance": string;
