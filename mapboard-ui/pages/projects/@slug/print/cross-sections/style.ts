@@ -92,8 +92,8 @@ export function buildCrossSectionStyle(
         "line-width": [
           "case",
           // special case for NNC bounding surface
-          ["==", ["get", "map_layer"], 89],
-          1.5,
+          ["==", ["get", "map_layer"], 413], // nappe complex layer
+          2,
           // faults and structures
           [
             "in",

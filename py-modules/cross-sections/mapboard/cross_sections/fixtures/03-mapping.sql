@@ -6,6 +6,7 @@ DECLARE
   layer_id integer;
   bedrock_id integer;
   outcrop_id integer;
+  nnc_id integer;
   nappes_id integer;
 BEGIN
 
@@ -72,12 +73,20 @@ and line types of the main mapping schema. */
 
 -- Layers for data
 
-/** Create a layer for nappes */
+/** Hierarchical layers for tectonic elements */
 INSERT INTO map_layer (name, topological, parent)
-VALUES ('Nappes', true, layer_id)
+VALUES ('Nappe complex', true, layer_id)
 ON CONFLICT (name) DO UPDATE SET
   topological = true,
   parent = layer_id
+RETURNING id INTO nnc_id;
+
+/** Create a layer for nappes */
+INSERT INTO map_layer (name, topological, parent)
+VALUES ('Nappes', true, nnc_id)
+ON CONFLICT (name) DO UPDATE SET
+  topological = true,
+  parent = nnc_id
 RETURNING id INTO nappes_id;
 
 INSERT INTO map_layer (name, topological, parent)
@@ -114,6 +123,8 @@ UNION ALL
 SELECT id, outcrop_id FROM poly_types
 UNION ALL
 SELECT id, nappes_id FROM poly_types
+UNION ALL
+SELECT id, nnc_id FROM poly_types
 ON CONFLICT DO NOTHING;
 
 WITH linework_types AS (
