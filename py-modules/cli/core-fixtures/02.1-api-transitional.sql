@@ -94,7 +94,7 @@ SELECT id,
        offset_x,
        offset_y,
        ST_Length(parent_geom) length,
-       ST_Transform(ST_LineMerge(parent_geom), 4236) geometry -- we store multilinestrings for some reason
+       ST_LineMerge(ST_Transform(parent_geom, 4326)) geometry -- we store multilinestrings for some reason
 FROM mapboard.context
 WHERE type = 'cross-section'
   AND parent_geom IS NOT null;
