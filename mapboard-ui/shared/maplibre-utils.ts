@@ -84,3 +84,24 @@ function getCameraPosition(map: maplibre.Map): CameraPosition {
     bearing: map.getBearing(),
   };
 }
+
+export function setMapPosition(map: maplibre.Map, pos: MapPosition) {
+  const { pitch = 0, bearing = 0, altitude } = pos.camera;
+  const zoom = pos.target?.zoom;
+  if (zoom != null && altitude == null && pitch == 0 && bearing == 0) {
+    const { lng, lat } = pos.target;
+    // Zoom must be set before center to correctly recall position
+    map.setZoom(zoom);
+    map.setCenter([lng, lat]);
+  } else {
+    const { altitude, lng, lat } = pos.camera;
+    map.jumpTo({
+      center: [lng, lat],
+      zoom: zoom ?? map.getZoom(),
+      bearing: bearing ?? map.getBearing(),
+      pitch: pitch ?? map.getPitch(),
+      // @ts-ignore
+      altitude: altitude,
+    });
+  }
+}

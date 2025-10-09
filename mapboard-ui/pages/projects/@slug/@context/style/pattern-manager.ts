@@ -1,6 +1,11 @@
 import { useEffect } from "react";
 import { createSolidColorImage, loadImage } from "./pattern-images";
 import { useMapInitialized, useMapRef } from "@macrostrat/mapbox-react";
+import thrustFaultMovement from "./symbols/thrust-fault-movement.svg";
+
+const crossSectionSymbols = {
+  "thrust-fault-movement": thrustFaultMovement,
+};
 
 export function useStyleImageManager() {
   const isInitialized = useMapInitialized();
@@ -41,6 +46,16 @@ async function loadStyleImage(map: mapboxgl.Map, id: string) {
   } else if (prefix == "line-symbol") {
     // Load line symbol image
     await loadSymbolImage(map, "geologic-symbols/lines/dev", id);
+  } else if (prefix == "cross-section") {
+    // Load cross-section specific symbols
+    if (name in crossSectionSymbols) {
+      const imgURL = crossSectionSymbols[name];
+      if (imgURL == null) {
+        console.warn(`No image data found for cross-section symbol: ${name}`);
+        return;
+      }
+      await addImageURLToMap(map, id, imgURL, { sdf: false, pixelRatio: 4 });
+    }
   } else {
     // Load pattern image
     await loadPatternImage(map, id);
@@ -50,10 +65,10 @@ async function loadStyleImage(map: mapboxgl.Map, id: string) {
 async function loadSymbolImage(map: mapboxgl.Map, set: string, id: string) {
   const [prefix, name, ...rest] = id.split(":");
   const lineSymbolsURL = `https://dev.macrostrat.org/assets/web/${set}/png`;
-  if (map.hasImage(id)) return;
-  const image = await loadImage(lineSymbolsURL + `/${name}.png`);
-  if (map.hasImage(id) || image == null) return;
-  map.addImage(id, image, { sdf: true, pixelRatio: 3 });
+  await addImageURLToMap(map, id, lineSymbolsURL + `/${name}.png`, {
+    sdf: true,
+    pixelRatio: 3,
+  });
 }
 
 async function loadPatternImage(map: mapboxgl.Map, patternSpec: string) {
@@ -66,15 +81,38 @@ async function loadPatternImage(map: mapboxgl.Map, patternSpec: string) {
   });
 }
 
+export function addImageToMap(
+  map: mapboxgl.Map,
+  id: string,
+  image: HTMLImageElement | ImageData | null,
+  options: any,
+) {
+  if (map.hasImage(id) || image == null) return;
+  map.addImage(id, image, options);
+}
+
+export async function addImageURLToMap(
+  map: mapboxgl.Map,
+  id: string,
+  url: string,
+  options: mapboxgl.AddImageOptions = {},
+) {
+  if (map.hasImage(id)) return;
+  const image = await loadImage(url);
+  if (map.hasImage(id) || image == null) return;
+  map.addImage(id, image, options);
+}
+
 async function buildPatternImage(
   patternSpec: string,
+  scale: number = 4,
 ): Promise<HTMLImageElement | ImageData | null> {
   const [prefix, ...rest] = patternSpec.split(":");
   if (prefix == "fgdc") {
     const [name, color, backgroundColor] = rest;
 
     const urlParams = new URLSearchParams();
-    urlParams.set("scale", "4");
+    urlParams.set("scale", scale.toString());
     if (backgroundColor) {
       urlParams.set("background-color", backgroundColor);
     }

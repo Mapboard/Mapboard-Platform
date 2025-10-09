@@ -1,52 +1,14 @@
 import { createLineSymbolLayers } from "../../@context/style/line-symbols";
-import {
-  buildFillLayers,
-  getTileQueryParams,
-  MapOverlayOptions,
-} from "../../@context/style/overlay";
 import type maplibre from "maplibre-gl";
-import { mergeStyles } from "@macrostrat/mapbox-utils";
-import type mapboxgl from "mapbox-gl";
 
-export function buildCrossSectionStyle(baseURL: string, opts = {}) {
-  const { showLineEndpoints, showFacesWithNoUnit, showTopologyPrimitives } =
-    opts;
-  const overlay = buildCrossSectionOverlayStyle(baseURL, {
-    selectedLayer: null,
-    showLineEndpoints,
-    showFacesWithNoUnit,
-    showTopologyPrimitives,
-    clipToContextBounds: true,
-  });
-
-  const mainStyle: mapboxgl.StyleSpecification = {
-    version: 8,
-    name: "Mapboard cross sections",
-    layers: [],
-    sources: {},
-  };
-
-  let style = mergeStyles(overlay as mapboxgl.StyleSpecification, mainStyle);
-  delete style.sprite;
-  return style;
-}
-
-function buildCrossSectionOverlayStyle(
+export function buildCrossSectionStyle(
   baseURL: string,
-  options: MapOverlayOptions,
 ): maplibre.StyleSpecification {
-  const { selectedLayer } = options ?? {};
-
   let sources: Record<string, mapboxgl.SourceSpecification> = {};
-
-  const suffix = getTileQueryParams({
-    map_layer: selectedLayer,
-    clip: true,
-  });
 
   sources["mapboard"] = {
     type: "vector",
-    tiles: [baseURL + `/tile/fills,lines/{z}/{x}/{y}${suffix}`],
+    tiles: [baseURL + `/tile/fills,lines/{z}/{x}/{y}?clip=true`],
     volatile: false,
   };
 
@@ -61,45 +23,49 @@ function buildCrossSectionOverlayStyle(
     ["get", "color"],
   ];
 
-  let lineWidth: any = [
-    "case",
-    // special case for NNC bounding surface
-    ["==", ["get", "source_layer"], 8],
-    2,
-    // faults and structures
-    [
-      "in",
-      ["get", "type"],
-      [
-        "literal",
-        [
-          "thrust-fault",
-          "normal-fault",
-          "fault",
-          "anticline-hinge",
-          "syncline-hinge",
-        ],
-      ],
-    ],
-    1.2,
-    0.5,
-  ];
-
-  let lineFilter = [
-    "all",
-    ["!", ["coalesce", ["get", "covered"], false]],
-    ["!=", ["get", "type"], "mapboard:arbitrary"],
-  ];
-
-  const lineSymbolFilter = [...lineFilter, ["!=", ["get", "source_layer"], 8]];
-  // exclude nappe bounding surface
+  const source = "mapboard";
+  const fillFilter = ["all", ["has", "unit"], ["==", ["get", "map_layer"], 1]];
 
   let layers = [
-    ...buildFillLayers({
-      opacity: 1,
-      filter: ["has", "unit"],
-      source: "mapboard",
-    }),
+    {
+      id: "fills-without-symbols",
+      type: "fill",
+      source,
+      "source-layer": "fills",
+      paint: {
+        "fill-color": ["get", "color"],
+        "fill-opacity": 0.8,
+        "fill-outline-color": "transparent",
+      },
+      filter: ["all", ["!", ["has", "symbol"]], fillFilter],
+    },
+    {
+      id: "fills-with-symbols",
+      type: "fill",
+      source,
+      "source-layer": "fills",
+      paint: {
+        "fill-pattern": [
+          "image",
+          [
+            "case",
+            ["has", "symbol"],
+            [
+              "concat",
+              ["get", "symbol"],
+              ":",
+              ["get", "symbol_color"],
+              ":",
+              ["get", "color"],
+            ],
+            ["concat", "color:", ["get", "color"]],
+          ],
+        ],
+        "fill-opacity": 0.8,
+        "fill-outline-color": "transparent",
+      },
+      filter: ["all", ["has", "symbol"], fillFilter],
+    },
 
     // A single layer for all lines
     {
@@ -109,7 +75,29 @@ function buildCrossSectionOverlayStyle(
       "source-layer": "lines",
       paint: {
         "line-color": lineColor,
-        "line-width": lineWidth,
+        "line-width": [
+          "case",
+          // special case for NNC bounding surface
+          ["==", ["get", "source_layer"], 8],
+          2,
+          // faults and structures
+          [
+            "in",
+            ["get", "type"],
+            [
+              "literal",
+              [
+                "thrust-fault",
+                "normal-fault",
+                "fault",
+                "anticline-hinge",
+                "syncline-hinge",
+              ],
+            ],
+          ],
+          1,
+          0.5,
+        ],
         "line-opacity": 1,
       },
       layout: {
@@ -132,13 +120,35 @@ function buildCrossSectionOverlayStyle(
           0,
         ],
       },
-      filter: lineFilter,
+      filter: [
+        "all",
+        ["!", ["coalesce", ["get", "covered"], false]],
+        ["!=", ["get", "type"], "mapboard:arbitrary"],
+      ],
     },
-    ...createLineSymbolLayers(lineSymbolFilter),
+    {
+      type: "symbol",
+      id: "thrust-fault-symbols",
+      layout: {
+        "icon-image": "cross-section:thrust-fault-movement",
+        "icon-pitch-alignment": "map",
+        "icon-allow-overlap": true,
+        "symbol-avoid-edges": false,
+        "symbol-placement": "line",
+        "symbol-spacing": 50,
+        "icon-offset": [0, -15],
+        "icon-rotate": 0,
+        "icon-size": 0.15,
+      },
+      filter: ["all", ["==", ["get", "type"], "thrust-fault"]],
+      source: "mapboard",
+      "source-layer": "lines",
+    },
   ];
 
   return {
     version: 8,
+    name: "Mapboard cross sections",
     sources,
     layers,
   };

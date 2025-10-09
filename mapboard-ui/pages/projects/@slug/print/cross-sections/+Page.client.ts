@@ -4,10 +4,14 @@ import hyper from "@macrostrat/hyper";
 
 import React, { useEffect, useRef } from "react";
 import styles from "./+Page.client.module.sass";
-import { setupStyleImageManager } from "../../@context/style/pattern-manager";
+import {
+  addImageToMap,
+  setupStyleImageManager,
+} from "../../@context/style/pattern-manager";
 import maplibre from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { SphericalMercator } from "@mapbox/sphericalmercator";
+import svg from "./thrust-fault-movement.svg";
 
 import { buildCrossSectionStyle } from "./style";
 
@@ -68,13 +72,9 @@ export function CrossSectionMapView(props: MapViewProps) {
     if (renderCounter.current > 1) return;
     // Compute tiled bounds
     const tileBounds = computeTiledBounds(data, {
-      metersPerPixel: 10,
+      metersPerPixel: 15,
     });
-    const baseStyle = buildCrossSectionStyle(baseURL, {
-      showFacesWithNoUnit: true,
-      showLineEndpoints: false,
-      showTopologyPrimitives: false,
-    });
+    const baseStyle = buildCrossSectionStyle(baseURL);
     renderTiledMap(ref.current, tileBounds, baseStyle).then(() => {});
   }, [ref.current]);
 
@@ -138,6 +138,7 @@ async function renderTiledMap(
     attributionControl: false,
     interactive: false,
     maxZoom: 22,
+    pixelRatio: 4,
     pitchWithRotate: false,
     dragRotate: false,
     touchPitch: false,
