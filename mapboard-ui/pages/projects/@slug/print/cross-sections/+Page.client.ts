@@ -5,10 +5,11 @@ import hyper from "@macrostrat/hyper";
 import React, { useEffect, useRef } from "react";
 import styles from "./+Page.client.module.sass";
 import { setupStyleImageManager } from "../../@context/style/pattern-manager";
-import { buildCrossSectionStyle } from "../../@context/cross-sections/style";
 import maplibre from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { SphericalMercator } from "@mapbox/sphericalmercator";
+
+import { buildCrossSectionStyle } from "./style";
 
 const h = hyper.styled(styles);
 
@@ -65,7 +66,6 @@ export function CrossSectionMapView(props: MapViewProps) {
     if (ref.current == null) return;
     renderCounter.current += 1;
     if (renderCounter.current > 1) return;
-    console.log("Render cross section map", renderCounter.current, ref.current);
     // Compute tiled bounds
     const tileBounds = computeTiledBounds(data, {
       metersPerPixel: 10,
@@ -75,7 +75,6 @@ export function CrossSectionMapView(props: MapViewProps) {
       showLineEndpoints: false,
       showTopologyPrimitives: false,
     });
-
     renderTiledMap(ref.current, tileBounds, baseStyle).then(() => {});
   }, [ref.current]);
 

@@ -1,11 +1,6 @@
 import { createLineSymbolLayers } from "./line-symbols";
 import { allFeatureModes, FeatureMode } from "../types";
-import {
-  LayerSpecification,
-  SourceSpecification,
-  StyleSpecification,
-} from "mapbox-gl";
-import maplibre from "maplibre-gl";
+import { StyleSpecification } from "mapbox-gl";
 
 export interface CrossSectionConfig {
   layerID: number;
@@ -387,7 +382,7 @@ export function buildDisplayOverlayStyle(
   };
 }
 
-function buildFillLayers({ opacity, filter, source = "mapboard" }): any {
+export function buildFillLayers({ opacity, filter, source = "mapboard" }): any {
   return [
     {
       id: "fills-without-symbols",
@@ -484,7 +479,7 @@ function tileLayerNameForFeatureMode(mode: FeatureMode): string {
   }
 }
 
-function getTileQueryParams(params: Record<string, any>) {
+export function getTileQueryParams(params: Record<string, any>) {
   let suffix = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
     if (value == null) {
