@@ -55,6 +55,5 @@ export const data = async (pageContext: PageContextServer) => {
   });
 
   // Merge piercing points into context
-
   return ctxResults;
 };

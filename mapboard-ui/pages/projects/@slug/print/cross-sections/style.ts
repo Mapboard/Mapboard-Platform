@@ -43,7 +43,7 @@ export function buildCrossSectionStyle(
       "source-layer": "fills",
       paint: {
         "fill-color": ["get", "color"],
-        "fill-opacity": 0.8,
+        "fill-opacity": 1,
         "fill-outline-color": "transparent",
       },
       filter: [
@@ -75,7 +75,7 @@ export function buildCrossSectionStyle(
             ["concat", "color:", ["get", "color"]],
           ],
         ],
-        "fill-opacity": 0.8,
+        "fill-opacity": 1,
         "fill-outline-color": "transparent",
       },
       filter: ["all", ["has", "symbol"], fillFilter],
@@ -92,8 +92,8 @@ export function buildCrossSectionStyle(
         "line-width": [
           "case",
           // special case for NNC bounding surface
-          ["==", ["get", "source_layer"], 8],
-          2,
+          ["==", ["get", "map_layer"], 89],
+          1.5,
           // faults and structures
           [
             "in",
@@ -137,8 +137,56 @@ export function buildCrossSectionStyle(
       filter: [
         "all",
         ["!", ["coalesce", ["get", "covered"], false]],
-        ["!=", ["get", "type"], "mapboard:arbitrary"],
+        [
+          "!",
+          [
+            "in",
+            ["get", "type"],
+            [
+              "literal",
+              ["mapboard:arbitrary", "cross-section", "terrain", "bounds"],
+            ],
+          ],
+        ],
       ],
+    },
+    // Semi-opaque sky overlay
+    {
+      id: "sky",
+      type: "fill",
+      source,
+      "source-layer": "fills",
+      paint: {
+        "fill-color": "#ffffff",
+        "fill-opacity": 0.5,
+      },
+      filter: [
+        "all",
+        ["==", ["get", "unit"], "sky"],
+        [
+          "==",
+          ["get", "map_layer"],
+          2, // context
+        ],
+      ],
+    },
+    // Terrain
+    {
+      id: "terrain",
+      type: "line",
+      source: "mapboard",
+      "source-layer": "lines",
+      paint: {
+        "line-color": "#000000",
+        "line-width": 2,
+        "line-offset": -0.5,
+        "line-opacity": 1,
+      },
+      layout: {
+        "line-join": "round",
+        "line-cap": "butt",
+      },
+      filter: ["==", ["get", "type"], "terrain"],
     },
     {
       type: "symbol",

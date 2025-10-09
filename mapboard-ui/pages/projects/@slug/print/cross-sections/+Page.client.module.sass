@@ -35,6 +35,32 @@
     top: 0
     left: 0
 
+.map-view
+  padding-top: var(--padding-top)
+  padding-left: var(--padding-left)
+
+.piercing-points
+  position: absolute
+  top: 0
+  left: 0
+  right: 0
+  bottom: 0
+
+.piercing-point
+  position: absolute
+  width: 0px
+  background: red
+  border-left: 2px solid black
+  transform: translate(-1px, 0)
+  pointer-events: none
+  top: var(--padding-top)
+  height: var(--inner-height)
+
+  .name
+    position: absolute
+    transform: translate(-0.4em, -1.2em)
+    font-size: 1.2em
+
 // dark mode styles
 @media (prefers-color-scheme: dark)
   .cross-sections

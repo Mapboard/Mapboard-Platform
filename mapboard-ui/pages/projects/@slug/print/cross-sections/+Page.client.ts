@@ -1,5 +1,5 @@
 import { useData } from "vike-react/useData";
-import type { CrossSectionData } from "./+data";
+import type { CrossSectionData, PiercingPoint } from "./+data";
 import hyper from "@macrostrat/hyper";
 
 import React, { useEffect, useMemo, useRef } from "react";
@@ -113,7 +113,7 @@ export function CrossSectionMapView(props: MapViewProps) {
     });
   }, [data]);
 
-  const { bounds, metersPerPixel, pixelSize } = tileBounds;
+  const { bounds, pixelSize } = tileBounds;
 
   const elevationScale = scaleLinear({
     domain: [bounds[1] - data.offset_y, bounds[3] - data.offset_y],
@@ -122,7 +122,7 @@ export function CrossSectionMapView(props: MapViewProps) {
   });
 
   const distanceScale = scaleLinear({
-    domain: [-data.offset_x, data.length - data.offset_x].map((d) => d / 1000),
+    domain: [-data.offset_x, data.length - data.offset_x],
     range: [0, pixelSize.width],
     clamp: true,
   });
@@ -150,15 +150,21 @@ export function CrossSectionMapView(props: MapViewProps) {
   return h(
     "div.map-view-container.main-view.cross-section-map",
     {
-      style: { width: width + "px", height: height + "px" },
+      style: {
+        width: width + "px",
+        height: height + "px",
+        "--padding-top": paddingTop + "px",
+        "--padding-left": paddingLeft + "px",
+        "--inner-height": pixelSize.height + "px",
+      },
     },
     [
+      h(PiercingPoints, {
+        data: data.piercing_points ?? [],
+        scale: distanceScale,
+      }),
       h("div.mapbox-map.map-view", {
         ref,
-        style: {
-          paddingTop: paddingTop + "px",
-          paddingLeft: paddingLeft + "px",
-        },
       }),
       h("svg.scales", { width, height }, [
         h(
@@ -174,6 +180,30 @@ export function CrossSectionMapView(props: MapViewProps) {
         ),
       ]),
     ],
+  );
+}
+
+function PiercingPoints({
+  data,
+  scale,
+}: {
+  data: PiercingPoint[];
+  scale: any;
+}) {
+  if (data == null || data.length === 0) return null;
+  return h(
+    "div.piercing-points",
+    data.map((pt) => {
+      return h(
+        "div.piercing-point",
+        {
+          style: {
+            left: scale(pt.distance),
+          },
+        },
+        [h("div.name", pt.other_name)],
+      );
+    }),
   );
 }
 
@@ -199,7 +229,7 @@ function ElevationAxis({ scale, left = 0 }) {
 function DistanceAxis({ scale, top = 0 }) {
   // Ticks every 2 km regardless of length
   const dx = scale.domain()[1] - scale.domain()[0];
-  const numTicks = Math.ceil(dx);
+  const numTicks = Math.ceil(dx / 1000);
 
   // only label every 5th km
 
@@ -207,27 +237,13 @@ function DistanceAxis({ scale, top = 0 }) {
     scale,
     numTicks,
     top,
-    tickComponent: DistanceTick,
+    tickFormat(val) {
+      if (val % 5000 === 0) {
+        return `${val / 1000} km`;
+      }
+      return "";
+    },
   });
-}
-
-function DistanceTick(props) {
-  const { formattedValue, x, y } = props;
-  const val = Number(formattedValue);
-  if (val % 5 !== 0) return null;
-  return h(
-    "g",
-    { transform: `translate(${x} ${y})` },
-    h(
-      "text",
-      {
-        style: { textAnchor: "middle" },
-        fontSize: 10,
-        dy: "0.5em",
-      },
-      `${val} km`,
-    ),
-  );
 }
 
 function lngLatBounds(bounds: MercatorBBox): maplibre.LngLatBoundsLike {
