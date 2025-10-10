@@ -9,9 +9,15 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { buildCrossSectionStyle } from "./style";
 import { AxisBottom, AxisLeft } from "@visx/axis";
 import { scaleLinear } from "@visx/scale";
-import { expandInnerSize } from "@macrostrat/ui-components";
-import { computeTiledBounds, MercatorBBox, renderTiledMap } from "~/maplibre";
+import { expandInnerSize, StrictPadding } from "@macrostrat/ui-components";
+import {
+  computeTiledBounds,
+  MercatorBBox,
+  renderTiledMap,
+  TiledMapArea,
+} from "~/maplibre";
 import { PrintButton } from "~/utils/print-button";
+import maplibre from "maplibre-gl";
 
 const h = hyper.styled(styles);
 
@@ -56,8 +62,6 @@ interface MapViewProps {
 export function CrossSectionMapView(props: MapViewProps) {
   const { data, children, className, ...rest } = props;
 
-  const ref = useRef<HTMLDivElement>();
-
   let domain = document.location.origin;
   const { project_slug, slug } = data;
   const baseURL = `${domain}/api/project/${project_slug}/context/${slug}`;
@@ -97,43 +101,31 @@ export function CrossSectionMapView(props: MapViewProps) {
   });
 
   // Not sure why this is needed, really, but it prevents double rendering
-  const renderCounter = useRef(0);
-  useEffect(() => {
-    /** Manager to update map style */
-    if (ref.current == null) return;
-    renderCounter.current += 1;
-    if (renderCounter.current > 1) return;
-    // Compute tiled bounds
+  const style = useMemo(() => {
+    return buildCrossSectionStyle(baseURL);
+  }, [baseURL]);
 
-    const baseStyle = buildCrossSectionStyle(baseURL);
-    renderTiledMap(ref.current, tileBounds, baseStyle).then(() => {});
-  }, [ref.current, tileBounds]);
-
-  const { width, height, paddingTop, paddingLeft } = expandInnerSize({
+  const sizeOpts = expandInnerSize({
     innerHeight: pixelSize.height,
     innerWidth: pixelSize.width,
     padding: 40,
     paddingLeft: 60,
   });
 
+  const { width, height, paddingTop, paddingLeft } = sizeOpts;
+
   return h(
-    "div.map-view-container.main-view.cross-section-map",
+    TiledMapArea,
     {
-      style: {
-        width: width + "px",
-        height: height + "px",
-        "--padding-top": paddingTop + "px",
-        "--padding-left": paddingLeft + "px",
-        "--inner-height": pixelSize.height + "px",
-      },
+      className: "cross-section-map",
+      tileBounds,
+      style,
+      ...sizeOpts,
     },
     [
       h(PiercingPoints, {
         data: data.piercing_points ?? [],
         scale: distanceScale,
-      }),
-      h("div.mapbox-map.map-view", {
-        ref,
       }),
       h("svg.scales", { width, height }, [
         h(

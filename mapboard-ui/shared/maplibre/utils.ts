@@ -1,9 +1,4 @@
-import {
-  useMapDispatch,
-  useMapInitialized,
-  useMapRef,
-  useMapStatus,
-} from "@macrostrat/mapbox-react";
+import { useMapDispatch, useMapInitialized, useMapRef, useMapStatus } from "@macrostrat/mapbox-react";
 import { useCallback, useEffect } from "react";
 import maplibre from "maplibre-gl";
 import { CameraPosition, MapPosition } from "@macrostrat/mapbox-utils";
@@ -104,4 +99,18 @@ export function setMapPosition(map: maplibre.Map, pos: MapPosition) {
       altitude: altitude,
     });
   }
+}
+export function prepareStyleForMaplibre(
+  style: mapboxgl.StyleSpecification,
+  accessToken: string,
+): maplibre.StyleSpecification {
+  // Convert any Mapbox-specific properties to Maplibre-compatible ones
+  let newStyle = {
+    ...style,
+    layers: style.layers.filter((d) => d.type !== "sky"),
+  };
+
+  //delete newStyle.sources["terrain"];
+
+  return newStyle;
 }

@@ -23,20 +23,6 @@
   width: var(--cross-section-width)
   height: var(--cross-section-height)
 
-.cross-section-map
-  width: var(--cross-section-width)
-  height: var(--cross-section-height)
-  //width: calc(var(--cross-section-width) * var(--cross-section-scale))
-  //height: calc(var(--cross-section-height) * var(--cross-section-scale))
-  //transform: scale(calc(1 / var(--cross-section-scale)))
-  //transform-origin: top left
-  position: relative
-  &>*
-    position: absolute
-    top: 0
-    left: 0
-
-.map-view
   padding-top: var(--padding-top)
   padding-left: var(--padding-left)
 
@@ -46,6 +32,7 @@
   left: var(--padding-left)
   width: var(--inner-width)
   height: var(--inner-height)
+  z-index: -1
 
 .piercing-point
   position: absolute

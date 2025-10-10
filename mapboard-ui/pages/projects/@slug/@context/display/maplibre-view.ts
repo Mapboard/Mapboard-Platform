@@ -11,8 +11,9 @@ import { useAsyncEffect } from "@macrostrat/ui-components";
 import { mapboxToken } from "~/settings";
 import {
   MapMovedReporter,
-  StyleLoadedReporter,
+  prepareStyleForMaplibre,
   setMapPosition,
+  StyleLoadedReporter,
 } from "~/maplibre/utils";
 
 const h = hyper.styled(styles);
@@ -47,21 +48,6 @@ function defaultInitializeMap(container, args: MapboxOptionsExt = {}) {
   map.addControl(scale, "bottom-right");
 
   return map;
-}
-
-function prepareStyleForMaplibre(
-  style: mapboxgl.StyleSpecification,
-  accessToken: string,
-): maplibre.StyleSpecification {
-  // Convert any Mapbox-specific properties to Maplibre-compatible ones
-  let newStyle = {
-    ...style,
-    layers: style.layers.filter((d) => d.type !== "sky"),
-  };
-
-  //delete newStyle.sources["terrain"];
-
-  return newStyle;
 }
 
 const defaultMapPosition: MapPosition = {

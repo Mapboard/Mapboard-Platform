@@ -2,6 +2,13 @@ import maplibre from "maplibre-gl";
 import { SphericalMercator } from "@mapbox/sphericalmercator";
 import { setupStyleImageManager } from "../../pages/projects/@slug/@context/style/pattern-manager";
 import type { CrossSectionData } from "../../pages/projects/@slug/@context/print/cross-sections/+data";
+import { StrictPadding } from "@macrostrat/ui-components";
+import { ReactNode, useEffect, useRef } from "react";
+import hyper from "@macrostrat/hyper";
+import styles from "./tiled-map.module.sass";
+import { initializeMap } from "@macrostrat/form-components";
+
+const h = hyper.styled(styles);
 
 const mercator = new SphericalMercator({
   size: 256,
@@ -51,10 +58,80 @@ interface MapTile {
   };
 }
 
+type TiledMapAreaProps = {
+  tileBounds: TileBoundsResult;
+  style: maplibre.StyleSpecification;
+  height?: number;
+  width?: number;
+  className?: string;
+  children?: ReactNode;
+  initializeMap?: MapInitFunction;
+} & StrictPadding;
+
+export function TiledMapArea({
+  tileBounds,
+  style,
+  width,
+  height,
+  paddingTop = 0,
+  paddingLeft = 0,
+  className,
+  children,
+  initializeMap,
+}: TiledMapAreaProps) {
+  const ref = useRef<HTMLDivElement>();
+
+  const { pixelSize } = tileBounds;
+
+  // Not sure why this is needed, really, but it prevents double rendering
+  const renderCounter = useRef(0);
+  useEffect(() => {
+    /** Manager to update map style */
+    if (ref.current == null) return;
+    renderCounter.current += 1;
+    if (renderCounter.current > 1) return;
+    // Compute tiled bounds
+
+    renderTiledMap(ref.current, tileBounds, style, initializeMap).then(
+      () => {},
+    );
+  }, [ref.current, tileBounds, style, initializeMap]);
+
+  return h(
+    "div.map-view-container.tiled-map",
+    {
+      className,
+      style: {
+        width: (width ?? pixelSize.width) + "px",
+        height: (height ?? pixelSize.height) + "px",
+        "--padding-top": paddingTop + "px",
+        "--padding-left": paddingLeft + "px",
+        "--inner-height": pixelSize.height + "px",
+        "--inner-width": pixelSize.width + "px",
+      },
+    },
+    [
+      h("div.mapbox-map.map-view", {
+        ref,
+      }),
+      children,
+    ],
+  );
+}
+
+type MapInitFunction = (mapOptions: maplibre.MapOptions) => maplibre.Map;
+
+function defaultInitializeMap(mapOptions: maplibre.MapOptions): maplibre.Map {
+  const map = new maplibre.Map(mapOptions);
+  setupStyleImageManager(map);
+  return map;
+}
+
 export async function renderTiledMap(
   element: HTMLDivElement,
   config: TileBoundsResult,
   style: any,
+  initializeMap: MapInitFunction = defaultInitializeMap,
 ) {
   const { tiles, bounds } = config;
 
@@ -62,21 +139,19 @@ export async function renderTiledMap(
   container.className = "map-container";
   element.appendChild(container);
 
-  const map = new maplibre.Map({
+  const map = initializeMap({
     container,
-    bounds: lngLatBounds(bounds),
     style,
     trackResize: false,
     attributionControl: false,
     interactive: false,
     maxZoom: 22,
-    pixelRatio: 4,
+    pixelRatio: 8,
     pitchWithRotate: false,
     dragRotate: false,
     touchPitch: false,
     boxZoom: false,
   });
-  setupStyleImageManager(map);
 
   const imageContainer = document.createElement("div");
   imageContainer.className = "image-container";
@@ -142,7 +217,7 @@ export function computeTiledBounds(
 
   // Iterate over tiles in x and y directions
   let sx = 0;
-  let sy = 0;
+  let sy: number;
   const tiles: MapTile[] = [];
   for (let x = 0; x < tilesX; x++) {
     sy = 0;
@@ -164,7 +239,7 @@ export function computeTiledBounds(
         },
         pixelOffset: {
           left: sx,
-          top: sy,
+          top: pixelHeight - sy - tileHeight,
         },
       });
 
