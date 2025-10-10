@@ -42,10 +42,10 @@
 
 .piercing-points
   position: absolute
-  top: 0
-  left: 0
-  right: 0
-  bottom: 0
+  top: var(--padding-top)
+  left: var(--padding-left)
+  width: var(--inner-width)
+  height: var(--inner-height)
 
 .piercing-point
   position: absolute
@@ -54,12 +54,15 @@
   border-left: 2px solid black
   transform: translate(-1px, 0)
   pointer-events: none
-  top: var(--padding-top)
+  top: 0
   height: var(--inner-height)
+  text-align: center
 
   .name
+    width: 20px
+    text-align: center
     position: absolute
-    transform: translate(-0.4em, -1.2em)
+    transform: translate(-50%, -1.2em)
     font-size: 1.2em
 
 // dark mode styles

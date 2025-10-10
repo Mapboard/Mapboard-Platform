@@ -28,7 +28,8 @@ export const data = async (pageContext: PageContextServer) => {
     .select("id,slug,name,project_slug,offset_x,offset_y,length")
     .order("name", { ascending: true })
     .eq("project_slug", pageContext.routeParams.slug)
-    .eq("clip_context_slug", clipContextSlug);
+    .eq("clip_context_slug", clipContextSlug)
+    .eq("is_public", true);
 
   // http://localhost:8000/pg-api/piercing_points?project_id=eq.5&parent_id=eq.3&columns=id,other_id,other_name,distance
 
@@ -36,7 +37,8 @@ export const data = async (pageContext: PageContextServer) => {
     .from("piercing_points")
     .select("id,other_id,other_name,distance")
     .eq("project_slug", pageContext.routeParams.slug)
-    .eq("clip_context_slug", clipContextSlug);
+    .eq("clip_context_slug", clipContextSlug)
+    .eq("is_public", true);
 
   const [ctxData, ppData] = await Promise.all([ctxRequest, piercingPoints]);
   if (ctxData.error || ppData.error) {
