@@ -8,7 +8,7 @@ import { useStyleImageManager } from "../style/pattern-manager";
 import { SelectionDrawer } from "../selection";
 import type { RequestTransformFunction } from "mapbox-gl";
 import { useRequestTransformer } from "../transform-request";
-import { expandBounds, MapMarker } from "../map-utils";
+import { expandBounds } from "../map-utils";
 import { MapView } from "./maplibre-view";
 import { useDisplayStyle } from "./style";
 

@@ -13,7 +13,7 @@ import {
   MapMovedReporter,
   StyleLoadedReporter,
   setMapPosition,
-} from "~/maplibre-utils";
+} from "~/maplibre/utils";
 
 const h = hyper.styled(styles);
 
