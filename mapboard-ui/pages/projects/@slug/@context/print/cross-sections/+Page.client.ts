@@ -12,7 +12,7 @@ import { scaleLinear } from "@visx/scale";
 import { expandInnerSize } from "@macrostrat/ui-components";
 import html2pdf from "html2pdf.js";
 import { Button } from "@blueprintjs/core";
-import { computeTiledBounds, renderTiledMap } from "~/maplibre/tiled-map";
+import { computeTiledBounds, MercatorBBox, renderTiledMap } from "~/maplibre";
 
 const h = hyper.styled(styles);
 
@@ -95,13 +95,20 @@ export function CrossSectionMapView(props: MapViewProps) {
 
   const ref = useRef<HTMLDivElement>();
 
-  console.log("Cross section", data);
   let domain = document.location.origin;
   const { project_slug, slug } = data;
   const baseURL = `${domain}/api/project/${project_slug}/context/${slug}`;
 
   const tileBounds = useMemo(() => {
-    return computeTiledBounds(data, {
+    const ll: [number, number] = [data.offset_x, data.offset_y + 500];
+    const ur: [number, number] = [
+      data.offset_x + data.length,
+      data.offset_y + 2200,
+    ];
+
+    const bounds: MercatorBBox = [...ll, ...ur];
+
+    return computeTiledBounds(bounds, {
       metersPerPixel: 15,
     });
   }, [data]);
@@ -244,4 +251,3 @@ function DistanceAxis({ scale, top = 0 }) {
     },
   });
 }
-

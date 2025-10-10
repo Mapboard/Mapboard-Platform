@@ -1,7 +1,7 @@
 import maplibre from "maplibre-gl";
 import { SphericalMercator } from "@mapbox/sphericalmercator";
 import { setupStyleImageManager } from "../../pages/projects/@slug/@context/style/pattern-manager";
-import type { CrossSectionData } from "../../pages/projects/@slug/print/cross-sections/+data";
+import type { CrossSectionData } from "../../pages/projects/@slug/@context/print/cross-sections/+data";
 
 const mercator = new SphericalMercator({
   size: 256,
@@ -29,7 +29,7 @@ interface TileComputationOptions {
   tileSize?: number;
 }
 
-type MercatorBBox = [number, number, number, number];
+export type MercatorBBox = [number, number, number, number];
 
 interface MapTile {
   bounds: MercatorBBox;
@@ -115,16 +115,12 @@ function setSize(element: HTMLDivElement, config: MapTile) {
 }
 
 export function computeTiledBounds(
-  data: CrossSectionData,
+  bounds: MercatorBBox,
   options: TileComputationOptions = {},
 ): TileBoundsResult {
-  const ll: [number, number] = [data.offset_x, data.offset_y + 500];
-  const ur: [number, number] = [
-    data.offset_x + data.length,
-    data.offset_y + 2200,
-  ];
-
-  const bounds: MercatorBBox = [...ll, ...ur];
+  const [minX, minY, maxX, maxY] = bounds;
+  const ll: [number, number] = [minX, minY];
+  const ur: [number, number] = [maxX, maxY];
 
   const { metersPerPixel = 10, tileSize = 1024 } = options;
   const width = ur[0] - ll[0];

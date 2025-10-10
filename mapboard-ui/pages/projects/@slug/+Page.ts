@@ -43,7 +43,7 @@ function Contexts({ contexts }) {
     h(ContextList, { name: "Cross sections", contexts: crossSections }),
     h(
       "a.print-products",
-      { href: `./${project_slug}/print` },
+      { href: `./${project_slug}/map/print` },
       "Print products",
     ),
   ]);

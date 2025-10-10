@@ -1,10 +1,9 @@
 import { useData } from "vike-react/useData";
-import type { Data } from "./+data";
 import hyper from "@macrostrat/hyper";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import styles from "./+Page.client.module.sass";
-import { useStyleImageManager } from "../../@context/style/pattern-manager";
+import { useStyleImageManager } from "../../style/pattern-manager";
 import {
   MapboxMapProvider,
   useMapDispatch,
@@ -12,14 +11,18 @@ import {
   useMapStatus,
 } from "@macrostrat/mapbox-react";
 import { bbox } from "@turf/bbox";
-import { buildCrossSectionStyle } from "../../@context/cross-sections/style";
 import maplibre from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { MapPosition, setMapPosition } from "@macrostrat/mapbox-utils";
 import { getMapPadding } from "@macrostrat/map-interface";
 import { useAsyncEffect } from "@macrostrat/ui-components";
 import { SphericalMercator } from "@mapbox/sphericalmercator";
-import { buildMapOverlayStyle } from "../../@context/style";
+import { buildMapOverlayStyle } from "../../style";
+
+import { useDisplayStyle } from "../../display/style";
+import { mapboxToken } from "~/settings";
+import { MapStateProvider } from "../../state";
+import type { Data } from "../../+data";
 
 const h = hyper.styled(styles);
 
@@ -29,12 +32,17 @@ const mercator = new SphericalMercator({
 });
 
 export function Page() {
-  const contexts = useData<Data>() ?? [];
-  const map = contexts[0];
+  const ctx = useData<Data>();
 
-  if (!map) return null;
+  // Current domain + port if set is the base
+  let domain = document.location.origin;
+  const baseURL = `${domain}/api/project/${ctx.project_slug}/context/${ctx.slug}`;
 
-  return h("div.map-area", h(PrintMapArea, { data: map }));
+  return h(
+    MapStateProvider,
+    { baseURL, baseLayers: ctx.layers, defaultLayer: 22, context: ctx },
+    h("div.map-area", h(PrintMapArea, { data: ctx })),
+  );
 }
 
 type ArrayElement<A> = A extends readonly (infer T)[] ? T : never;
@@ -92,14 +100,11 @@ function MapInner({ baseURL, bounds, ...rest }) {
 
   useStyleImageManager();
 
-  const style = useMemo(() => {
-    return buildMapOverlayStyle(baseURL, {
-      showLineEndpoints: false,
-      showTopologyPrimitives: false,
-      clipToContextBounds: true,
-      selectedLayer: 22,
-    });
-  }, [baseURL]);
+  const style = useDisplayStyle(baseURL, {
+    mapboxToken,
+    isMapView: true,
+    projectID: rest.project_id,
+  });
 
   return h(MapView, {
     bounds,
@@ -217,7 +222,6 @@ export function MapView(props: MapViewProps) {
 
   return h("div.map-view-container.main-view", { ref: parentRef, className }, [
     h("div.mapbox-map.map-view", { ref }),
-    h(StyleLoadedReporter, { onStyleLoaded }),
     children,
   ]);
 }
