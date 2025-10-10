@@ -14,6 +14,14 @@ function lngLatBounds(bounds: MercatorBBox): maplibre.LngLatBoundsLike {
   return [sw, ne];
 }
 
+export function mercatorBBox(
+  lngLatBounds: [number, number, number, number],
+): MercatorBBox {
+  const sw = mercator.forward([lngLatBounds[0], lngLatBounds[1]]);
+  const ne = mercator.forward([lngLatBounds[2], lngLatBounds[3]]);
+  return [sw[0], sw[1], ne[0], ne[1]];
+}
+
 interface TileBoundsResult {
   tiles: MapTile[];
   pixelSize: {

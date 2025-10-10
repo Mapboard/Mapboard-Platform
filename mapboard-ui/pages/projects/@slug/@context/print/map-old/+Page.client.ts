@@ -13,11 +13,10 @@ import {
 import { bbox } from "@turf/bbox";
 import maplibre from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { MapPosition, setMapPosition } from "@macrostrat/mapbox-utils";
+import { MapPosition } from "@macrostrat/mapbox-utils";
 import { getMapPadding } from "@macrostrat/map-interface";
 import { useAsyncEffect } from "@macrostrat/ui-components";
 import { SphericalMercator } from "@mapbox/sphericalmercator";
-import { buildMapOverlayStyle } from "../../style";
 
 import { useDisplayStyle } from "../../display/style";
 import { mapboxToken } from "~/settings";
