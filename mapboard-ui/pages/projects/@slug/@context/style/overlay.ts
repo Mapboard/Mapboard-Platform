@@ -299,46 +299,81 @@ export function buildDisplayOverlayStyle(
     ["get", "color"],
   ];
 
+  const inFaultsAndStructures = [
+    "in",
+    ["get", "type"],
+    [
+      "literal",
+      [
+        "thrust-fault",
+        "normal-fault",
+        "fault",
+        "anticline-hinge",
+        "syncline-hinge",
+      ],
+    ],
+  ];
+
   let lineWidth: any = [
     "case",
     // special case for NNC bounding surface
     ["==", ["get", "source_layer"], 8],
     2,
     // faults and structures
-    [
-      "in",
-      ["get", "type"],
-      [
-        "literal",
-        [
-          "thrust-fault",
-          "normal-fault",
-          "fault",
-          "anticline-hinge",
-          "syncline-hinge",
-        ],
-      ],
-    ],
+    inFaultsAndStructures,
     1.2,
-    0.5,
+    0.4,
   ];
 
   let lineFilter = [
     "all",
     ["!", ["coalesce", ["get", "covered"], false]],
-    ["!=", ["get", "type"], "mapboard:arbitrary"],
+    //inFaultsAndStructures, // only use faults and structures
+    ["!", ["in", ["get", "type"], ["literal", ["mapboard:arbitrary"]]]],
   ];
 
   const lineSymbolFilter = [...lineFilter, ["!=", ["get", "source_layer"], 8]];
   // exclude nappe bounding surface
 
   let layers = [
-    ...buildFillLayers({
-      opacity: 0.6,
-      filter: ["has", "unit"],
+    {
+      id: "fills-without-symbols",
+      type: "fill",
       source: "mapboard",
-    }),
-
+      "source-layer": "fills",
+      paint: {
+        "fill-color": ["get", "color"],
+        "fill-opacity": 0.6,
+        "fill-outline-color": ["get", "color"],
+      },
+      filter: ["has", "unit"],
+    },
+    {
+      id: "fills-with-symbols",
+      type: "fill",
+      source: "mapboard",
+      "source-layer": "fills",
+      paint: {
+        "fill-pattern": [
+          "image",
+          [
+            "case",
+            ["has", "symbol"],
+            [
+              "concat",
+              ["get", "symbol"],
+              ":",
+              ["get", "symbol_color"],
+              ":transparent",
+            ],
+            ["concat", "color:", ["get", "color"]],
+          ],
+        ],
+        "fill-opacity": 0.6,
+        "fill-outline-color": "transparent",
+      },
+      filter: ["all", ["has", "symbol"], ["has", "unit"]],
+    },
     // A single layer for all lines
     {
       id: "lines",

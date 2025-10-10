@@ -121,8 +121,14 @@ export function CrossSectionMapView(props: MapViewProps) {
     clamp: true,
   });
 
+  const showDistanceOffset = false;
+  let offset = 0;
+  if (showDistanceOffset) {
+    offset = data.offset_x;
+  }
+
   const distanceScale = scaleLinear({
-    domain: [-data.offset_x, data.length - data.offset_x],
+    domain: [offset, data.length + offset],
     range: [0, pixelSize.width],
     clamp: true,
   });

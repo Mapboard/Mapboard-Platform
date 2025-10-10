@@ -10,7 +10,6 @@ export interface CrossSectionData {
   offset_x: number;
   offset_y: number;
   length: number;
-  parent_geom: LineString;
   piercing_points?: PiercingPoint[];
 }
 
@@ -22,21 +21,22 @@ export interface PiercingPoint {
 }
 
 export const data = async (pageContext: PageContextServer) => {
+  const clipContextSlug = "cross-section-aoi";
+
   const ctxRequest = postgrest
-    .from("context")
-    .select(
-      "id,slug,name,type,is_main,project_slug,bounds,offset_x,offset_y,length,parent_geom",
-    )
-    .filter("type", "eq", "cross-section")
+    .from("cross_sections")
+    .select("id,slug,name,project_slug,offset_x,offset_y,length")
     .order("name", { ascending: true })
-    .eq("project_slug", pageContext.routeParams.slug);
+    .eq("project_slug", pageContext.routeParams.slug)
+    .eq("clip_context_slug", clipContextSlug);
 
   // http://localhost:8000/pg-api/piercing_points?project_id=eq.5&parent_id=eq.3&columns=id,other_id,other_name,distance
 
   const piercingPoints = postgrest
     .from("piercing_points")
     .select("id,other_id,other_name,distance")
-    .eq("project_slug", pageContext.routeParams.slug);
+    .eq("project_slug", pageContext.routeParams.slug)
+    .eq("clip_context_slug", clipContextSlug);
 
   const [ctxData, ppData] = await Promise.all([ctxRequest, piercingPoints]);
   if (ctxData.error || ppData.error) {

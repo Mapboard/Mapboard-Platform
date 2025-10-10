@@ -29,6 +29,7 @@ function CrossSectionCloseButton() {
 }
 
 export async function fetchCrossSections(contextID: number): Promise<any[]> {
+  /** This fetches all cross sections for a given context, without clipping for display */
   const res = await postgrest
     .from("context")
     .select("name,parent_geom,id")

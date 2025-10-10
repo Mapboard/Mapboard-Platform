@@ -175,11 +175,11 @@ export function useDisplayStyle(
       sources: {
         crossSections: {
           type: "geojson",
-          data: `${apiBaseURL}/cross_sections.geojson?project_id=eq.${projectID}&order=name.asc&is_public=eq.true`,
+          data: `${apiBaseURL}/cross_sections.geojson?project_id=eq.${projectID}&order=name.asc&is_public=eq.true&clip_context_slug=eq.cross-section-aoi`,
         },
         crossSectionEndpoints: {
           type: "geojson",
-          data: `${apiBaseURL}/cross_section_endpoints.geojson?project_id=eq.${projectID}&is_public=eq.true`,
+          data: `${apiBaseURL}/cross_section_endpoints.geojson?project_id=eq.${projectID}&is_public=eq.true&clip_context_slug=eq.cross-section-aoi`,
         },
       },
       layers: [

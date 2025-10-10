@@ -85,6 +85,7 @@ SELECT
   data
 FROM naukluft_map_data.stations;
 
+DROP VIEW IF EXISTS mapboard_api.cross_sections CASCADE;
 CREATE OR REPLACE VIEW mapboard_api.cross_sections AS
 SELECT id,
        project_id,
@@ -211,6 +212,8 @@ SELECT
   cs.project_id,
   cs.project_slug,
   cs.name,
+  cs.clip_context_id,
+  cs.clip_context_slug,
   cs.parent_context_id,
   cs.parent_context_slug,
   cs.is_public,
@@ -224,6 +227,8 @@ SELECT
   cs.project_id,
   cs.project_slug,
   cs.name,
+  cs.clip_context_id,
+  cs.clip_context_slug,
   cs.parent_context_id,
   cs.parent_context_slug,
   cs.is_public,
@@ -260,18 +265,18 @@ SELECT
   s1.name,
   s2.name other_name,
   (s1.is_public AND s2.is_public) is_public,
-  ST_Intersection(s1.geometry, s2.geometry) geometry,
+  ST_Transform(ST_Intersection(s1.geometry, s2.geometry), 4326) geometry,
   ST_Length(s1.geometry) * ST_LineLocatePoint(s1.geometry, ST_Intersection(s1.geometry, s2.geometry)) distance,
   ST_Length(s2.geometry) * ST_LineLocatePoint(s2.geometry, ST_Intersection(s1.geometry, s2.geometry)) other_distance
 FROM cross_sections s1
-       JOIN cross_sections s2
-         ON ST_Intersects(s1.geometry, s2.geometry)
-        AND s1.id != s2.id
-        AND s1.project_id = s2.project_id
-        AND s1.parent_context_id = s2.parent_context_id
-        -- If clip context exists, it must be the same
-        AND ((s1.clip_context_id IS NULL AND s2.clip_context_id IS NULL)
-             OR s1.clip_context_id = s2.clip_context_id)
-       JOIN mapboard.project p
-            ON s1.project_id = p.id;
+JOIN cross_sections s2
+  ON ST_Intersects(s1.geometry, s2.geometry)
+ AND s1.id != s2.id
+ AND s1.project_id = s2.project_id
+ AND s1.parent_context_id = s2.parent_context_id
+  -- If clip context exists, it must be the same
+ AND ((s1.clip_context_id IS NULL AND s2.clip_context_id IS NULL)
+  OR s1.clip_context_id = s2.clip_context_id)
+JOIN mapboard.project p
+  ON s1.project_id = p.id;
 
