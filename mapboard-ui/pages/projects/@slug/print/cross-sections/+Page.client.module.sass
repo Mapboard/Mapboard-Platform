@@ -16,6 +16,7 @@
 .cross-sections
   padding: 2em
   --cross-section-scale: 1
+  --text-color: #000
   page-break-after: always
 
 .cross-section-map-container
@@ -49,7 +50,7 @@
 .piercing-point
   position: absolute
   width: 0px
-  background: red
+  color: black
   border-left: 2px solid black
   transform: translate(-1px, 0)
   pointer-events: none
@@ -65,6 +66,7 @@
 @media (prefers-color-scheme: dark)
   .cross-sections
     color: #ddd
+    --text-color: #ddd
   .cross-section-map
     filter: invert(1) hue-rotate(180deg)
 

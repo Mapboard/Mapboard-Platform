@@ -47,7 +47,6 @@ export function CrossSectionsLayer() {
     (state) => state.showCrossSectionLines,
   );
 
-  console.log(crossSections);
   const setActiveSection = useMapState((state) => state.setActiveCrossSection);
 
   const allSections = showCrossSectionLines ? crossSections : null;
