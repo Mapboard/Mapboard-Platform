@@ -16,7 +16,6 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { expandInnerSize } from "@macrostrat/ui-components";
 import { prepareStyleForMaplibre } from "~/maplibre/utils";
 import { computeTiledBounds, mercatorBBox } from "~/maplibre";
-import { marked } from "marked";
 import { LegendPanel } from "./legend";
 import { SourcesMap } from "./legend/sources-map";
 
