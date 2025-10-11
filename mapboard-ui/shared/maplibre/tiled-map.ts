@@ -1,12 +1,10 @@
 import maplibre from "maplibre-gl";
 import { SphericalMercator } from "@mapbox/sphericalmercator";
 import { setupStyleImageManager } from "../../pages/projects/@slug/@context/style/pattern-manager";
-import type { CrossSectionData } from "../../pages/projects/@slug/@context/print/cross-sections/+data";
 import { StrictPadding } from "@macrostrat/ui-components";
 import { ReactNode, useEffect, useRef } from "react";
 import hyper from "@macrostrat/hyper";
 import styles from "./tiled-map.module.sass";
-import { initializeMap } from "@macrostrat/form-components";
 
 const h = hyper.styled(styles);
 
@@ -66,7 +64,7 @@ type TiledMapAreaProps = {
   className?: string;
   children?: ReactNode;
   initializeMap?: MapInitFunction;
-} & StrictPadding;
+} & Partial<StrictPadding>;
 
 export function TiledMapArea({
   tileBounds,

@@ -1,4 +1,9 @@
-import { useMapDispatch, useMapInitialized, useMapRef, useMapStatus } from "@macrostrat/mapbox-react";
+import {
+  useMapDispatch,
+  useMapInitialized,
+  useMapRef,
+  useMapStatus,
+} from "@macrostrat/mapbox-react";
 import { useCallback, useEffect } from "react";
 import maplibre from "maplibre-gl";
 import { CameraPosition, MapPosition } from "@macrostrat/mapbox-utils";

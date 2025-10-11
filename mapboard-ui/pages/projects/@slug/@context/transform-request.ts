@@ -107,6 +107,8 @@ export function useRequestTransformer(
         transformedURL = newURL + "?" + queryArgs.toString();
       }
 
+      console.log(url, transformedURL);
+
       return { url: transformedURL };
     };
   }, [dem, transformMapboxRequests]);

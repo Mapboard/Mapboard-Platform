@@ -121,8 +121,6 @@ export function useDisplayStyle(
                 contourLayer: "contours",
                 elevationKey: "ele",
                 levelKey: "level",
-                extent: 4096,
-                buffer: 1,
               }),
             ],
             maxzoom: 14,
@@ -264,11 +262,11 @@ export function useDisplayStyle(
     const oldRasterID = "mapbox://mapbox.terrain-rgb";
     delete style.sources[oldRasterID];
     style.layers = style.layers
-      .filter((d) => {
-        return d.type != "hillshade";
-      })
+      // .filter((d) => {
+      //   return d.type != "hillshade";
+      // })
       .map((l) => {
-        if (l.source === oldRasterID) {
+        if (l.source === "mapbox-dem" || l.source === oldRasterID) {
           return {
             ...l,
             source: "terrain",
@@ -278,12 +276,114 @@ export function useDisplayStyle(
       });
 
     delete style.terrain;
-    delete style.projection;
 
     // Deleting glyphs property means we try to use local fonts
     //delete style.glyphs;
 
-    console.log("Setting style", style);
     return style;
   }, [baseStyle, overlayStyle, demSource]);
+}
+
+export function useSourcesStyle(
+  baseURL: string,
+  { mapboxToken, showOverlay = true }: MapStyleOptions,
+) {
+  const baseStyleURL = "mapbox://styles/jczaplewski/ckxcu9zmu4aln14mfg4monlv3";
+
+  const [baseStyle, setBaseStyle] = useState<StyleSpecification | null>(null);
+  useEffect(() => {
+    if (baseStyleURL == null) return;
+    getMapboxStyle(baseStyleURL, {
+      access_token: mapboxToken,
+    }).then((baseStyle) => {
+      setBaseStyle(baseStyle);
+    });
+  }, [baseStyleURL]);
+
+  return useMemo(() => {
+    if (baseStyle == null) {
+      return null;
+    }
+    let style = baseStyle;
+    // Modernize the terrain source
+    style.sources["mapbox://mapbox.terrain-rgb"].url =
+      "mapbox://mapbox.mapbox-terrain-dem-v1";
+
+    return {
+      ...style,
+      sources: {
+        ...style.sources,
+        map: {
+          type: "vector",
+          tiles: [
+            baseURL + `/tile/fills,lines,polygons/{z}/{x}/{y}?map_layer=24`,
+          ],
+          volatile: false,
+        },
+      },
+      layers: [
+        ...style.layers,
+        {
+          id: "map-areas",
+          type: "fill",
+          source: "map",
+          "source-layer": "fills",
+          paint: {
+            "fill-color": "#1e90ff",
+            "fill-opacity": [
+              "match",
+              ["get", "type"],
+              "domain-1",
+              0.5,
+              "domain-2",
+              0.35,
+              "domain-3",
+              0.2,
+              0.1,
+            ],
+          },
+        },
+        {
+          id: "domain-labels",
+          type: "symbol",
+          source: "map",
+          "source-layer": "polygons",
+          layout: {
+            "text-field": [
+              "match",
+              ["get", "type"],
+              "domain-1",
+              "1",
+              "domain-2",
+              "2",
+              "domain-3",
+              "3",
+              /* other */ "4",
+            ],
+            "text-font": ["PT Serif Bold"],
+            "text-size": 30,
+            "text-allow-overlap": false,
+            "symbol-placement": "point",
+          },
+          paint: {
+            "text-halo-color": "rgba(255,255,255, 0.5)",
+            "text-halo-width": 2,
+            "text-halo-blur": 2,
+            "text-color": "#092b4d",
+          },
+        },
+        {
+          id: "map-lines",
+          type: "line",
+          source: "map",
+          "source-layer": "lines",
+          paint: {
+            "line-color": "#092b4d",
+            "line-width": 2,
+            "line-opacity": 0.8,
+          },
+        },
+      ],
+    };
+  }, [baseStyle]);
 }
