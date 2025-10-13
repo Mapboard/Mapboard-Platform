@@ -92,8 +92,8 @@ function MapLegendList() {
       ]),
       g("Pavian Series", [
         g("Southern Pavian Series", [
-          u("bullsport-outlier", "Büllsport outlier"),
-          u("arbeit-adelt-outlier", "Arbeit Adelt outlier"),
+          u("bullsport-outlier", "Büllsport facies"),
+          u("arbeit-adelt-outlier", "Arbeit Adelt facies"),
         ]),
         u("northern-pavian", "Northern Pavian Series"),
       ]),
