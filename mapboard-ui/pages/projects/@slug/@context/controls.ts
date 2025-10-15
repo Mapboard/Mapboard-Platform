@@ -16,7 +16,7 @@ import { BasemapType, useMapActions, useMapState } from "./state";
 import { ItemSelect } from "@macrostrat/form-components";
 import { FeatureMode, MapLayer } from "./types";
 import { useAtom, useSetAtom } from "jotai";
-import { overlayClipAtom, overlayOpacityAtom } from "./style";
+import { overlayClipAtom, overlayOpacityAtom, showStationsAtom } from "./style";
 import { incrementRevisionAtom, mapReloadCounterAtom } from "./change-watcher";
 import { useMapStatus } from "@macrostrat/mapbox-react";
 
@@ -38,6 +38,7 @@ export function LayerControlPanel() {
     h(OpacitySlider),
     h(LayerList),
     h(SingleLayerViewOptions),
+    h(ShowStationsSwitch),
     h(Divider),
     h(BasemapList),
     h(TerrainExaggeration),
@@ -60,6 +61,18 @@ function RefreshMapSwitch() {
     },
     "Refresh map",
   );
+}
+
+function ShowStationsSwitch() {
+  const [showStations, setShowStations] = useAtom(showStationsAtom);
+
+  return h(Switch, {
+    label: "Stations",
+    checked: showStations,
+    onChange() {
+      setShowStations((s) => !s);
+    },
+  });
 }
 
 export function BackButton({ href, children, className }) {

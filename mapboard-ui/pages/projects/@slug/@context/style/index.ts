@@ -40,6 +40,11 @@ export interface MapStyleOptions {
 
 const overlayStyleAtom = atom<mapboxgl.StyleSpecification | null>(null);
 
+export const showStationsAtom = atomWithStorage<boolean>(
+  "mapboard:show-stations",
+  true,
+);
+
 const styleLayerIDsAtom = atom<string[]>((get) => {
   const overlayStyle = get(overlayStyleAtom);
   if (overlayStyle == null) return [];
@@ -103,6 +108,7 @@ export function useMapStyle(
   const exaggeration = useMapState((d) => d.terrainExaggeration);
   const showTopologyPrimitives = useMapState((d) => d.showTopologyPrimitives);
   const styleMode = useMapState((d) => d.styleMode);
+  const showStations = useAtomValue(showStationsAtom);
 
   const [revision, acceptedRevision] = useMapRevision(mapReloadCounterAtom);
 
@@ -156,21 +162,24 @@ export function useMapStyle(
       });
     }
 
-    const stationsStyle: Partial<StyleSpecification> = {
-      sources: {
-        stations: {
-          type: "geojson",
-          data: `${apiBaseURL}/stations.geojson?project_id=eq.${projectID}`,
+    let stationsStyle: Partial<StyleSpecification> = {};
+    if (showStations) {
+      stationsStyle = {
+        sources: {
+          stations: {
+            type: "geojson",
+            data: `${apiBaseURL}/stations.geojson?project_id=eq.${projectID}`,
+          },
         },
-      },
-      layers: [
-        createStationsLayer({
-          id: "orientations",
-          sourceID: "stations",
-          showOrientations: true,
-        }),
-      ],
-    };
+        layers: [
+          createStationsLayer({
+            id: "orientations",
+            sourceID: "stations",
+            showOrientations: true,
+          }),
+        ],
+      };
+    }
 
     const selectionStyle: any = {
       layers: buildSelectionLayers(`mapboard-${acceptedRevision}`),
@@ -190,6 +199,7 @@ export function useMapStyle(
     showTopologyPrimitives,
     clipToContextBounds,
     overlayOpacity,
+    showStations,
   ]);
 
   return useMemo(() => {
@@ -224,6 +234,15 @@ export function useMapStyle(
         source: "terrain",
         exaggeration,
       },
+      fog: {
+        range: [0.8, 8],
+        color: "#c6d0e0",
+        "horizon-blend": 0.5,
+        "high-color": "#245bde",
+        "space-color": "#000000",
+        "star-intensity": 0.15,
+      },
+
       // Use the new imports syntax for basemap styles.
       // This allows us to provide our own sprites
       // imports: [
