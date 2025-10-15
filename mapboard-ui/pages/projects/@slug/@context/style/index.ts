@@ -4,12 +4,9 @@ import { BasemapType, useMapState } from "../state";
 import { getMapboxStyle, mergeStyles } from "@macrostrat/mapbox-utils";
 import { buildMapOverlayStyle, MapOverlayOptions } from "./overlay";
 import { buildSelectionLayers } from "../selection";
-import { atom, useAtom, useAtomValue } from "jotai";
+import { Atom, atom, useAtom, useAtomValue } from "jotai";
 import { atomWithStorage } from "jotai/utils";
-import {
-  acceptedRevisionAtom,
-  mapReloadTimestampAtom,
-} from "../change-watcher";
+import { acceptedRevisionAtom, mapReloadCounterAtom } from "../change-watcher";
 import { apiBaseURL } from "~/settings";
 import { useMapRef } from "@macrostrat/mapbox-react";
 import { StyleSpecification } from "mapbox-gl";
@@ -63,43 +60,10 @@ export const overlayOpacityAtom = atomWithStorage<number>(
   1.0,
 );
 
-export function useMapStyle(
-  baseURL: string,
-  { mapboxToken, isMapView = true, projectID }: MapStyleOptions,
-) {
-  const activeLayer = useMapState((state) => state.activeLayer);
-  const basemapType = useMapState((state) => state.baseMap);
-  const showLineEndpoints = useMapState((state) => state.showLineEndpoints);
-  const enabledFeatureModes = useMapState((state) => state.enabledFeatureModes);
-
-  const showFacesWithNoUnit = useMapState((d) => d.showFacesWithNoUnit);
-  const showOverlay = useMapState((d) => d.showOverlay);
-  const exaggeration = useMapState((d) => d.terrainExaggeration);
-  const showTopologyPrimitives = useMapState((d) => d.showTopologyPrimitives);
-  const styleMode = useMapState((d) => d.styleMode);
-
-  const revision = useAtomValue(mapReloadTimestampAtom);
-  const [acceptedRevision, setAcceptedRevision] = useAtom(acceptedRevisionAtom);
-
-  const baseStyleURL = useBaseMapStyle(basemapType);
-
-  const [overlayStyle, setOverlayStyle] = useAtom(overlayStyleAtom);
-  const clipToContextBounds = useAtomValue(overlayClipAtom);
-
-  const overlayOpacity = useAtomValue(overlayOpacityAtom);
-
+export function useMapRevision(revisionAtom: Atom<number>): [number, number] {
   const mapRef = useMapRef();
-
-  const [baseStyle, setBaseStyle] = useState<StyleSpecification | null>(null);
-  useEffect(() => {
-    if (baseStyleURL == null) return;
-    getMapboxStyle(baseStyleURL, {
-      access_token: mapboxToken,
-    }).then((baseStyle) => {
-      console.log(baseStyle);
-      setBaseStyle(baseStyle);
-    });
-  }, [baseStyleURL]);
+  const revision = useAtomValue(revisionAtom);
+  const [acceptedRevision, setAcceptedRevision] = useState<number>(revision);
 
   // When loading completes, update accepted revision
   useEffect(() => {
@@ -121,6 +85,44 @@ export function useMapStyle(
       map.off("data", callback);
     };
   }, [revision, acceptedRevision]);
+
+  return [revision, acceptedRevision];
+}
+
+export function useMapStyle(
+  baseURL: string,
+  { mapboxToken, isMapView = true, projectID }: MapStyleOptions,
+) {
+  const activeLayer = useMapState((state) => state.activeLayer);
+  const basemapType = useMapState((state) => state.baseMap);
+  const showLineEndpoints = useMapState((state) => state.showLineEndpoints);
+  const enabledFeatureModes = useMapState((state) => state.enabledFeatureModes);
+
+  const showFacesWithNoUnit = useMapState((d) => d.showFacesWithNoUnit);
+  const showOverlay = useMapState((d) => d.showOverlay);
+  const exaggeration = useMapState((d) => d.terrainExaggeration);
+  const showTopologyPrimitives = useMapState((d) => d.showTopologyPrimitives);
+  const styleMode = useMapState((d) => d.styleMode);
+
+  const [revision, acceptedRevision] = useMapRevision(mapReloadCounterAtom);
+
+  const baseStyleURL = useBaseMapStyle(basemapType);
+
+  const [overlayStyle, setOverlayStyle] = useAtom(overlayStyleAtom);
+  const clipToContextBounds = useAtomValue(overlayClipAtom);
+
+  const overlayOpacity = useAtomValue(overlayOpacityAtom);
+
+  const [baseStyle, setBaseStyle] = useState<StyleSpecification | null>(null);
+  useEffect(() => {
+    if (baseStyleURL == null) return;
+    getMapboxStyle(baseStyleURL, {
+      access_token: mapboxToken,
+    }).then((baseStyle) => {
+      console.log(baseStyle);
+      setBaseStyle(baseStyle);
+    });
+  }, [baseStyleURL]);
 
   useEffect(() => {
     if (!showOverlay) {
@@ -162,12 +164,6 @@ export function useMapStyle(
         },
       },
       layers: [
-        // createStationsLayer({
-        //   id: "points",
-        //   sourceID: "stations",
-        //   showOrientations: false,
-        //   showAll: true,
-        // }),
         createStationsLayer({
           id: "orientations",
           sourceID: "stations",
@@ -239,7 +235,6 @@ export function useMapStyle(
     };
 
     const style = mergeStyles(baseStyle, overlayStyle, mainStyle);
-    console.log("Setting style", style);
     return style;
   }, [baseStyle, overlayStyle, exaggeration]);
 }

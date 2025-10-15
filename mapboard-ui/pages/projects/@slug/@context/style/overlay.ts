@@ -18,7 +18,7 @@ export interface MapOverlayOptions {
   // Restrict to bounds
   clipToContextBounds?: boolean;
   opacity?: number;
-  revision: number;
+  revision?: number;
   visible: boolean;
 }
 
@@ -63,9 +63,6 @@ export function buildMapOverlayStyle(
 
   let layers: mapboxgl.Layer[] = [];
 
-  // Timestamp of the most recent change to a layer
-  const changed = revision;
-
   if (selectedLayer != null) {
     params.set("map_layer", selectedLayer.toString());
     selectedLayerOpacity = (a, b) => {
@@ -102,7 +99,7 @@ export function buildMapOverlayStyle(
 
   let p0: any = {
     map_layer: selectedLayer,
-    changed,
+    revision,
   };
   if (clipToContextBounds) {
     p0.clip = true;
@@ -237,17 +234,18 @@ export function buildMapOverlayStyle(
   layers.push(...overlayLayers);
 
   if (revision != null) {
+    const rev = revision % 2;
     // rekey sources and layers to force reload
     let sourcesNew: StyleSpecification["sources"] = {};
     for (const [key, value] of Object.entries(sources)) {
-      const ix = `${key}-${revision}`;
+      const ix = `${key}-${rev}`;
       sourcesNew[ix] = value;
     }
 
     sources = sourcesNew;
     for (let layer of layers) {
-      layer.id = layer.id + `-${revision}`;
-      layer.source = `${layer.source}-${revision}`;
+      layer.id = layer.id + `-${rev}`;
+      layer.source = `${layer.source}-${rev}`;
     }
   }
 

@@ -13,16 +13,30 @@ type TopologyChangeMessage = {
   schema: string;
 };
 
-export const mapReloadTimestampAtom = atom<number>(0);
+export const mapReloadCounterAtom = atom<number>(0);
+
+export const crossSectionReloadCounterAtom = atom<number>(0);
 
 export const acceptedRevisionAtom = atom<number>(0);
 
-export const incrementTimestampAtom = atom(null, (get, set) => {
-  set(mapReloadTimestampAtom, Date.now());
-});
+export enum Topology {
+  Map = "map",
+  CrossSection = "cross-section",
+}
+
+export const incrementRevisionAtom = atom(
+  null,
+  (get, set, value: Topology = Topology.Map) => {
+    if (value === Topology.CrossSection) {
+      set(crossSectionReloadCounterAtom, (c) => c + 1);
+    } else {
+      set(mapReloadCounterAtom, (c) => c + 1);
+    }
+  },
+);
 
 export function MapReloadWatcher({ baseURL }: { baseURL: string }) {
-  const setMapReloadTimestamp = useSetAtom(mapReloadTimestampAtom);
+  const incrementTimestamp = useSetAtom(incrementRevisionAtom);
 
   const ws = useMapReloader(baseURL + "/topology/changes");
   useEffect(() => {
@@ -30,10 +44,14 @@ export function MapReloadWatcher({ baseURL }: { baseURL: string }) {
       return;
     }
     /** If the handler changed them, we could notify on topology changes */
-    const { n_deleted, n_created } =
+    const { n_deleted, n_created, schema } =
       ws.lastJsonMessage as TopologyChangeMessage;
+
+    const topologyType =
+      schema == "cross_section_topology" ? Topology.CrossSection : Topology.Map;
+
     if (n_deleted > 0 || n_created > 0) {
-      setMapReloadTimestamp(Date.now());
+      incrementTimestamp(topologyType);
     }
     console.log("Received message", ws.lastJsonMessage);
   }, [ws.lastJsonMessage]);

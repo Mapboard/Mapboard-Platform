@@ -3,7 +3,7 @@ import { AnchorButton, Button, Spinner } from "@blueprintjs/core";
 import { postgrest } from "~/utils/api-client";
 
 import { atom, useAtom, useAtomValue, useSetAtom } from "jotai";
-import { Suspense, useEffect } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import styles from "./index.module.sass";
 import { mapboxToken } from "~/settings";
 import { useStyleImageManager } from "../style/pattern-manager";
@@ -140,30 +140,21 @@ function CrossSectionMapArea({
 }
 
 function MapInner({ baseURL, mapboxToken, bounds, ...rest }) {
-  const mapRef = useMapRef();
-
   useStyleImageManager();
+  const boundsArray = useMemo(() => bbox(bounds), []);
+
+  // Keep the map position in state so that it is not reset on style change
+  const [mapPosition, setMapPosition] = useState(null);
 
   const style = useCrossSectionStyle(baseURL);
   if (style == null) {
     return null;
   }
 
-  console.log("Setup style", style);
-
-  const boundsArray = bbox(bounds);
-
-  let aspectRatio = 1;
-  const rect = mapRef?.current?.getContainer().getBoundingClientRect();
-  if (rect != null) {
-    const { width, height } = rect;
-    aspectRatio = width / height;
-  }
-
   return h(MapView, {
     bounds: boundsArray,
     //maxBounds: convertedBounds,
-    //mapPosition: _mapPosition,
+    mapPosition,
     mapboxToken,
     style,
     enableTerrain: false,
@@ -174,7 +165,7 @@ function MapInner({ baseURL, mapboxToken, bounds, ...rest }) {
     dragRotate: false,
     touchPitch: false,
     //standalone: true,
-    //onMapMoved: setMapPosition,
+    onMapMoved: setMapPosition,
     ...rest,
   });
 }

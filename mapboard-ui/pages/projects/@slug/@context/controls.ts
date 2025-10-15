@@ -17,10 +17,7 @@ import { ItemSelect } from "@macrostrat/form-components";
 import { FeatureMode, MapLayer } from "./types";
 import { useAtom, useSetAtom } from "jotai";
 import { overlayClipAtom, overlayOpacityAtom } from "./style";
-import {
-  incrementTimestampAtom,
-  mapReloadTimestampAtom,
-} from "./change-watcher";
+import { incrementRevisionAtom, mapReloadCounterAtom } from "./change-watcher";
 import { useMapStatus } from "@macrostrat/mapbox-react";
 
 const h = hyper.styled(styles);
@@ -52,7 +49,7 @@ export function LayerControlPanel() {
 }
 
 function RefreshMapSwitch() {
-  const reloadTimestamp = useSetAtom(incrementTimestampAtom);
+  const reloadTimestamp = useSetAtom(incrementRevisionAtom);
   const isLoading = useMapStatus((s) => s.isLoading);
 
   return h(
