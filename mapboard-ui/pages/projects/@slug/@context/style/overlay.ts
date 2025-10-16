@@ -1,4 +1,4 @@
-import { createLineSymbolLayers } from "./line-symbols";
+import { createLineSymbolLayers, structureColor } from "./line-symbols";
 import { allFeatureModes, FeatureMode } from "../types";
 import { StyleSpecification } from "mapbox-gl";
 
@@ -294,16 +294,10 @@ export function buildDisplayOverlayStyle(
     "case",
     inTypes(["thrust-fault", "normal-fault", "fault"]),
     "#000000",
+    inTypes(["anticline-hinge", "syncline-hinge"]),
+    structureColor,
     ["get", "color"],
   ];
-
-  const inFaultsAndStructures = inTypes([
-    "thrust-fault",
-    "normal-fault",
-    "fault",
-    "anticline-hinge",
-    "syncline-hinge",
-  ]);
 
   let lineWidth: any = [
     "case",
@@ -311,7 +305,9 @@ export function buildDisplayOverlayStyle(
     ["==", ["get", "source_layer"], 8],
     2,
     // faults and structures
-    inFaultsAndStructures,
+    inTypes(["anticline-hinge", "syncline-hinge"]),
+    1.5,
+    inTypes(["thrust-fault", "normal-fault", "fault"]),
     1.2,
     0.4,
   ];

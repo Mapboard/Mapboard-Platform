@@ -186,6 +186,16 @@ export function useDisplayStyle(
     if (showCrossSectionLabels) {
       crossSectionLabelLayers = [
         {
+          id: "cross-section-endpoints",
+          type: "circle",
+          source: "crossSectionEndpoints",
+          paint: {
+            "circle-color": "#444",
+            "circle-radius": 3,
+            "circle-opacity": 1,
+          },
+        },
+        {
           id: "cross-section-start-labels",
           type: "symbol",
           source: "crossSectionEndpoints",
@@ -248,43 +258,31 @@ export function useDisplayStyle(
             "line-opacity": 1,
           },
         },
-        {
-          id: "cross-section-endpoints",
-          type: "circle",
-          source: "crossSectionEndpoints",
-          paint: {
-            "circle-color": "#444",
-            "circle-radius": 3,
-            "circle-opacity": 1,
-          },
-        },
         ...crossSectionLabelLayers,
       ],
     };
 
-    //let style = baseStyle;
+    if (baseStyle == null) return null;
 
-    let style = mergeStyles(
+    //return baseStyle;
+
+    let style1 = mergeStyles(
       baseStyle,
       mainStyle,
       contourStyle,
-      //overlayStyle,
-      //crossSectionsStyle,
+      overlayStyle,
+      crossSectionsStyle,
     );
-
-    // Deleting glyphs property means we try to use local fonts
-    //delete style.glyphs;
-    console.log(style);
-
-    return style;
+    return style1;
   }, [baseStyle, overlayStyle, demSource, showContours]);
 
   return useMemo(() => {
     if (finalStyle == null) return null;
-    return prepareStyleForMaplibre(
+    const style = prepareStyleForMaplibre(
       optimizeTerrain(finalStyle, terrainTileURL),
       mapboxToken,
     );
+    return style;
   }, [finalStyle, mapboxToken, terrainTileURL]);
 }
 

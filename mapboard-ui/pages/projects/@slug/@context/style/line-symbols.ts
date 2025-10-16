@@ -25,6 +25,7 @@ export function createLineSymbolLayers(filter) {
       types: ["anticline-hinge", "syncline-hinge"],
       symbolSpacing: 200,
       symbolPlacement: "line-center",
+      iconScaleFactor: 1.5,
     }),
     builder.createLayer("faults", {
       types: ["left-lateral-fault", "right-lateral-fault", "normal-fault"],
@@ -39,14 +40,16 @@ export function createLineSymbolLayers(filter) {
         0, // stop
         3, // size
         15,
-        120,
+        80,
         24,
-        250,
+        140,
       ],
       iconOffset: [0, 0],
     }),
   ];
 }
+
+export const structureColor = "#7c0138";
 
 class SymbolLayerBuilder {
   index: LineSymbolIndex;
@@ -62,13 +65,16 @@ class SymbolLayerBuilder {
       symbolSpacing = 30,
       symbolPlacement = "line",
       iconOffset = [0, 0],
+      iconScaleFactor = 1.0,
       types = Object.keys(this.index),
     } = opts;
-    const sz = (s) => s;
+    const sz = (s) => s * iconScaleFactor;
 
     const colorMap = {
       "thrust-fault": "#000000",
       "normal-fault": "#000000",
+      "anticline-hinge": structureColor,
+      "syncline-hinge": structureColor,
     };
 
     let filterStack = ["all", ["in", ["get", "type"], ["literal", types]]];
