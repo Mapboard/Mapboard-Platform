@@ -1,4 +1,5 @@
 import { postgrest } from "~/utils/api-client";
+import type { LineString } from "geojson";
 
 export interface CrossSectionData {
   id: number;
@@ -9,6 +10,7 @@ export interface CrossSectionData {
   offset_y: number;
   length: number;
   piercing_points?: PiercingPoint[];
+  geometry?: LineString;
 }
 
 export interface PiercingPoint {
@@ -28,7 +30,7 @@ export async function buildCrossSectionData(opts: CrossSectionDataOpts) {
 
   const ctxRequest = postgrest
     .from("cross_sections")
-    .select("id,slug,name,project_slug,offset_x,offset_y,length")
+    .select("id,slug,name,project_slug,offset_x,offset_y,length,geometry")
     .order("name", { ascending: true })
     .eq("project_slug", projectSlug)
     .eq("clip_context_slug", contextSlug)

@@ -29,12 +29,20 @@ export function CrossSectionsList({
 export function CrossSection(props: { data: CrossSectionData }) {
   const { data } = props;
 
-  return h("div.cross-section", {}, [
-    h("h2.cross-section-title", data.name),
+  console.log(data);
+
+  return h("div.cross-section", [
     h("div.cross-section-map-container", [
-      h(CrossSectionMapView, {
-        data,
-      }),
+      h(
+        CrossSectionMapView,
+        {
+          data,
+        },
+        [
+          h("h2.cross-section-title", data.name),
+          h("h3.cross-section-title.end-title", data.name + "'"),
+        ],
+      ),
     ]),
   ]);
 }
@@ -95,6 +103,7 @@ export function CrossSectionMapView(props: MapViewProps) {
     innerHeight: pixelSize.height,
     innerWidth: pixelSize.width,
     padding: 40,
+    paddingTop: 20,
     paddingLeft: 60,
   });
 
@@ -126,6 +135,7 @@ export function CrossSectionMapView(props: MapViewProps) {
           ],
         ),
       ]),
+      children,
     ],
   );
 }
@@ -156,20 +166,31 @@ function PiercingPoints({
 
 function ElevationAxis({ scale, left = 0 }) {
   const tickLength = 5;
+  const halfHeight = (scale.range()[1] - scale.range()[0]) / 2;
+  const x = left - tickLength - 20;
+  const y = -halfHeight;
   return h("g.elevation-axis", [
     h(
       "text",
       {
-        x: left - tickLength,
-        y: -15,
         style: {
           textAnchor: "middle",
         },
         fontSize: 12,
+        transform: `translate(${x} ${y}) rotate(-90)`,
       },
       "Elevation (m)",
     ),
-    h(AxisLeft, { scale, numTicks: 4, left, tickLength }),
+    h(AxisLeft, {
+      scale,
+      numTicks: 3,
+      left,
+      tickLength,
+      tickLabelProps: {
+        angle: -90,
+        textAnchor: "middle",
+      },
+    }),
   ]);
 }
 

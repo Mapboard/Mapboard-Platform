@@ -25,6 +25,99 @@ export function buildCrossSectionStyle(
   const source = "mapboard";
   const fillFilter = ["all", ["has", "unit"], ["==", ["get", "map_layer"], 1]];
 
+  let lineLayers = [];
+  const lineCertaintyFilters = {
+    certain: ["==", ["coalesce", ["get", "certainty"], 10], 10],
+    high: [">=", ["coalesce", ["get", "certainty"], 10], 8],
+    medium: [
+      "all",
+      [">", ["coalesce", ["get", "certainty"], 10], 5],
+      ["<", ["coalesce", ["get", "certainty"], 10], 8],
+    ],
+    low: ["<=", ["coalesce", ["get", "certainty"], 10], 5],
+  };
+
+  const dashPatterns = {
+    certain: [1, 0],
+    high: [8, 1], // nearly solid
+    medium: [4, 1], // dashed
+    low: [2, 4], // dotted
+  };
+
+  for (const [id, certaintyFilter] of Object.entries(lineCertaintyFilters)) {
+    lineLayers.push({
+      id: `lines-${id}`,
+      type: "line",
+      source: "mapboard",
+      "source-layer": "lines",
+      paint: {
+        "line-color": lineColor,
+        "line-width": [
+          "case",
+          // special case for NNC bounding surface
+          ["==", ["get", "map_layer"], 413], // nappe complex layer
+          2,
+          // faults and structures
+          [
+            "in",
+            ["get", "type"],
+            [
+              "literal",
+              [
+                "thrust-fault",
+                "normal-fault",
+                "fault",
+                "anticline-hinge",
+                "syncline-hinge",
+              ],
+            ],
+          ],
+          1.2,
+          0.5,
+        ],
+        "line-opacity": 1,
+        // fixed dasharray per layer because this doesn't support data-driven styles
+        "line-dasharray": dashPatterns[id],
+      },
+      layout: {
+        "line-cap": "round",
+        "line-join": "round",
+        "line-sort-key": [
+          "case",
+          [
+            "in",
+            ["get", "type"],
+            ["literal", ["anticline-hinge", "syncline-hinge"]],
+          ],
+          2,
+          [
+            "in",
+            ["get", "type"],
+            ["literal", ["thrust-fault", "normal-fault", "fault"]],
+          ],
+          1,
+          0,
+        ],
+      },
+      filter: [
+        "all",
+        certaintyFilter,
+        ["!", ["coalesce", ["get", "covered"], false]],
+        [
+          "!",
+          [
+            "in",
+            ["get", "type"],
+            [
+              "literal",
+              ["mapboard:arbitrary", "cross-section", "terrain", "bounds"],
+            ],
+          ],
+        ],
+      ],
+    });
+  }
+
   let layers = [
     {
       id: "basement",
@@ -80,76 +173,7 @@ export function buildCrossSectionStyle(
       },
       filter: ["all", ["has", "symbol"], fillFilter],
     },
-
-    // A single layer for all lines
-    {
-      id: "lines",
-      type: "line",
-      source: "mapboard",
-      "source-layer": "lines",
-      paint: {
-        "line-color": lineColor,
-        "line-width": [
-          "case",
-          // special case for NNC bounding surface
-          ["==", ["get", "map_layer"], 413], // nappe complex layer
-          2,
-          // faults and structures
-          [
-            "in",
-            ["get", "type"],
-            [
-              "literal",
-              [
-                "thrust-fault",
-                "normal-fault",
-                "fault",
-                "anticline-hinge",
-                "syncline-hinge",
-              ],
-            ],
-          ],
-          1,
-          0.5,
-        ],
-        "line-opacity": 1,
-      },
-      layout: {
-        "line-cap": "round",
-        "line-join": "round",
-        "line-sort-key": [
-          "case",
-          [
-            "in",
-            ["get", "type"],
-            ["literal", ["anticline-hinge", "syncline-hinge"]],
-          ],
-          2,
-          [
-            "in",
-            ["get", "type"],
-            ["literal", ["thrust-fault", "normal-fault", "fault"]],
-          ],
-          1,
-          0,
-        ],
-      },
-      filter: [
-        "all",
-        ["!", ["coalesce", ["get", "covered"], false]],
-        [
-          "!",
-          [
-            "in",
-            ["get", "type"],
-            [
-              "literal",
-              ["mapboard:arbitrary", "cross-section", "terrain", "bounds"],
-            ],
-          ],
-        ],
-      ],
-    },
+    ...lineLayers,
     // Semi-opaque sky overlay
     {
       id: "sky",
@@ -200,7 +224,7 @@ export function buildCrossSectionStyle(
         "symbol-spacing": 50,
         "icon-offset": [0, -15],
         "icon-rotate": 0,
-        "icon-size": 0.15,
+        "icon-size": 0.2,
       },
       filter: ["all", ["==", ["get", "type"], "thrust-fault"]],
       source: "mapboard",

@@ -13,8 +13,20 @@
   @media print
     display: none
 
+
+.cross-section-title
+  position: absolute
+  top: -0.5rem
+  left: var(--padding-left)
+  font-size: 1.5rem
+  text-align: center
+  &.end-title
+    right: var(--padding-right)
+    text-align: right
+    color: #888
+
 .cross-sections
-  padding: 2em
+  padding: 1em
   --cross-section-scale: 1
   --text-color: #000
   page-break-after: always
@@ -25,6 +37,7 @@
 
   padding-top: var(--padding-top)
   padding-left: var(--padding-left)
+  position: relative
 
 .piercing-points
   position: absolute

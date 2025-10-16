@@ -95,15 +95,22 @@ export function TiledMapArea({
     );
   }, [ref.current, tileBounds, style, initializeMap]);
 
+  const _width = (width ?? pixelSize.width) + "px";
+  const _height = (height ?? pixelSize.height) + "px";
+
   return h(
     "div.map-view-container.tiled-map",
     {
       className,
       style: {
-        width: (width ?? pixelSize.width) + "px",
-        height: (height ?? pixelSize.height) + "px",
+        width: _width,
+        height: _height,
+        "--outer-width": _width,
+        "--outer-height": _height,
         "--padding-top": paddingTop + "px",
         "--padding-left": paddingLeft + "px",
+        "--padding-right": width - pixelSize.width - paddingLeft + "px",
+        "--padding-bottom": height - pixelSize.height - paddingTop + "px",
         "--inner-height": pixelSize.height + "px",
         "--inner-width": pixelSize.width + "px",
       },
