@@ -86,13 +86,16 @@ export function MapInner({
   const setMapPosition = useMapActions((a) => a.setMapPosition);
   const mapPosition = useMapState((state) => state.mapPosition);
   const projectID = useMapState((d) => d.context.project_id);
+  const contextSlug = useMapState((d) => d.context.slug);
 
   useStyleImageManager();
 
   const style = useDisplayStyle(baseURL, {
-    isMapView,
     mapboxToken,
     projectID,
+    contextSlug: contextSlug,
+    crossSectionClipContext: "cross-section-aoi",
+    showOverlay: false,
   });
   if (style == null) {
     return null;

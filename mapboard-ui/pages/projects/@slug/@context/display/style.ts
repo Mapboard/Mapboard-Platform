@@ -15,6 +15,9 @@ interface DisplayStyleOptions {
   projectID: number;
   contextSlug: string;
   showCrossSectionLabels?: boolean;
+  // Context slug to clip by for viewing a subset of the cross section
+  crossSectionClipContext?: string;
+  showContours?: boolean;
 }
 
 export function useDisplayStyle(
@@ -25,11 +28,11 @@ export function useDisplayStyle(
     showCrossSectionLabels = true,
     projectID,
     contextSlug,
+    crossSectionClipContext,
+    showContours = true,
   }: DisplayStyleOptions,
 ) {
   const baseStyleURL = "mapbox://styles/jczaplewski/cmggy9lqq005l01ryhb5o2eo4";
-
-  const [overlayStyle, setOverlayStyle] = useState(null);
 
   const [baseStyle, setBaseStyle] = useState<StyleSpecification | null>(null);
   useEffect(() => {
@@ -41,6 +44,7 @@ export function useDisplayStyle(
     });
   }, [baseStyleURL]);
 
+  const [overlayStyle, setOverlayStyle] = useState(null);
   useEffect(() => {
     if (!showOverlay) {
       setOverlayStyle(null);
@@ -74,7 +78,7 @@ export function useDisplayStyle(
   const demURL = useDEMTileURL();
 
   const demSource = useMemo(() => {
-    if (demURL == null) return null;
+    if (demURL == null || !showContours) return null;
     const src = new mlcontour.DemSource({
       url: demURL,
       encoding: "mapbox", // "mapbox" or "terrarium" default="terrarium"
@@ -84,12 +88,13 @@ export function useDisplayStyle(
       timeoutMs: 20_000, // timeout on fetch requests
     });
     src.setupMaplibre(maplibre);
-    console.log(src);
     return src;
-  }, [demURL]);
+  }, [demURL, showContours]);
 
-  return useMemo(() => {
-    if (baseStyleURL == null || overlayStyle == null) {
+  const terrainTileURL = demSource?.sharedDemProtocolUrl ?? demURL;
+
+  const finalStyle = useMemo(() => {
+    if (baseStyle == null && overlayStyle == null) {
       return null;
     }
 
@@ -109,14 +114,7 @@ export function useDisplayStyle(
           },
         },
       ],
-      sources: {
-        terrain: {
-          type: "raster-dem",
-          url: demURL,
-          tileSize: 512,
-          maxzoom: 14,
-        },
-      },
+      sources: {},
     };
 
     let contourStyle = null;
@@ -128,8 +126,8 @@ export function useDisplayStyle(
             tiles: [
               demSource.contourProtocolUrl({
                 thresholds: {
-                  10: 20,
-                  12: 10,
+                  10: [20, 200],
+                  12: [10, 100],
                 },
                 contourLayer: "contours",
                 elevationKey: "ele",
@@ -138,12 +136,12 @@ export function useDisplayStyle(
             ],
             maxzoom: 14,
           },
-          terrain: {
-            type: "raster-dem",
-            url: demSource.sharedDemProtocolUrl,
-            tileSize: 256,
-            maxzoom: 14,
-          },
+          // terrain: {
+          //   type: "raster-dem",
+          //   url: terrainTileURL,
+          //   tileSize: 256,
+          //   maxzoom: 14,
+          // },
         },
         layers: [
           {
@@ -154,36 +152,34 @@ export function useDisplayStyle(
             paint: {
               "line-color": "#777",
               // level = highest index in thresholds array the elevation is a multiple of
-              "line-width": 0.25, //["match", ["get", "level"], 1, 1, 0.5],
+              "line-width": ["match", ["get", "level"], 1, 1, 0.5],
             },
           },
-          {
-            id: "contour-labels",
-            type: "symbol",
-            source: "contour",
-            "source-layer": "contours",
-            filter: [">", ["get", "level"], 0],
-            layout: {
-              "symbol-placement": "line",
-              "text-size": 10,
-              "text-field": [
-                "concat",
-                ["number-format", ["get", "ele"], {}],
-                "'",
-              ],
-              "text-font": ["Noto Sans Bold"],
-            },
-            paint: {
-              "text-halo-color": "white",
-              "text-halo-width": 1,
-            },
-          },
+          // {
+          //   id: "contour-labels",
+          //   type: "symbol",
+          //   source: "contour",
+          //   "source-layer": "contours",
+          //   filter: [">", ["get", "level"], 0],
+          //   layout: {
+          //     "symbol-placement": "line",
+          //     "text-size": 10,
+          //     "text-field": ["to-string", ["get", "ele"]],
+          //     "text-font": ["PT Serif Regular"],
+          //     "symbol-spacing": 1,
+          //     "text-max-angle": 45,
+          //   },
+          //   paint: {
+          //     "text-halo-color": "white",
+          //     "text-halo-width": 1,
+          //     "text-color": "#444",
+          //   },
+          // },
         ],
       };
     }
 
-    // cross-section-aoi
-    const clipSlug = contextSlug;
+    const clipSlug = crossSectionClipContext ?? contextSlug;
 
     let crossSectionLabelLayers: maplibre.LayerSpecification[] = [];
 
@@ -266,44 +262,84 @@ export function useDisplayStyle(
       ],
     };
 
+    //let style = baseStyle;
+
     let style = mergeStyles(
       baseStyle,
       mainStyle,
       contourStyle,
-      overlayStyle,
-      crossSectionsStyle,
+      //overlayStyle,
+      //crossSectionsStyle,
     );
-
-    for (const [key, source] of Object.entries(style.sources)) {
-      if (
-        source.type === "raster-dem" &&
-        source.url != demSource.sharedDemProtocolURL
-      ) {
-        delete style.sources[key];
-      }
-    }
-
-    const oldRasterID = "mapbox://mapbox.terrain-rgb";
-    delete style.sources[oldRasterID];
-    style.layers = style.layers
-      // .filter((d) => {
-      //   return d.type != "hillshade";
-      // })
-      .map((l) => {
-        if (l.source === "mapbox-dem" || l.source === oldRasterID) {
-          return {
-            ...l,
-            source: "terrain",
-          };
-        }
-        return l;
-      });
-
-    delete style.terrain;
 
     // Deleting glyphs property means we try to use local fonts
     //delete style.glyphs;
+    console.log(style);
 
-    return prepareStyleForMaplibre(style, mapboxToken);
-  }, [baseStyle, overlayStyle, demSource]);
+    return style;
+  }, [baseStyle, overlayStyle, demSource, showContours]);
+
+  return useMemo(() => {
+    if (finalStyle == null) return null;
+    return prepareStyleForMaplibre(
+      optimizeTerrain(finalStyle, terrainTileURL),
+      mapboxToken,
+    );
+  }, [finalStyle, mapboxToken, terrainTileURL]);
+}
+
+function optimizeTerrain(
+  style: StyleSpecification | null,
+  terrainSourceURL: string | null,
+) {
+  for (const [key, source] of Object.entries(style.sources)) {
+    if (source.type === "raster-dem" && source.url != terrainSourceURL) {
+      delete style.sources[key];
+    }
+  }
+
+  style.sources.terrain = {
+    type: "raster-dem",
+    tiles: [terrainSourceURL],
+    tileSize: 512,
+    maxzoom: 14,
+  };
+
+  for (const layer of style.layers) {
+    if (layer.type === "hillshade") {
+      layer.paint = {
+        "hillshade-method": "multidirectional",
+        "hillshade-highlight-color": [
+          "#ffffffcc",
+          "#ffffffcc",
+          "#ffffffcc",
+          "#ffffffcc",
+        ],
+        "hillshade-shadow-color": [
+          "#00000033",
+          "#00000033",
+          "#00000033",
+          "#00000033",
+        ],
+        "hillshade-illumination-direction": [270, 315, 0, 45],
+        "hillshade-illumination-altitude": [30, 30, 30, 30],
+      };
+    }
+  }
+
+  const oldRasterID = "mapbox://mapbox.terrain-rgb";
+  delete style.sources[oldRasterID];
+  style.layers = style.layers.map((l) => {
+    if (l.source === "mapbox-dem" || l.source === oldRasterID) {
+      return {
+        ...l,
+        source: "terrain",
+      };
+    }
+    return l;
+  });
+
+  delete style.terrain;
+
+  return style;
 }

@@ -286,31 +286,24 @@ export function buildDisplayOverlayStyle(
     volatile: false,
   };
 
+  function inTypes(typeList: string[]) {
+    return ["in", ["get", "type"], ["literal", typeList]];
+  }
+
   let lineColor = [
     "case",
-    [
-      "in",
-      ["get", "type"],
-      ["literal", ["thrust-fault", "normal-fault", "fault"]],
-    ],
+    inTypes(["thrust-fault", "normal-fault", "fault"]),
     "#000000",
     ["get", "color"],
   ];
 
-  const inFaultsAndStructures = [
-    "in",
-    ["get", "type"],
-    [
-      "literal",
-      [
-        "thrust-fault",
-        "normal-fault",
-        "fault",
-        "anticline-hinge",
-        "syncline-hinge",
-      ],
-    ],
-  ];
+  const inFaultsAndStructures = inTypes([
+    "thrust-fault",
+    "normal-fault",
+    "fault",
+    "anticline-hinge",
+    "syncline-hinge",
+  ]);
 
   let lineWidth: any = [
     "case",
@@ -342,7 +335,7 @@ export function buildDisplayOverlayStyle(
       paint: {
         "fill-color": ["get", "color"],
         "fill-opacity": 0.6,
-        "fill-outline-color": ["get", "color"],
+        "fill-outline-color": "transparent",
       },
       filter: ["has", "unit"],
     },
@@ -388,17 +381,9 @@ export function buildDisplayOverlayStyle(
         "line-join": "round",
         "line-sort-key": [
           "case",
-          [
-            "in",
-            ["get", "type"],
-            ["literal", ["anticline-hinge", "syncline-hinge"]],
-          ],
+          inTypes(["anticline-hinge", "syncline-hinge"]),
           2,
-          [
-            "in",
-            ["get", "type"],
-            ["literal", ["thrust-fault", "normal-fault", "fault"]],
-          ],
+          inTypes(["thrust-fault", "normal-fault", "fault"]),
           1,
           0,
         ],

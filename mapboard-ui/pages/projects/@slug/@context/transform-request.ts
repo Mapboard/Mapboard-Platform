@@ -91,7 +91,6 @@ export function useRequestTransformer(
         }
 
         let [start, ...rest1] = baseURL.split(tilesetID);
-        console.log("baseURL", baseURL, start);
         if (start.endsWith("/")) {
           start = start.slice(0, -1);
         }
@@ -106,8 +105,6 @@ export function useRequestTransformer(
 
         transformedURL = newURL + "?" + queryArgs.toString();
       }
-
-      console.log(url, transformedURL);
 
       return { url: transformedURL };
     };
