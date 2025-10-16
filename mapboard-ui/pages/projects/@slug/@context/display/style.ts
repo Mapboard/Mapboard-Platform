@@ -280,6 +280,7 @@ export function useDisplayStyle(
       optimizeTerrain(finalStyle, terrainTileURL),
       mapboxToken,
     );
+
     return style;
   }, [finalStyle, mapboxToken, terrainTileURL]);
 }

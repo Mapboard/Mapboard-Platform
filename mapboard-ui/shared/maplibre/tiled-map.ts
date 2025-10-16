@@ -151,7 +151,7 @@ export async function renderTiledMap(
     attributionControl: false,
     interactive: false,
     maxZoom: 22,
-    pixelRatio: 8,
+    pixelRatio: 4,
     pitchWithRotate: false,
     dragRotate: false,
     touchPitch: false,

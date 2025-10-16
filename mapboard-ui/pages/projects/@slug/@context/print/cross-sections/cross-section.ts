@@ -18,21 +18,37 @@ const h = hyper.styled(styles);
 export function CrossSectionsList({
   data,
   ref,
+  elevationRange,
+  metersPerPixel,
 }: {
   data: CrossSectionData[];
   ref: React.Ref<HTMLElement>;
-}) {
+} & CrossSectionOpts) {
   return h(
     "div.cross-sections",
     { ref },
     data.map((ctx) => {
-      return h(CrossSection, { key: ctx.id, data: ctx });
+      return h(CrossSection, {
+        key: ctx.id,
+        data: ctx,
+        elevationRange,
+        metersPerPixel,
+      });
     }),
   );
 }
 
-export function CrossSection(props: { data: CrossSectionData }) {
-  const { data } = props;
+interface CrossSectionOpts {
+  elevationRange?: [number, number];
+  metersPerPixel?: number;
+}
+
+export function CrossSection(
+  props: {
+    data: CrossSectionData;
+  } & CrossSectionOpts,
+) {
+  const { data, elevationRange, metersPerPixel } = props;
 
   return h("div.cross-section", [
     h("div.cross-section-map-container", [
@@ -40,6 +56,8 @@ export function CrossSection(props: { data: CrossSectionData }) {
         CrossSectionMapView,
         {
           data,
+          elevationRange,
+          metersPerPixel,
         },
         [
           h("h2.cross-section-title", data.name),
@@ -51,7 +69,7 @@ export function CrossSection(props: { data: CrossSectionData }) {
   ]);
 }
 
-interface MapViewProps {
+interface MapViewProps extends CrossSectionOpts {
   data: CrossSectionData;
   children?: React.ReactNode;
   className?: string;
@@ -66,23 +84,33 @@ function Endpoints({ line }: { line: GeoJSON.LineString }) {
 }
 
 export function CrossSectionMapView(props: MapViewProps) {
-  const { data, children, className, ...rest } = props;
+  const {
+    data,
+    children,
+    className,
+    elevationRange = [500, 2200],
+    metersPerPixel = 15,
+    ...rest
+  } = props;
 
   let domain = document.location.origin;
   const { project_slug, slug } = data;
   const baseURL = `${domain}/api/project/${project_slug}/context/${slug}`;
 
   const tileBounds = useMemo(() => {
-    const ll: [number, number] = [data.offset_x, data.offset_y + 500];
+    const ll: [number, number] = [
+      data.offset_x,
+      data.offset_y + elevationRange[0],
+    ];
     const ur: [number, number] = [
       data.offset_x + data.length,
-      data.offset_y + 2200,
+      data.offset_y + elevationRange[1],
     ];
 
     const bounds: MercatorBBox = [...ll, ...ur];
 
     return computeTiledBounds(bounds, {
-      metersPerPixel: 15,
+      metersPerPixel,
     });
   }, [data]);
 

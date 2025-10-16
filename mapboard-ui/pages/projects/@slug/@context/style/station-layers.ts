@@ -42,9 +42,9 @@ export function createStationsLayer(
       "icon-ignore-placement": showAll,
     },
     paint: {
-      "text-halo-color": "rgba(255,255,255, 0.75)",
-      "text-halo-width": 0.5,
-      "text-halo-blur": 2,
+      "text-halo-color": "rgba(255,255,255, 1)",
+      "text-halo-width": 1,
+      "text-halo-blur": 1,
     },
   };
 }

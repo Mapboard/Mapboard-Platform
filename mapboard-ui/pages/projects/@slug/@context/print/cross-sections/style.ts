@@ -2,8 +2,11 @@ import type maplibre from "maplibre-gl";
 
 export function buildCrossSectionStyle(
   baseURL: string,
+  options: { opaque?: boolean } = {},
 ): maplibre.StyleSpecification {
   let sources: Record<string, mapboxgl.SourceSpecification> = {};
+
+  const { opaque = false } = options;
 
   sources["mapboard"] = {
     type: "vector",
@@ -73,7 +76,7 @@ export function buildCrossSectionStyle(
             ],
           ],
           1.2,
-          0.5,
+          0.75,
         ],
         "line-opacity": 1,
         // fixed dasharray per layer because this doesn't support data-driven styles
@@ -119,6 +122,26 @@ export function buildCrossSectionStyle(
   }
 
   let layers = [
+    // Opaque subsurface overlay
+    {
+      id: "subsurface",
+      type: "fill",
+      source,
+      "source-layer": "fills",
+      paint: {
+        "fill-color": "#dddddd",
+        "fill-opacity": 1,
+      },
+      filter: [
+        "all",
+        ["==", ["get", "unit"], "subsurface"],
+        [
+          "==",
+          ["get", "map_layer"],
+          2, // context
+        ],
+      ],
+    },
     {
       id: "basement",
       type: "fill",
@@ -136,15 +159,11 @@ export function buildCrossSectionStyle(
       "source-layer": "fills",
       paint: {
         "fill-color": ["get", "color"],
-        "fill-opacity": 1,
-        "fill-outline-color": "transparent",
+        "fill-opacity": opaque ? 1 : 0.5,
+        "fill-outline-color": ["get", "color"],
+        "fill-antialias": true,
       },
-      filter: [
-        "all",
-        ["!", ["has", "symbol"]],
-        ["!=", ["get", "unit"], "basement"],
-        fillFilter,
-      ],
+      filter: ["all", ["!=", ["get", "unit"], "basement"], fillFilter],
     },
     {
       id: "fills-with-symbols",
@@ -155,45 +174,19 @@ export function buildCrossSectionStyle(
         "fill-pattern": [
           "image",
           [
-            "case",
-            ["has", "symbol"],
-            [
-              "concat",
-              ["get", "symbol"],
-              ":",
-              ["get", "symbol_color"],
-              ":",
-              ["get", "color"],
-            ],
-            ["concat", "color:", ["get", "color"]],
+            "concat",
+            ["get", "symbol"],
+            ":",
+            ["get", "symbol_color"],
+            ":transparent",
           ],
         ],
-        "fill-opacity": 1,
+        "fill-opacity": opaque ? 1 : 0.8,
         "fill-outline-color": "transparent",
       },
       filter: ["all", ["has", "symbol"], fillFilter],
     },
     ...lineLayers,
-    // Semi-opaque sky overlay
-    {
-      id: "sky",
-      type: "fill",
-      source,
-      "source-layer": "fills",
-      paint: {
-        "fill-color": "#ffffff",
-        "fill-opacity": 0.5,
-      },
-      filter: [
-        "all",
-        ["==", ["get", "unit"], "sky"],
-        [
-          "==",
-          ["get", "map_layer"],
-          2, // context
-        ],
-      ],
-    },
     // Terrain
     {
       id: "terrain",
@@ -220,8 +213,8 @@ export function buildCrossSectionStyle(
         "icon-pitch-alignment": "map",
         "icon-allow-overlap": true,
         "symbol-avoid-edges": false,
-        "symbol-placement": "line",
-        "symbol-spacing": 50,
+        "symbol-placement": "line-center",
+        "symbol-spacing": 30,
         "icon-offset": [0, -15],
         "icon-rotate": 0,
         "icon-size": 0.2,

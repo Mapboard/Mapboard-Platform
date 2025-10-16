@@ -87,7 +87,7 @@ async function loadPatternImage(map: mapboxgl.Map, patternSpec: string) {
   if (map.hasImage(patternSpec) || image == null) return;
 
   map.addImage(patternSpec, image, {
-    pixelRatio: 4, // Use a higher pixel ratio for better quality
+    pixelRatio: 2, // Use a higher pixel ratio for better quality
   });
 }
 

@@ -34,10 +34,11 @@ export function Page() {
 }
 
 function PageInner({ baseURL, context: ctx }) {
+  const metersPerPixel = 8;
   const bounds = mercatorBBox(bbox(ctx.bounds));
 
   const tileBounds = computeTiledBounds(bounds, {
-    metersPerPixel: 10,
+    metersPerPixel,
     tileSize: 512,
   });
   const transformRequest = useRequestTransformer(true);
@@ -66,14 +67,16 @@ function PageInner({ baseURL, context: ctx }) {
   const sizeOpts = expandInnerSize({
     innerHeight: tileBounds.pixelSize.height,
     innerWidth: tileBounds.pixelSize.width,
-    padding: 40,
-    paddingLeft: 60,
+    paddingH: 40,
+    padding: 10,
   });
 
   return h("div.main", [
     h(TiledMapArea, { tileBounds, style, initializeMap, ...sizeOpts }),
     h.if(ctx.crossSections != null)(CrossSectionsList, {
       data: ctx.crossSections,
+      elevationRange: [1000, 2100],
+      metersPerPixel,
     }),
   ]);
 }

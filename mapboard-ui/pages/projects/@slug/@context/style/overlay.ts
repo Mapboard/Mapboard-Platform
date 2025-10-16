@@ -286,6 +286,11 @@ export function buildDisplayOverlayStyle(
     volatile: false,
   };
 
+  sources["rivers"] = {
+    type: "vector",
+    tiles: [baseURL + `/tile/lines/{z}/{x}/{y}?map_layer=3&clip=true`],
+  };
+
   function inTypes(typeList: string[]) {
     return ["in", ["get", "type"], ["literal", typeList]];
   }
@@ -324,13 +329,23 @@ export function buildDisplayOverlayStyle(
 
   let layers = [
     {
+      id: "rivers",
+      type: "line",
+      source: "rivers",
+      "source-layer": "lines",
+      paint: {
+        "line-color": "hsl(215, 84%, 69%)",
+        "line-width": 1.5,
+      },
+    },
+    {
       id: "fills-without-symbols",
       type: "fill",
       source: "mapboard",
       "source-layer": "fills",
       paint: {
         "fill-color": ["get", "color"],
-        "fill-opacity": 0.6,
+        "fill-opacity": 0.5,
         "fill-outline-color": "transparent",
       },
       filter: ["has", "unit"],
@@ -356,7 +371,7 @@ export function buildDisplayOverlayStyle(
             ["concat", "color:", ["get", "color"]],
           ],
         ],
-        "fill-opacity": 0.6,
+        "fill-opacity": 0.8,
         "fill-outline-color": "transparent",
       },
       filter: ["all", ["has", "symbol"], ["has", "unit"]],
