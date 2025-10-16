@@ -15,6 +15,7 @@ import maplibre from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { expandInnerSize } from "@macrostrat/ui-components";
 import { computeTiledBounds, mercatorBBox, TiledMapArea } from "~/maplibre";
+import { CrossSectionsList } from "../cross-sections/cross-section";
 
 const h = hyper.styled(styles);
 
@@ -71,5 +72,8 @@ function PageInner({ baseURL, context: ctx }) {
 
   return h("div.main", [
     h(TiledMapArea, { tileBounds, style, initializeMap, ...sizeOpts }),
+    h.if(ctx.crossSections != null)(CrossSectionsList, {
+      data: ctx.crossSections,
+    }),
   ]);
 }
