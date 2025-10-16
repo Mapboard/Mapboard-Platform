@@ -1,15 +1,15 @@
 import { useData } from "vike-react/useData";
-import type { CrossSectionData, PiercingPoint } from "./+data";
+import type { CrossSectionData, PiercingPoint } from "./cross-section-data";
 import hyper from "@macrostrat/hyper";
 
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { useMemo, useRef } from "react";
 import styles from "./+Page.client.module.sass";
 import "maplibre-gl/dist/maplibre-gl.css";
 
 import { buildCrossSectionStyle } from "./style";
 import { AxisBottom, AxisLeft } from "@visx/axis";
 import { scaleLinear } from "@visx/scale";
-import { expandInnerSize, StrictPadding } from "@macrostrat/ui-components";
+import { expandInnerSize } from "@macrostrat/ui-components";
 import {
   computeTiledBounds,
   MercatorBBox,
