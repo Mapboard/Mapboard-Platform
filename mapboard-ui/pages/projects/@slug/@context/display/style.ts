@@ -44,35 +44,13 @@ export function useDisplayStyle(
     });
   }, [baseStyleURL]);
 
-  const [overlayStyle, setOverlayStyle] = useState(null);
-  useEffect(() => {
+  const overlayStyle = useMemo(() => {
     if (!showOverlay) {
-      setOverlayStyle(null);
-      return;
+      return null;
     }
-
-    const style = buildDisplayOverlayStyle(baseURL, {
+    return buildDisplayOverlayStyle(baseURL, {
       selectedLayer: 22, // composite layer
     });
-
-    const stationsStyle: Partial<StyleSpecification> = {
-      sources: {
-        stations: {
-          type: "geojson",
-          data: `${apiBaseURL}/stations.geojson?project_id=eq.${projectID}`,
-        },
-      },
-      layers: [
-        createStationsLayer({
-          id: "orientations",
-          sourceID: "stations",
-          showOrientations: true,
-          showAll: false,
-        }),
-      ],
-    };
-
-    setOverlayStyle(mergeStyles(style, stationsStyle));
   }, [showOverlay]);
 
   const demURL = useDEMTileURL();
@@ -253,8 +231,8 @@ export function useDisplayStyle(
           type: "line",
           source: "crossSections",
           paint: {
-            "line-color": "#444",
-            "line-width": 2,
+            "line-color": "#000",
+            "line-width": 2.5,
             "line-opacity": 1,
           },
         },
@@ -266,12 +244,32 @@ export function useDisplayStyle(
 
     //return baseStyle;
 
+    // Stations
+
+    const stationsStyle: Partial<StyleSpecification> = {
+      sources: {
+        stations: {
+          type: "geojson",
+          data: `${apiBaseURL}/stations.geojson?project_id=eq.${projectID}`,
+        },
+      },
+      layers: [
+        createStationsLayer({
+          id: "orientations",
+          sourceID: "stations",
+          showOrientations: true,
+          showAll: false,
+        }),
+      ],
+    };
+
     let style1 = mergeStyles(
       baseStyle,
       mainStyle,
       contourStyle,
       overlayStyle,
       crossSectionsStyle,
+      stationsStyle,
     );
     return style1;
   }, [baseStyle, overlayStyle, demSource, showContours]);
