@@ -1,7 +1,12 @@
 import type { CrossSectionData, PiercingPoint } from "./cross-section-data";
 import React, { useMemo } from "react";
 import { AxisBottom, AxisLeft } from "@visx/axis";
-import { computeTiledBounds, MercatorBBox, TiledMapArea } from "~/maplibre";
+import {
+  computeTiledBounds,
+  MercatorBBox,
+  TiledMapArea,
+  getLineOverallAngle,
+} from "~/maplibre";
 import { scaleLinear } from "@visx/scale";
 import { buildCrossSectionStyle } from "./style";
 import { expandInnerSize } from "@macrostrat/ui-components";
@@ -29,8 +34,6 @@ export function CrossSectionsList({
 export function CrossSection(props: { data: CrossSectionData }) {
   const { data } = props;
 
-  console.log(data);
-
   return h("div.cross-section", [
     h("div.cross-section-map-container", [
       h(
@@ -41,6 +44,7 @@ export function CrossSection(props: { data: CrossSectionData }) {
         [
           h("h2.cross-section-title", data.name),
           h("h3.cross-section-title.end-title", data.name + "'"),
+          //h(Endpoints, { line: data.geometry }),
         ],
       ),
     ]),
@@ -51,6 +55,14 @@ interface MapViewProps {
   data: CrossSectionData;
   children?: React.ReactNode;
   className?: string;
+}
+
+function Endpoints({ line }: { line: GeoJSON.LineString }) {
+  const endpoints = getEndpointCardinalDirections(line);
+  return h("div.endpoints", [
+    h("div.endpoint.start", endpoints[0]),
+    h("div.endpoint.end", endpoints[1]),
+  ]);
 }
 
 export function CrossSectionMapView(props: MapViewProps) {
@@ -162,6 +174,27 @@ function PiercingPoints({
       );
     }),
   );
+}
+
+function getEndpointCardinalDirections(
+  linestring: GeoJSON.LineString,
+): [string, string] {
+  // Compute the cardinal directions of each endpoint of a section line
+
+  const angle = getLineOverallAngle(linestring);
+  if (angle == null) return ["?", "?"];
+
+  const domains = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+  const correctedAngle = (angle + 360) % 360;
+  // Each domain covers 45 degrees, centered on the cardinal direction
+
+  const index = Math.floor((correctedAngle + 22.5) / 45);
+
+  console.log(correctedAngle, index);
+
+  const endDir = domains[index];
+  const startDir = domains[(index + 4) % domains.length];
+  return [startDir, endDir];
 }
 
 function ElevationAxis({ scale, left = 0 }) {

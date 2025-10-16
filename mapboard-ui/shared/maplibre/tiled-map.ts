@@ -263,3 +263,14 @@ export function computeTiledBounds(
     metersPerPixel,
   };
 }
+
+export function getLineOverallAngle(
+  geojson: GeoJSON.LineString,
+): number | null {
+  const coords = geojson.coordinates;
+  if (coords.length < 2) return null;
+  // Convert to web mercator since it preserves angles
+  const p1 = mercator.forward(coords[0]);
+  const p2 = mercator.forward(coords[coords.length - 1]);
+  return (Math.atan2(p2[1] - p1[1], p2[0] - p1[0]) * 180) / Math.PI + 90;
+}
