@@ -62,10 +62,20 @@ async function loadStyleImage(map: mapboxgl.Map, id: string) {
   }
 }
 
-async function loadSymbolImage(map: mapboxgl.Map, set: string, id: string) {
+enum SymbolImageFormat {
+  PNG = "png",
+  SVG = "svg",
+}
+
+async function loadSymbolImage(
+  map: mapboxgl.Map,
+  set: string,
+  id: string,
+  format: SymbolImageFormat = SymbolImageFormat.PNG,
+) {
   const [prefix, name, ...rest] = id.split(":");
-  const lineSymbolsURL = `https://dev.macrostrat.org/assets/web/${set}/png`;
-  await addImageURLToMap(map, id, lineSymbolsURL + `/${name}.png`, {
+  const lineSymbolsURL = `https://dev.macrostrat.org/assets/web/${set}/${format}`;
+  await addImageURLToMap(map, id, lineSymbolsURL + `/${name}.${format}`, {
     sdf: true,
     pixelRatio: 3,
   });
@@ -77,7 +87,7 @@ async function loadPatternImage(map: mapboxgl.Map, patternSpec: string) {
   if (map.hasImage(patternSpec) || image == null) return;
 
   map.addImage(patternSpec, image, {
-    pixelRatio: 2, // Use a higher pixel ratio for better quality
+    pixelRatio: 4, // Use a higher pixel ratio for better quality
   });
 }
 

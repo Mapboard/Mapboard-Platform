@@ -57,7 +57,7 @@ export function useRequestTransformer(
 
   // Check if there's a DEM layer in the base layers
   return useMemo(() => {
-    if (dem == null || !transformMapboxRequests) {
+    if (dem == null && !transformMapboxRequests) {
       return null;
     }
 

@@ -14,9 +14,7 @@ import { useCallback } from "react";
 import maplibre from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { expandInnerSize } from "@macrostrat/ui-components";
-import { prepareStyleForMaplibre } from "~/maplibre/utils";
-import { computeTiledBounds, mercatorBBox } from "~/maplibre";
-import { LegendPanel } from "./legend";
+import { computeTiledBounds, mercatorBBox, TiledMapArea } from "~/maplibre";
 import { SourcesMap } from "./legend/sources-map";
 
 const h = hyper.styled(styles);
@@ -39,14 +37,15 @@ function PageInner({ baseURL, context: ctx }) {
   const bounds = mercatorBBox(bbox(ctx.bounds));
 
   const tileBounds = computeTiledBounds(bounds, {
-    metersPerPixel: 50,
+    metersPerPixel: 10,
     tileSize: 512,
   });
   const transformRequest = useRequestTransformer(true);
   const style = useDisplayStyle(baseURL, {
     mapboxToken,
-    isMapView: false,
     projectID: ctx.project_id,
+    contextSlug: ctx.slug,
+    showCrossSectionLabels: false,
   });
 
   const initializeMap = useCallback(
@@ -54,6 +53,7 @@ function PageInner({ baseURL, context: ctx }) {
       const map = new maplibre.Map({
         ...opts,
         transformRequest,
+        pixelRatio: 4,
       });
       setupStyleImageManager(map);
       return map;
@@ -63,8 +63,6 @@ function PageInner({ baseURL, context: ctx }) {
 
   if (style == null) return null;
 
-  const style1 = prepareStyleForMaplibre(style, mapboxToken);
-
   const sizeOpts = expandInnerSize({
     innerHeight: tileBounds.pixelSize.height,
     innerWidth: tileBounds.pixelSize.width,
@@ -73,9 +71,9 @@ function PageInner({ baseURL, context: ctx }) {
   });
 
   return h("div.main", [
-    //h(TiledMapArea, { tileBounds, style: style1, initializeMap, ...sizeOpts }),
+    h(TiledMapArea, { tileBounds, style, initializeMap, ...sizeOpts }),
 
-    h(LegendPanel),
+    //h(LegendPanel),
     h("div.map-info", [
       h(SourcesMap, {
         baseURL,

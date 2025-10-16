@@ -96,10 +96,15 @@ DROP TRIGGER IF EXISTS check_bounds_overlap ON mapboard.context;
 
 CREATE TABLE IF NOT EXISTS mapboard.base_layer (
   id          serial PRIMARY KEY,
-  context_id  integer REFERENCES mapboard.context (id) ON DELETE CASCADE,
   name        text NOT NULL,
   description text,
   type        text NOT NULL, -- e.g. 'dem', 'imagery'
   url         text NOT NULL, -- URL to tile service or COG
   created_at  timestamp DEFAULT current_timestamp
+);
+
+CREATE TABLE IF NOT EXISTS mapboard.context_base_layer (
+  context_id    integer REFERENCES mapboard.context (id) ON DELETE CASCADE,
+  base_layer_id integer REFERENCES mapboard.base_layer (id) ON DELETE CASCADE,
+  PRIMARY KEY (context_id, base_layer_id)
 );

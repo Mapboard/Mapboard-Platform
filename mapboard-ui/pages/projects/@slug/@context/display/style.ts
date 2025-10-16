@@ -7,12 +7,25 @@ import { createStationsLayer } from "../style/station-layers";
 import { useDEMTileURL } from "../transform-request";
 import mlcontour from "maplibre-contour";
 import maplibre from "maplibre-gl";
+import { prepareStyleForMaplibre } from "~/maplibre";
 
-import type { MapStyleOptions } from "../style";
+interface DisplayStyleOptions {
+  mapboxToken: string;
+  showOverlay?: boolean;
+  projectID: number;
+  contextSlug: string;
+  showCrossSectionLabels?: boolean;
+}
 
 export function useDisplayStyle(
   baseURL: string,
-  { mapboxToken, showOverlay = true, projectID }: MapStyleOptions,
+  {
+    mapboxToken,
+    showOverlay = true,
+    showCrossSectionLabels = true,
+    projectID,
+    contextSlug,
+  }: DisplayStyleOptions,
 ) {
   const baseStyleURL = "mapbox://styles/jczaplewski/cmggy9lqq005l01ryhb5o2eo4";
 
@@ -169,38 +182,13 @@ export function useDisplayStyle(
       };
     }
 
-    const crossSectionsStyle = {
-      sources: {
-        crossSections: {
-          type: "geojson",
-          data: `${apiBaseURL}/cross_sections.geojson?project_id=eq.${projectID}&order=name.asc&is_public=eq.true&clip_context_slug=eq.cross-section-aoi`,
-        },
-        crossSectionEndpoints: {
-          type: "geojson",
-          data: `${apiBaseURL}/cross_section_endpoints.geojson?project_id=eq.${projectID}&is_public=eq.true&clip_context_slug=eq.cross-section-aoi`,
-        },
-      },
-      layers: [
-        {
-          id: "cross-section-lines",
-          type: "line",
-          source: "crossSections",
-          paint: {
-            "line-color": "#444",
-            "line-width": 2,
-            "line-opacity": 1,
-          },
-        },
-        {
-          id: "cross-section-endpoints",
-          type: "circle",
-          source: "crossSectionEndpoints",
-          paint: {
-            "circle-color": "#444",
-            "circle-radius": 3,
-            "circle-opacity": 1,
-          },
-        },
+    // cross-section-aoi
+    const clipSlug = contextSlug;
+
+    let crossSectionLabelLayers: maplibre.LayerSpecification[] = [];
+
+    if (showCrossSectionLabels) {
+      crossSectionLabelLayers = [
         {
           id: "cross-section-start-labels",
           type: "symbol",
@@ -239,6 +227,42 @@ export function useDisplayStyle(
           },
           filter: ["==", ["get", "end_type"], "end"],
         },
+      ];
+    }
+
+    const crossSectionsStyle = {
+      sources: {
+        crossSections: {
+          type: "geojson",
+          data: `${apiBaseURL}/cross_sections.geojson?project_id=eq.${projectID}&order=name.asc&is_public=eq.true&clip_context_slug=eq.${clipSlug}`,
+        },
+        crossSectionEndpoints: {
+          type: "geojson",
+          data: `${apiBaseURL}/cross_section_endpoints.geojson?project_id=eq.${projectID}&is_public=eq.true&clip_context_slug=eq.${clipSlug}`,
+        },
+      },
+      layers: [
+        {
+          id: "cross-section-lines",
+          type: "line",
+          source: "crossSections",
+          paint: {
+            "line-color": "#444",
+            "line-width": 2,
+            "line-opacity": 1,
+          },
+        },
+        {
+          id: "cross-section-endpoints",
+          type: "circle",
+          source: "crossSectionEndpoints",
+          paint: {
+            "circle-color": "#444",
+            "circle-radius": 3,
+            "circle-opacity": 1,
+          },
+        },
+        ...crossSectionLabelLayers,
       ],
     };
 
@@ -280,6 +304,6 @@ export function useDisplayStyle(
     // Deleting glyphs property means we try to use local fonts
     //delete style.glyphs;
 
-    return style;
+    return prepareStyleForMaplibre(style, mapboxToken);
   }, [baseStyle, overlayStyle, demSource]);
 }

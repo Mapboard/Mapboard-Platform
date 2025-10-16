@@ -52,7 +52,9 @@ SELECT
       )
     )
     FROM mapboard.base_layer r
-    WHERE context_id = c.id
+    JOIN mapboard.context_base_layer cl
+      ON r.id = cl.base_layer_id
+    WHERE cl.context_id = c.id
   ) layers
 FROM
   mapboard.context c
