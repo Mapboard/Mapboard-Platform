@@ -4,19 +4,19 @@ import type { Data } from "../../+data";
 import { useData } from "vike-react/useData";
 import { MapStateProvider } from "../../state";
 // Import other components
-import { bbox } from "@turf/bbox";
 import styles from "./map.module.scss";
 import { setupStyleImageManager } from "../../style/pattern-manager";
 import { useRequestTransformer } from "../../transform-request";
 import { useDisplayStyle } from "../../display/style";
 
-import { useCallback, useRef } from "react";
+import { useCallback } from "react";
 import maplibre from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { expandInnerSize } from "@macrostrat/ui-components";
-import { computeTiledBounds, mercatorBBox, TiledMapArea } from "~/maplibre";
+import { computeTiledBoundsForMap, TiledMapArea } from "~/maplibre";
 import { SourcesMap } from "./legend/sources-map";
-import { PrintButton } from "~/utils/print-button";
+import { PrintArea } from "~/utils/print-area";
+import { Scalebar } from "~/map-scale";
 
 const h = hyper.styled(styles);
 
@@ -26,27 +26,19 @@ export function Page() {
   // Current domain + port if set is the base
   let domain = document.location.origin;
   const baseURL = `${domain}/api/project/${ctx.project_slug}/context/${ctx.slug}`;
-  const ref = useRef(null);
 
-  return h("div.print-area-container", [
-    h("div.controls", [
-      h(PrintButton, { elementRef: ref, filename: "full-map.pdf" }),
-    ]),
-    h("div.print-area", { ref }, [
-      h(
-        MapStateProvider,
-        { baseURL, baseLayers: ctx.layers, defaultLayer: 22, context: ctx },
-        h(PageInner, { baseURL, context: ctx }),
-      ),
-    ]),
+  return h(PrintArea, { filename: "full-map.pdf" }, [
+    h(
+      MapStateProvider,
+      { baseURL, baseLayers: ctx.layers, defaultLayer: 22, context: ctx },
+      h(PageInner, { baseURL, context: ctx }),
+    ),
   ]);
 }
 
 function PageInner({ baseURL, context: ctx }) {
-  const bounds = mercatorBBox(bbox(ctx.bounds));
-
-  const tileBounds = computeTiledBounds(bounds, {
-    metersPerPixel: 10,
+  const tileBounds = computeTiledBoundsForMap(ctx.bounds, {
+    metersPerPixel: 50,
     tileSize: 512,
   });
   const transformRequest = useRequestTransformer(true);
@@ -54,7 +46,8 @@ function PageInner({ baseURL, context: ctx }) {
     mapboxToken,
     projectID: ctx.project_id,
     contextSlug: ctx.slug,
-    showCrossSectionLabels: false,
+    crossSectionClipContext: "cross-section-aoi",
+    showCrossSectionLabels: true,
   });
 
   const initializeMap = useCallback(
@@ -75,18 +68,35 @@ function PageInner({ baseURL, context: ctx }) {
   const sizeOpts = expandInnerSize({
     innerHeight: tileBounds.pixelSize.height,
     innerWidth: tileBounds.pixelSize.width,
-    padding: 40,
-    paddingLeft: 60,
+    padding: 0,
   });
 
   return h("div.main", [
-    h(TiledMapArea, { tileBounds, style, initializeMap, ...sizeOpts }),
+    h(
+      TiledMapArea,
+      {
+        className: "map-area",
+        tileBounds,
+        style,
+        initializeMap,
+        ...sizeOpts,
+        internalScaleFactor: 0.5,
+      },
+      [
+        h(Scalebar, {
+          className: "map-scalebar",
+          scale: tileBounds.realMetersPerPixel,
+          width: 200,
+          backgroundColor: "white",
+        }),
+      ],
+    ),
 
     //h(LegendPanel),
     h("div.map-info", [
       h(SourcesMap, {
         baseURL,
-        bounds,
+        bounds: tileBounds.bounds,
         initializeMap,
       }),
     ]),

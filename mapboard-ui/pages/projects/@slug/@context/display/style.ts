@@ -172,7 +172,7 @@ export function useDisplayStyle(
           type: "circle",
           source: "crossSectionEndpoints",
           paint: {
-            "circle-color": "#444",
+            "circle-color": "black",
             "circle-radius": 3,
             "circle-opacity": 1,
           },
@@ -183,7 +183,7 @@ export function useDisplayStyle(
           source: "crossSectionEndpoints",
           layout: {
             "text-field": ["get", "name"],
-            "text-font": ["PT Sans Bold"],
+            "text-font": ["Montserrat Bold"],
             "text-size": 16,
             "text-radial-offset": 0.5,
             "text-allow-overlap": false,
@@ -192,7 +192,7 @@ export function useDisplayStyle(
           paint: {
             "text-halo-color": "rgba(255,255,255, 0.5)",
             "text-halo-width": 1,
-            "text-color": "#444",
+            "text-color": "black",
           },
           filter: ["==", ["get", "end_type"], "start"],
         },
@@ -202,7 +202,7 @@ export function useDisplayStyle(
           source: "crossSectionEndpoints",
           layout: {
             "text-field": ["concat", ["get", "name"], "'"],
-            "text-font": ["PT Sans Bold"],
+            "text-font": ["Montserrat Bold"],
             "text-size": 16,
             "text-radial-offset": 0.5,
             "text-allow-overlap": false,
@@ -211,7 +211,7 @@ export function useDisplayStyle(
           paint: {
             "text-halo-color": "rgba(255,255,255, 0.5)",
             "text-halo-width": 1,
-            "text-color": "#444",
+            "text-color": "black",
           },
           filter: ["==", ["get", "end_type"], "end"],
         },

@@ -42,3 +42,15 @@
   --map-context-stack-width: fit-content;
 }
 
+.map-area {
+  --scalebar-background: white;
+  --scalebar-font-family: "Montserrat", sans-serif;
+  outline: 2px solid black;
+  position: relative;
+}
+
+.map-scalebar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+}
