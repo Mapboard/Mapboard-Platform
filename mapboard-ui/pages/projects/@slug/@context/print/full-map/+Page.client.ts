@@ -10,12 +10,13 @@ import { setupStyleImageManager } from "../../style/pattern-manager";
 import { useRequestTransformer } from "../../transform-request";
 import { useDisplayStyle } from "../../display/style";
 
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
 import maplibre from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { expandInnerSize } from "@macrostrat/ui-components";
 import { computeTiledBounds, mercatorBBox, TiledMapArea } from "~/maplibre";
 import { SourcesMap } from "./legend/sources-map";
+import { PrintButton } from "~/utils/print-button";
 
 const h = hyper.styled(styles);
 
@@ -25,12 +26,20 @@ export function Page() {
   // Current domain + port if set is the base
   let domain = document.location.origin;
   const baseURL = `${domain}/api/project/${ctx.project_slug}/context/${ctx.slug}`;
+  const ref = useRef(null);
 
-  return h(
-    MapStateProvider,
-    { baseURL, baseLayers: ctx.layers, defaultLayer: 22, context: ctx },
-    h(PageInner, { baseURL, context: ctx }),
-  );
+  return h("div.print-area-container", [
+    h("div.controls", [
+      h(PrintButton, { elementRef: ref, filename: "full-map.pdf" }),
+    ]),
+    h("div.print-area", { ref }, [
+      h(
+        MapStateProvider,
+        { baseURL, baseLayers: ctx.layers, defaultLayer: 22, context: ctx },
+        h(PageInner, { baseURL, context: ctx }),
+      ),
+    ]),
+  ]);
 }
 
 function PageInner({ baseURL, context: ctx }) {

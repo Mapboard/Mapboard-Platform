@@ -1,7 +1,7 @@
 import hyper from "@macrostrat/hyper";
 import { scaleLinear } from "@visx/scale";
 import styles from "./index.module.sass";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { createElement, useCallback, useMemo, useRef, useState } from "react";
 
 console.log(styles);
 
@@ -95,12 +95,10 @@ export function Scalebar({
   const totalHeight = height + paddingTop + paddingBottom;
 
   return h(
-    "svg",
+    SVG,
     {
-      width: width + 40,
-      height: totalHeight,
-      style: { overflow: "visible", ...styleVars },
-      className: `scalebar-root ${className}`,
+      style: { ...styleVars, width: lastLabelXVal + 40, height: totalHeight },
+      className: `scalebar-root ${className ?? ""}`.trim(),
     },
     [
       h("rect.scalebar-underlay", {
@@ -153,4 +151,12 @@ export function Scalebar({
       ]),
     ],
   );
+}
+
+function SVG(props) {
+  return createElement("svg", {
+    xmlns: "http://www.w3.org/2000/svg",
+    xmlnsXlink: "http://www.w3.org/1999/xlink",
+    ...props,
+  });
 }

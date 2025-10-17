@@ -15,6 +15,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { expandInnerSize } from "@macrostrat/ui-components";
 import { computeTiledBoundsForMap, TiledMapArea } from "~/maplibre";
 import { Scalebar } from "~/map-scale";
+import { PrintArea } from "~/utils/print-area";
 
 const h = hyper.styled(styles);
 
@@ -25,11 +26,13 @@ export function Page() {
   let domain = document.location.origin;
   const baseURL = `${domain}/api/project/${ctx.project_slug}/context/${ctx.slug}`;
 
-  return h(
-    MapStateProvider,
-    { baseURL, baseLayers: ctx.layers, defaultLayer: 22, context: ctx },
-    h(PageInner, { baseURL, context: ctx }),
-  );
+  return h(PrintArea, { filename: "overview-map.pdf" }, [
+    h(
+      MapStateProvider,
+      { baseURL, baseLayers: ctx.layers, defaultLayer: 22, context: ctx },
+      h(PageInner, { baseURL, context: ctx }),
+    ),
+  ]);
 }
 
 const bounds = [16, -24.42, 16.28, -24.18];
@@ -56,7 +59,7 @@ function PageInner({ baseURL, context: ctx }) {
         transformRequest,
         pixelRatio: 4,
       });
-      setupStyleImageManager(map, 8);
+      setupStyleImageManager(map, 4);
       return map;
     },
     [transformRequest],
@@ -79,7 +82,7 @@ function PageInner({ baseURL, context: ctx }) {
         initializeMap,
         className: "map-area",
         ...sizeOpts,
-        internalScaleFactor: 1,
+        internalScaleFactor: 2,
       },
       [
         h(Scalebar, {

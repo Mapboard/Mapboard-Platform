@@ -16,6 +16,7 @@ import { expandInnerSize } from "@macrostrat/ui-components";
 import { computeTiledBoundsForMap, TiledMapArea } from "~/maplibre";
 import { CrossSectionsList } from "../cross-sections/cross-section";
 import { Scalebar } from "~/map-scale";
+import { PrintArea } from "~/utils/print-area";
 
 const h = hyper.styled(styles);
 
@@ -26,10 +27,16 @@ export function Page() {
   let domain = document.location.origin;
   const baseURL = `${domain}/api/project/${ctx.project_slug}/context/${ctx.slug}`;
 
+  const filename = `${ctx.project_slug}-${ctx.slug}-map.pdf`;
+
   return h(
-    MapStateProvider,
-    { baseURL, baseLayers: ctx.layers, defaultLayer: 22, context: ctx },
-    h(PageInner, { baseURL, context: ctx }),
+    PrintArea,
+    { filename },
+    h(
+      MapStateProvider,
+      { baseURL, baseLayers: ctx.layers, defaultLayer: 22, context: ctx },
+      h(PageInner, { baseURL, context: ctx }),
+    ),
   );
 }
 
