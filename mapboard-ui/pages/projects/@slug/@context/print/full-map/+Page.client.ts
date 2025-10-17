@@ -4,7 +4,7 @@ import type { Data } from "../../+data";
 import { useData } from "vike-react/useData";
 import { MapStateProvider } from "../../state";
 // Import other components
-import styles from "./map.module.scss";
+import styles from "./map.module.sass";
 import { setupStyleImageManager } from "../../style/pattern-manager";
 import { useRequestTransformer } from "../../transform-request";
 import { useDisplayStyle } from "../../display/style";
@@ -17,6 +17,7 @@ import { computeTiledBoundsForMap, TiledMapArea } from "~/maplibre";
 import { SourcesMap } from "./legend/sources-map";
 import { PrintArea } from "~/utils/print-area";
 import { Scalebar } from "~/map-scale";
+import { LegendPanel } from "./legend";
 
 const h = hyper.styled(styles);
 
@@ -38,7 +39,7 @@ export function Page() {
 
 function PageInner({ baseURL, context: ctx }) {
   const tileBounds = computeTiledBoundsForMap(ctx.bounds, {
-    metersPerPixel: 50,
+    metersPerPixel: 30,
     tileSize: 512,
   });
   const transformRequest = useRequestTransformer(true);
@@ -91,14 +92,15 @@ function PageInner({ baseURL, context: ctx }) {
         }),
       ],
     ),
-
-    //h(LegendPanel),
-    h("div.map-info", [
-      h(SourcesMap, {
-        baseURL,
-        bounds: tileBounds.bounds,
-        initializeMap,
-      }),
+    h("div.right-column", [
+      h(LegendPanel),
+      h("div.map-info", [
+        h(SourcesMap, {
+          baseURL,
+          bounds: tileBounds.bounds,
+          initializeMap,
+        }),
+      ]),
     ]),
   ]);
 }

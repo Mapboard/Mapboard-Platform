@@ -1,0 +1,77 @@
+.mapboard-map
+  height: 100vh
+
+
+.layer-control-panel
+  line-height: 1
+
+  &>:first-child
+    margin-top: 0
+
+
+  &>:last-child
+    margin-bottom: 0 !important
+
+
+
+.layer-control-panel
+  :global(.bp5-form-group)
+    justify-content: space-between
+    margin-bottom: 0.5em
+
+
+
+
+.layer-list .active
+  font-weight: 800
+  background: var(--background-active)
+
+
+.feature-panel
+  position: relative
+  margin: 0 -1em
+
+
+.back-to-project
+  text-overflow: ellipsis
+  text-wrap: nowrap
+  justify-content: start
+
+
+.map-viewer
+  --map-context-stack-width: fit-content
+
+:root
+  --main-font: "Publico Text Serif", serif
+  --heading-font: Montserrat, sans-serif
+
+.main
+  display: flex
+  flex-direction: row
+  gap: 2em
+  width: fit-content
+  margin: 4em
+  font-family: var(--main-font)
+  font-size: 16px
+
+  h1, h2, h3, h4, h5, h6
+    font-family: var(--heading-font)
+    font-weight: 600
+
+.right-column
+  min-width: 25em
+
+.map-area
+  --scalebar-background: white
+  --scalebar-font-family: var(--heading-font)
+  outline: 2px solid black
+  position: relative
+  width: fit-content
+  flex-shrink: 0
+
+
+.map-scalebar
+  position: absolute
+  bottom: 0
+  left: 0
+

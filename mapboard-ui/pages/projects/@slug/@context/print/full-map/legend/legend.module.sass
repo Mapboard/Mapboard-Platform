@@ -6,14 +6,6 @@
   background-repeat: repeat
   background-size: 7rem
 
-.map-legend
-  font-family: "PT Serif", serif
-
-  h1, h2, h3, h4, h5, h6
-    font-family: Montserrat, sans-serif
-    font-weight: 600
-    font-size: 1.5em
-
 .unit-group
   font-size: 1.5em
 .unit-group
@@ -108,3 +100,41 @@ div.unit
   .unit-name.subsidiary
     font-weight: 400
     font-size: 0.9em
+
+.key-value
+  display: flex
+  flex-direction: row
+  align-items: baseline
+  gap: 0.5em
+  .key
+    font-family: var(--heading-font)
+    font-size: 0.9em
+    &:after
+      content: ":"
+    float: left
+
+h1.title
+  margin-top: 0
+
+h2.subtitle
+  font-weight: 500
+  font-size: 1.2em
+  margin-top: 0
+
+h2.authors
+  font-size: 1.2em
+
+.source-list
+  .domains
+    list-style: none
+    padding-left: 0
+  .domain
+    display: flex
+    flex-direction: row
+    align-items: baseline
+    ul
+      padding-left: 1.2em
+    p
+      margin-bottom: 0.2em
+    h5
+      margin-top: 0.5em

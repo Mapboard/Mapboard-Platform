@@ -145,13 +145,12 @@ export function SourcesMap({
       h(
         "ul.domains",
         sourceDomains.map((d) =>
-          h("li", [
-            h("strong", d.name),
+          h("li.domain", [
+            h("h5", d.name),
             h(
               "ul",
               d.desc.map((line) => {
                 const html = marked.parse(line);
-                console.log(html);
                 return h("li", { dangerouslySetInnerHTML: { __html: html } });
               }),
             ),
@@ -167,7 +166,10 @@ const marientalSheet =
 const sourceDomains = [
   {
     name: "1",
-    desc: ["Detailed mapping, 2015-2018 *(this study)*."],
+    desc: [
+      "Detailed mapping, 2015-2018 *(this study)*.",
+      "Interpretation of satellite and uncrewed aerial vehicle (_UAV_) imagery and elevation models *(this study)*.",
+    ],
   },
   {
     name: "2",
@@ -180,7 +182,7 @@ const sourceDomains = [
     name: "3",
     desc: [
       marientalSheet,
-      "Omkyk Member subdivisions from reconnaissance mapping and aerial photo interpretation *(this study)*.",
+      "Omkyk Member subdivisions from reconnaissance mapping and satellite photo interpretation *(this study)*.",
       "Hoogland member associations based on *Dibenedetto and Grotzinger (2005)*.",
     ],
   },

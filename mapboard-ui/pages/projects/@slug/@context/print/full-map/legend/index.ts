@@ -3,6 +3,8 @@ import style from "./legend.module.sass";
 import { postgrest } from "~/utils/api-client";
 import { atom, useAtomValue } from "jotai";
 import classNames from "classnames";
+import { marked } from "marked";
+import { useMemo } from "react";
 
 const h = hyper.styled(style);
 
@@ -10,12 +12,32 @@ export function LegendPanel() {
   return h("div.map-legend", [
     h("div.legend-inner", {}, [
       h("div.title-block", [
-        h("h1", "Geologic map of the southern Naukluft Mountains"),
-        h("div.admonition", [
+        h("h1.title", "Geologic map of the southern Naukluft Mountains"),
+        h("h2.subtitle", [
+          "Preliminary version, accompanying the manuscript ",
           h(
-            "p",
-            "Fault ticks, fold axes, bedding orientations, and unit labels are not rendered",
+            "em",
+            "Tectonostratigraphy of the Zebra Series and the tectonic evolution of the Naukluft Mountains, Namibia",
           ),
+        ]),
+        h("h2.authors", "Daven Quinn, John Grotzinger, and Ted Present"),
+        h("div.admonition", [
+          h(KeyValue, {
+            label: "Compilation date",
+            value: new Date().toLocaleDateString("en-US", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            }),
+          }),
+          h(KeyValue, {
+            label: "Contour interval",
+            value: "**Major**: 100 meters, **Minor**: 10 meters",
+          }),
+          h(KeyValue, {
+            label: "Projection",
+            value: "UTM Zone 33S, WGS84 (_rendered as Web Mercator_)",
+          }),
         ]),
       ]),
       h(MapLegendList),
@@ -23,10 +45,22 @@ export function LegendPanel() {
   ]);
 }
 
+function KeyValue({ label, value }: { label: string; value: string }) {
+  const __html = useMemo(() => {
+    return marked.parse(value);
+  }, [value]);
+
+  return h("div.key-value", [
+    h("span.key", label),
+    h("span.value", { dangerouslySetInnerHTML: { __html } }),
+  ]);
+}
+
 function MapLegendList() {
   const undiv = "Undivided";
 
   return h("div.map-units-list", [
+    h("h3", "Map units"),
     g("Cover", [u("dune"), u("alluvium"), u("colluvium"), u("tufa")]),
     g("Nama Group", [
       u("urusis"),
