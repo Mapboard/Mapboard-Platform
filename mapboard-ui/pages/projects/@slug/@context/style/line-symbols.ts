@@ -12,7 +12,7 @@ export const lineSymbols = [
   "thrust-fault",
 ];
 
-export function createLineSymbolLayers(filter) {
+export function createLineSymbolLayers(filter, scaleFactor = 1.0) {
   let symbolIndex: LineSymbolIndex = {};
   for (const symbol of lineSymbols) {
     symbolIndex[symbol] = `line-symbol:${symbol}`;
@@ -23,13 +23,14 @@ export function createLineSymbolLayers(filter) {
   return [
     builder.createLayer("fold-axes", {
       types: ["anticline-hinge", "syncline-hinge"],
-      symbolSpacing: 200,
+      symbolSpacing: 200 * scaleFactor,
       symbolPlacement: "line",
-      iconScaleFactor: 1.5,
+      iconScaleFactor: 1.5 * scaleFactor,
     }),
     builder.createLayer("faults", {
       types: ["left-lateral-fault", "right-lateral-fault", "normal-fault"],
-      symbolSpacing: 100,
+      symbolSpacing: 100 * scaleFactor,
+      iconScaleFactor: scaleFactor,
     }),
     builder.createLayer("thrust-fault", {
       types: ["thrust-fault", "reverse-fault"],
@@ -38,13 +39,14 @@ export function createLineSymbolLayers(filter) {
         ["exponential", 2],
         ["zoom"],
         0, // stop
-        3, // size
+        3 * scaleFactor, // size
         15,
-        80,
+        80 * scaleFactor,
         24,
-        140,
+        140 * scaleFactor,
       ],
       iconOffset: [0, 0],
+      iconScaleFactor: scaleFactor,
     }),
   ];
 }

@@ -19,9 +19,12 @@ export function useStyleImageManager() {
   }, [isInitialized]);
 }
 
-export function setupStyleImageManager(map: any): () => void {
+export function setupStyleImageManager(
+  map: any,
+  pixelRatio: number,
+): () => void {
   const styleImageMissing = (e) => {
-    loadStyleImage(map, e.id)
+    loadStyleImage(map, e.id, pixelRatio)
       .catch((err) => {
         console.error(`Failed to load pattern image for ${e.id}:`, err);
       })
@@ -36,16 +39,32 @@ export function setupStyleImageManager(map: any): () => void {
   };
 }
 
-async function loadStyleImage(map: mapboxgl.Map, id: string) {
+async function loadStyleImage(
+  map: mapboxgl.Map,
+  id: string,
+  pixelRatio: number = 3,
+) {
   const [prefix, name, ...rest] = id.split(":");
 
   //console.log("Loading style image:", id, prefix, name, rest);
 
   if (prefix == "point") {
-    await loadSymbolImage(map, "geologic-symbols/points/strabospot", id);
+    await loadSymbolImage(
+      map,
+      "geologic-symbols/points/strabospot",
+      id,
+      SymbolImageFormat.PNG,
+      pixelRatio,
+    );
   } else if (prefix == "line-symbol") {
     // Load line symbol image
-    await loadSymbolImage(map, "geologic-symbols/lines/dev", id);
+    await loadSymbolImage(
+      map,
+      "geologic-symbols/lines/dev",
+      id,
+      SymbolImageFormat.PNG,
+      pixelRatio,
+    );
   } else if (prefix == "cross-section") {
     // Load cross-section specific symbols
     if (name in crossSectionSymbols) {
@@ -54,11 +73,11 @@ async function loadStyleImage(map: mapboxgl.Map, id: string) {
         console.warn(`No image data found for cross-section symbol: ${name}`);
         return;
       }
-      await addImageURLToMap(map, id, imgURL, { sdf: false, pixelRatio: 4 });
+      await addImageURLToMap(map, id, imgURL, { sdf: false, pixelRatio });
     }
   } else {
     // Load pattern image
-    await loadPatternImage(map, id);
+    await loadPatternImage(map, id, pixelRatio);
   }
 }
 
@@ -72,22 +91,27 @@ async function loadSymbolImage(
   set: string,
   id: string,
   format: SymbolImageFormat = SymbolImageFormat.PNG,
+  pixelRatio: number = 3,
 ) {
   const [prefix, name, ...rest] = id.split(":");
   const lineSymbolsURL = `https://dev.macrostrat.org/assets/web/${set}/${format}`;
   await addImageURLToMap(map, id, lineSymbolsURL + `/${name}.${format}`, {
     sdf: true,
-    pixelRatio: 3,
+    pixelRatio,
   });
 }
 
-async function loadPatternImage(map: mapboxgl.Map, patternSpec: string) {
+async function loadPatternImage(
+  map: mapboxgl.Map,
+  patternSpec: string,
+  pixelRatio: number = 3,
+) {
   if (map.hasImage(patternSpec)) return;
   const image = await buildPatternImage(patternSpec);
   if (map.hasImage(patternSpec) || image == null) return;
 
   map.addImage(patternSpec, image, {
-    pixelRatio: 2, // Use a higher pixel ratio for better quality
+    pixelRatio, // Use a higher pixel ratio for better quality
   });
 }
 

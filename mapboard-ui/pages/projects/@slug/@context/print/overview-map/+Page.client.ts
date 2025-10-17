@@ -7,14 +7,13 @@ import { MapStateProvider } from "../../state";
 import styles from "./map.module.scss";
 import { setupStyleImageManager } from "../../style/pattern-manager";
 import { useRequestTransformer } from "../../transform-request";
-import { useDisplayStyle } from "../../display/style";
+import { useBasicDisplayStyle } from "../../display/style";
 
 import { useCallback } from "react";
 import maplibre from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { expandInnerSize } from "@macrostrat/ui-components";
 import { computeTiledBoundsForMap, TiledMapArea } from "~/maplibre";
-import { CrossSectionsList } from "../cross-sections/cross-section";
 import { Scalebar } from "~/map-scale";
 
 const h = hyper.styled(styles);
@@ -33,15 +32,17 @@ export function Page() {
   );
 }
 
-function PageInner({ baseURL, context: ctx }) {
-  const metersPerPixel = 8;
+const bounds = [16, -24.42, 16.28, -24.18];
 
-  const tileBounds = computeTiledBoundsForMap(ctx.bounds, {
+function PageInner({ baseURL, context: ctx }) {
+  const metersPerPixel = 40;
+
+  const tileBounds = computeTiledBoundsForMap(bounds, {
     metersPerPixel,
     tileSize: 512,
   });
   const transformRequest = useRequestTransformer(true);
-  const style = useDisplayStyle(baseURL, {
+  const style = useBasicDisplayStyle(baseURL, {
     mapboxToken,
     projectID: ctx.project_id,
     contextSlug: ctx.slug,
@@ -55,7 +56,7 @@ function PageInner({ baseURL, context: ctx }) {
         transformRequest,
         pixelRatio: 4,
       });
-      setupStyleImageManager(map);
+      setupStyleImageManager(map, 8);
       return map;
     },
     [transformRequest],
@@ -72,7 +73,14 @@ function PageInner({ baseURL, context: ctx }) {
   return h("div.main", [
     h(
       TiledMapArea,
-      { tileBounds, style, initializeMap, className: "map-area", ...sizeOpts },
+      {
+        tileBounds,
+        style,
+        initializeMap,
+        className: "map-area",
+        ...sizeOpts,
+        internalScaleFactor: 1,
+      },
       [
         h(Scalebar, {
           className: "map-scalebar",
@@ -82,11 +90,5 @@ function PageInner({ baseURL, context: ctx }) {
         }),
       ],
     ),
-    h.if(ctx.crossSections != null)(CrossSectionsList, {
-      data: ctx.crossSections,
-      elevationRange: [1000, 2100],
-      metersPerPixel: tileBounds.realMetersPerPixel,
-      className: "cross-sections",
-    }),
   ]);
 }

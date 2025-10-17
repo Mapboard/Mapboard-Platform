@@ -5,6 +5,8 @@ import { StrictPadding } from "@macrostrat/ui-components";
 import { ReactNode, useEffect, useRef } from "react";
 import hyper from "@macrostrat/hyper";
 import styles from "./tiled-map.module.sass";
+import { bbox } from "@turf/bbox";
+import { distance } from "@turf/distance";
 
 const h = hyper.styled(styles);
 
@@ -64,6 +66,7 @@ type TiledMapAreaProps = {
   className?: string;
   children?: ReactNode;
   initializeMap?: MapInitFunction;
+  internalScaleFactor?: number;
 } & Partial<StrictPadding>;
 
 export function TiledMapArea({
@@ -76,6 +79,7 @@ export function TiledMapArea({
   className,
   children,
   initializeMap,
+  internalScaleFactor = 1,
 }: TiledMapAreaProps) {
   const ref = useRef<HTMLDivElement>();
 
@@ -90,10 +94,10 @@ export function TiledMapArea({
     if (renderCounter.current > 1) return;
     // Compute tiled bounds
 
-    renderTiledMap(ref.current, tileBounds, style, initializeMap).then(
-      () => {},
-    );
-  }, [ref.current, tileBounds, style, initializeMap]);
+    renderTiledMap(ref.current, tileBounds, style, initializeMap, {
+      internalScaleFactor,
+    }).then(() => {});
+  }, [ref.current, tileBounds, style, initializeMap, internalScaleFactor]);
 
   const _width = (width ?? pixelSize.width) + "px";
   const _height = (height ?? pixelSize.height) + "px";
@@ -137,8 +141,10 @@ export async function renderTiledMap(
   config: TileBoundsResult,
   style: any,
   initializeMap: MapInitFunction = defaultInitializeMap,
+  options: { internalScaleFactor?: number } = {},
 ) {
   const { tiles, bounds } = config;
+  const { internalScaleFactor = 1 } = options;
 
   const container = document.createElement("div");
   container.className = "map-container";
@@ -169,7 +175,8 @@ export async function renderTiledMap(
   for await (const tile of tiles) {
     const { bounds, pixelSize } = tile;
     container.style.position = "absolute";
-    setSize(container, tile);
+    container.style.visibility = "hidden";
+    setSize(container, tile, internalScaleFactor);
     map.resize();
     map.fitBounds(lngLatBounds(bounds), { duration: 0, padding: 0 });
     await new Promise((resolve) => {
@@ -193,19 +200,47 @@ export async function renderTiledMap(
   container.remove();
 }
 
-function setSize(element: HTMLDivElement, config: MapTile) {
+function setSize(element: HTMLDivElement, config: MapTile, scaleFactor = 1) {
   const { pixelSize } = config;
-  element.style.width = pixelSize.width + "px";
-  element.style.height = pixelSize.height + "px";
+  element.style.width = pixelSize.width * scaleFactor + "px";
+  element.style.height = pixelSize.height * scaleFactor + "px";
   element.style.position = "absolute";
   element.style.top = config.pixelOffset.top + "px";
   element.style.left = config.pixelOffset.left + "px";
 }
 
+export interface MapTileBoundsResult extends TileBoundsResult {
+  realMetersPerPixel: number;
+}
+
+export function computeTiledBoundsForMap(
+  _input: GeoJSON.Geometry | [number, number, number, number],
+  options: TileComputationOptions = {},
+): MapTileBoundsResult {
+  let lngLatBBox: [number, number, number, number];
+  if (!Array.isArray(_input)) {
+    lngLatBBox = bbox(_input) as [number, number, number, number];
+  } else {
+    lngLatBBox = _input;
+  }
+  console.log("Lng lat bounds", lngLatBBox);
+
+  const bounds = mercatorBBox(lngLatBBox);
+  const res = computeTiledBounds(bounds, options);
+  return {
+    ...res,
+    realMetersPerPixel: getWidthOfMapView(lngLatBBox) / res.pixelSize.width,
+  };
+}
+
 export function computeTiledBounds(
-  bounds: MercatorBBox,
+  bounds: [number, number, number, number],
   options: TileComputationOptions = {},
 ): TileBoundsResult {
+  /**
+   *   Bounds are provided in raw mercator coordinates. This allows the
+   *   function to be used for non-map contexts (e.g., cross-sections).
+   */
   const [minX, minY, maxX, maxY] = bounds;
   const ll: [number, number] = [minX, minY];
   const ur: [number, number] = [maxX, maxY];
@@ -277,4 +312,16 @@ export function getLineOverallAngle(
   console.log(width, height);
   const angle = Math.atan2(height, width);
   return (angle * 180) / Math.PI;
+}
+
+export function getWidthOfMapView(bbox) {
+  // Get the real-world width of the bbox in meters
+  // Does not handle low-zoom cases as yet
+  const nw = [bbox[0], bbox[3]];
+  const ne = [bbox[2], bbox[3]];
+  const sw = [bbox[0], bbox[1]];
+  const se = [bbox[2], bbox[1]];
+  const d0 = distance(nw, ne, { units: "meters" });
+  const d1 = distance(sw, se, { units: "meters" });
+  return (d0 + d1) / 2;
 }

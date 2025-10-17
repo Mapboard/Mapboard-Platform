@@ -1,7 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { StyleSpecification } from "mapbox-gl";
 import { getMapboxStyle, mergeStyles } from "@macrostrat/mapbox-utils";
-import { buildDisplayOverlayStyle } from "../style/overlay";
+import {
+  buildBasicOverlayStyle,
+  buildDisplayOverlayStyle,
+  buildSimpleOverlayStyle,
+} from "../style/overlay";
 import { apiBaseURL } from "~/settings";
 import { createStationsLayer } from "../style/station-layers";
 import { useDEMTileURL } from "../transform-request";
@@ -283,6 +287,80 @@ export function useDisplayStyle(
 
     return style;
   }, [finalStyle, mapboxToken, terrainTileURL]);
+}
+
+function useBaseStyle(baseStyleURL: string, mapboxToken: string) {
+  const [baseStyle, setBaseStyle] = useState<StyleSpecification | null>(null);
+  useEffect(() => {
+    if (baseStyleURL == null) return;
+    getMapboxStyle(baseStyleURL, {
+      access_token: mapboxToken,
+    }).then((baseStyle) => {
+      setBaseStyle(baseStyle);
+    });
+  }, [baseStyleURL]);
+
+  return baseStyle;
+}
+
+export function useBasicDisplayStyle(
+  baseURL: string,
+  { mapboxToken, showOverlay = true }: DisplayStyleOptions,
+) {
+  const baseStyle = useBaseStyle(
+    "mapbox://styles/jczaplewski/cmggy9lqq005l01ryhb5o2eo4",
+    mapboxToken,
+  );
+
+  const overlayStyle = useMemo(() => {
+    if (!showOverlay) {
+      return null;
+    }
+    return buildBasicOverlayStyle(baseURL, {
+      selectedLayer: 22, // composite layer
+    });
+  }, [showOverlay]);
+
+  const demURL = useDEMTileURL();
+
+  const finalStyle = useMemo(() => {
+    if (baseStyle == null && overlayStyle == null) {
+      return null;
+    }
+
+    const mainStyle: mapboxgl.StyleSpecification = {
+      version: 8,
+      name: "Mapboard",
+      glyphs: "mapbox://fonts/openmaptiles/{fontstack}/{range}.pbf",
+      layers: [
+        // We need to add this so that the style doesn't randomly reload
+        {
+          id: "sky",
+          type: "sky",
+          paint: {
+            "sky-type": "atmosphere",
+            "sky-atmosphere-sun": [0.0, 0.0],
+            "sky-atmosphere-sun-intensity": 15,
+          },
+        },
+      ],
+      sources: {},
+    };
+
+    if (baseStyle == null) return null;
+
+    return mergeStyles(baseStyle, mainStyle, overlayStyle);
+  }, [baseStyle, overlayStyle]);
+
+  return useMemo(() => {
+    if (finalStyle == null) return null;
+    const style = prepareStyleForMaplibre(
+      optimizeTerrain(finalStyle, demURL),
+      mapboxToken,
+    );
+
+    return style;
+  }, [finalStyle, mapboxToken, demURL]);
 }
 
 function optimizeTerrain(

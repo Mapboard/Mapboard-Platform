@@ -411,6 +411,129 @@ export function buildDisplayOverlayStyle(
   };
 }
 
+export function buildBasicOverlayStyle(
+  baseURL: string,
+  options: MapOverlayOptions,
+): mapboxgl.StyleSpecification {
+  const { selectedLayer } = options ?? {};
+
+  function inTypes(typeList: string[]) {
+    return ["in", ["get", "type"], ["literal", typeList]];
+  }
+
+  let lineColor = [
+    "case",
+    inTypes(["thrust-fault", "normal-fault", "fault"]),
+    "#000000",
+    inTypes(["anticline-hinge", "syncline-hinge"]),
+    structureColor,
+    ["get", "color"],
+  ];
+
+  let lineWidth: any = [
+    "case",
+    // special case for NNC bounding surface
+    ["==", ["get", "source_layer"], 8],
+    1.5,
+    // faults and structures
+    inTypes(["anticline-hinge", "syncline-hinge"]),
+    0.8,
+    inTypes(["thrust-fault", "normal-fault", "fault"]),
+    0.5,
+    0,
+  ];
+
+  let lineFilter = [
+    "all",
+    ["!", ["coalesce", ["get", "covered"], false]],
+    ["!", ["in", ["get", "type"], ["literal", ["mapboard:arbitrary"]]]],
+  ];
+
+  const lineSymbolFilter = [...lineFilter, ["!=", ["get", "source_layer"], 8]];
+  // exclude nappe bounding surface
+
+  let layers = [
+    {
+      id: "fills-without-symbols",
+      type: "fill",
+      source: "mapboard",
+      "source-layer": "fills",
+      paint: {
+        "fill-color": ["get", "color"],
+        "fill-opacity": 0.5,
+        "fill-outline-color": "transparent",
+      },
+      filter: ["has", "unit"],
+    },
+    {
+      id: "fills-with-symbols",
+      type: "fill",
+      source: "mapboard",
+      "source-layer": "fills",
+      paint: {
+        "fill-pattern": [
+          "image",
+          [
+            "case",
+            ["has", "symbol"],
+            [
+              "concat",
+              ["get", "symbol"],
+              ":",
+              ["get", "symbol_color"],
+              ":transparent",
+            ],
+            ["concat", "color:", ["get", "color"]],
+          ],
+        ],
+        "fill-opacity": 0.8,
+        "fill-outline-color": "transparent",
+      },
+      filter: ["all", ["has", "symbol"], ["has", "unit"]],
+    },
+    // A single layer for all lines
+    {
+      id: "lines",
+      type: "line",
+      source: "mapboard",
+      "source-layer": "lines",
+      paint: {
+        "line-color": lineColor,
+        "line-width": lineWidth,
+        "line-opacity": 1,
+      },
+      layout: {
+        "line-cap": "round",
+        "line-join": "round",
+        "line-sort-key": [
+          "case",
+          inTypes(["anticline-hinge", "syncline-hinge"]),
+          2,
+          inTypes(["thrust-fault", "normal-fault", "fault"]),
+          1,
+          0,
+        ],
+      },
+      filter: lineFilter,
+    },
+    ...createLineSymbolLayers(lineSymbolFilter, 1.5),
+  ];
+
+  return {
+    version: 8,
+    sources: {
+      mapboard: {
+        type: "vector",
+        tiles: [
+          baseURL + `/tile/fills,lines/{z}/{x}/{y}?map_layer=${selectedLayer}`,
+        ],
+        volatile: false,
+      },
+    },
+    layers,
+  };
+}
+
 export function buildFillLayers({ opacity, filter, source = "mapboard" }): any {
   return [
     {
