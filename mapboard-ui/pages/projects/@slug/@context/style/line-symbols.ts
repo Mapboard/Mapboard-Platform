@@ -24,7 +24,7 @@ export function createLineSymbolLayers(filter) {
     builder.createLayer("fold-axes", {
       types: ["anticline-hinge", "syncline-hinge"],
       symbolSpacing: 200,
-      symbolPlacement: "line-center",
+      symbolPlacement: "line",
       iconScaleFactor: 1.5,
     }),
     builder.createLayer("faults", {

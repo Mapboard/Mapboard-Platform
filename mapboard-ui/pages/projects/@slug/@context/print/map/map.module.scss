@@ -42,3 +42,21 @@
   --map-context-stack-width: fit-content;
 }
 
+.main, .cross-sections {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.map-area {
+  --scalebar-background: white;
+  --scalebar-font-family: "Montserrat", sans-serif;
+  outline: 2px solid black;
+}
+
+.map-scalebar {
+  position: absolute;
+  bottom: var(--padding-bottom);
+  left: var(--padding-left);
+}

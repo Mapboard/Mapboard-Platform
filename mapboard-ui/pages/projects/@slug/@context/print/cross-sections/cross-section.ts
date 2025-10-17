@@ -20,13 +20,15 @@ export function CrossSectionsList({
   ref,
   elevationRange,
   metersPerPixel,
+  className,
 }: {
   data: CrossSectionData[];
-  ref: React.Ref<HTMLElement>;
+  ref?: React.Ref<HTMLElement>;
+  className?: string;
 } & CrossSectionOpts) {
   return h(
     "div.cross-sections",
-    { ref },
+    { ref, className },
     data.map((ctx) => {
       return h(CrossSection, {
         key: ctx.id,
@@ -198,7 +200,7 @@ function PiercingPoints({
             left: scale(pt.distance),
           },
         },
-        [h("div.name", pt.other_name)],
+        [h("div.name", pt.other_name), h("div.tick")],
       );
     }),
   );
@@ -217,8 +219,6 @@ function getEndpointCardinalDirections(
   // Each domain covers 45 degrees, centered on the cardinal direction
 
   const index = Math.floor((correctedAngle + 22.5) / 45);
-
-  console.log(correctedAngle, index);
 
   const endDir = domains[index];
   const startDir = domains[(index + 4) % domains.length];

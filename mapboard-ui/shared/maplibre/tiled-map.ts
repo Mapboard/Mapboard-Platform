@@ -272,5 +272,9 @@ export function getLineOverallAngle(
   // Convert to web mercator since it preserves angles
   const p1 = mercator.forward(coords[0]);
   const p2 = mercator.forward(coords[coords.length - 1]);
-  return (Math.atan2(p2[1] - p1[1], p2[0] - p1[0]) * 180) / Math.PI + 90;
+  const height = p2[1] - p1[1];
+  const width = p2[0] - p1[0];
+  console.log(width, height);
+  const angle = Math.atan2(height, width);
+  return (angle * 180) / Math.PI;
 }

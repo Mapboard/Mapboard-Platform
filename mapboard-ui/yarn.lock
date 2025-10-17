@@ -8914,6 +8914,7 @@ __metadata:
     "@turf/along": "npm:^7.2.0"
     "@turf/bbox": "npm:^7.2.0"
     "@turf/buffer": "npm:^7.2.0"
+    "@turf/distance": "npm:^7.2.0"
     "@turf/length": "npm:^7.2.0"
     "@turf/nearest-point-on-line": "npm:^7.2.0"
     "@types/express": "npm:^4.17.21"

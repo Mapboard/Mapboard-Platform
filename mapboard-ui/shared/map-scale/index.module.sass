@@ -1,0 +1,27 @@
+.scalebar-root
+  --scalebar-color-INT: var(--scalebar-color, #888)
+  --scalebar-background-INT: var(--scalebar-background, #fff)
+
+  text
+    font-family: var(--scalebar-font-family, Gotham, sans-serif)
+    font-size: var(--scalebar-font-size, 12px)
+    fill: var(--scalebar-color-INT)
+
+  .label
+    text-anchor: middle
+  .unit-label
+    text-anchor: start
+
+
+.scalebar-underlay
+  fill: var(--scalebar-background-INT)
+
+.scale-background
+  fill: var(--scalebar-background-INT)
+  stroke: var(--scalebar-color-INT)
+
+.scale-box
+  fill: var(--scalebar-background-INT)
+  &.even
+    fill: var(--scalebar-color-INT)
+
