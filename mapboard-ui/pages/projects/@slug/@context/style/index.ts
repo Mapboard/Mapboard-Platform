@@ -7,7 +7,7 @@ import { buildSelectionLayers } from "../selection";
 import { Atom, atom, useAtom, useAtomValue } from "jotai";
 import { atomWithStorage } from "jotai/utils";
 import { acceptedRevisionAtom, mapReloadCounterAtom } from "../change-watcher";
-import { apiBaseURL } from "~/settings";
+import { apiBaseURL, mapboxToken } from "~/settings";
 import { useMapRef } from "@macrostrat/mapbox-react";
 import { StyleSpecification } from "mapbox-gl";
 import { createStationsLayer } from "./station-layers";
@@ -92,6 +92,32 @@ export function useMapRevision(revisionAtom: Atom<number>): [number, number] {
   }, [revision, acceptedRevision]);
 
   return [revision, acceptedRevision];
+}
+
+export function useInsetMapStyle() {
+  /** Inset map style for basic context map use */
+  const baseStyleURL = "mapbox://styles/jczaplewski/ckxcu9zmu4aln14mfg4monlv3";
+
+  const [baseStyle, setBaseStyle] = useState<StyleSpecification | null>(null);
+  useEffect(() => {
+    if (baseStyleURL == null) return;
+    getMapboxStyle(baseStyleURL, {
+      access_token: mapboxToken,
+    }).then((baseStyle) => {
+      setBaseStyle(baseStyle);
+    });
+  }, [baseStyleURL]);
+
+  return useMemo(() => {
+    if (baseStyle == null) {
+      return null;
+    }
+    // Modernize the terrain source
+    let style = baseStyle;
+    style.sources["mapbox://mapbox.terrain-rgb"].url =
+      "mapbox://mapbox.mapbox-terrain-dem-v1";
+    return baseStyle;
+  }, [baseStyle]);
 }
 
 export function useMapStyle(

@@ -1,5 +1,5 @@
 import type { PageContextServer } from "vike/types";
-import { buildCrossSectionData } from "./cross-section-data";
+import { fetchContextData } from "../map/+data";
 
 export const data = async (pageContext: PageContextServer) => {
   const context = pageContext.routeParams.context;
@@ -8,7 +8,7 @@ export const data = async (pageContext: PageContextServer) => {
     contextSlug = "cross-section-aoi";
   }
 
-  return await buildCrossSectionData({
+  return await fetchContextData({
     projectSlug: pageContext.routeParams.slug,
     contextSlug,
   });

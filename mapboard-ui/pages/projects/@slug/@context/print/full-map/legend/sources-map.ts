@@ -181,9 +181,9 @@ const sourceDomains = [
   {
     name: "3",
     desc: [
-      marientalSheet,
       "Omkyk Member subdivisions from reconnaissance mapping and satellite photo interpretation *(this study)*.",
       "Hoogland member associations based on *Dibenedetto and Grotzinger (2005)*.",
+      marientalSheet,
     ],
   },
   {

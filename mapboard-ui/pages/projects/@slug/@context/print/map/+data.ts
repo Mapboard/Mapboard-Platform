@@ -8,7 +8,7 @@ import {
   CrossSectionData,
 } from "../cross-sections/cross-section-data";
 
-export type Data = Context & {
+export type ContextDataExt = Context & {
   crossSections?: CrossSectionData[];
 };
 
@@ -18,24 +18,12 @@ export const data = async (pageContext: PageContextServer) => {
 
   const projectSlug = pageContext.routeParams.slug;
   const contextSlug = pageContext.routeParams.context;
-
-  const res = await postgrest
-    .from("context")
-    .select()
-    .eq("project_slug", projectSlug)
-    .eq("slug", contextSlug);
-
-  let ctx: Data = res.data?.[0];
+  const ctx = await fetchContextData({ projectSlug, contextSlug });
 
   if (!ctx) {
     // Redirect to 404 if context not found
     throw render(404, "Context not found");
   }
-
-  ctx.crossSections = await buildCrossSectionData({
-    projectSlug,
-    contextSlug,
-  });
 
   config({
     // Set <title>
@@ -44,3 +32,28 @@ export const data = async (pageContext: PageContextServer) => {
 
   return ctx;
 };
+
+export async function fetchContextData({
+  contextSlug,
+  projectSlug,
+}: {
+  contextSlug: string;
+  projectSlug: string;
+}): Promise<ContextDataExt | null> {
+  const res = await postgrest
+    .from("context")
+    .select()
+    .eq("project_slug", projectSlug)
+    .eq("slug", contextSlug);
+
+  let ctx: Context | null = res.data?.[0];
+  if (ctx == null) {
+    return null;
+  }
+
+  ctx.crossSections = await buildCrossSectionData({
+    projectSlug,
+    contextSlug,
+  });
+  return ctx;
+}

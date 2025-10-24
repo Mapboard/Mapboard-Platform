@@ -132,7 +132,7 @@ export function useDisplayStyle(
             source: "contour",
             "source-layer": "contours",
             paint: {
-              "line-color": "#777",
+              "line-color": "#aaaaaa",
               // level = highest index in thresholds array the elevation is a multiple of
               "line-width": ["match", ["get", "level"], 1, 1, 0.5],
             },
@@ -154,7 +154,7 @@ export function useDisplayStyle(
           //   paint: {
           //     "text-halo-color": "white",
           //     "text-halo-width": 1,
-          //     "text-color": "#444",
+          //     "text-color": "#aaaaaa",
           //   },
           // },
         ],
@@ -163,86 +163,12 @@ export function useDisplayStyle(
 
     const clipSlug = crossSectionClipContext ?? contextSlug;
 
-    let crossSectionLabelLayers: maplibre.LayerSpecification[] = [];
-
-    if (showCrossSectionLabels) {
-      crossSectionLabelLayers = [
-        {
-          id: "cross-section-endpoints",
-          type: "circle",
-          source: "crossSectionEndpoints",
-          paint: {
-            "circle-color": "black",
-            "circle-radius": 3,
-            "circle-opacity": 1,
-          },
-        },
-        {
-          id: "cross-section-start-labels",
-          type: "symbol",
-          source: "crossSectionEndpoints",
-          layout: {
-            "text-field": ["get", "name"],
-            "text-font": ["Montserrat Bold"],
-            "text-size": 16,
-            "text-radial-offset": 0.5,
-            "text-allow-overlap": false,
-            "text-variable-anchor": ["right", "top", "bottom", "left"],
-          },
-          paint: {
-            "text-halo-color": "rgba(255,255,255, 0.5)",
-            "text-halo-width": 1,
-            "text-color": "black",
-          },
-          filter: ["==", ["get", "end_type"], "start"],
-        },
-        {
-          id: "cross-section-end-labels",
-          type: "symbol",
-          source: "crossSectionEndpoints",
-          layout: {
-            "text-field": ["concat", ["get", "name"], "'"],
-            "text-font": ["Montserrat Bold"],
-            "text-size": 16,
-            "text-radial-offset": 0.5,
-            "text-allow-overlap": false,
-            "text-variable-anchor": ["left", "bottom", "top", "right"],
-          },
-          paint: {
-            "text-halo-color": "rgba(255,255,255, 0.5)",
-            "text-halo-width": 1,
-            "text-color": "black",
-          },
-          filter: ["==", ["get", "end_type"], "end"],
-        },
-      ];
-    }
-
-    const crossSectionsStyle = {
-      sources: {
-        crossSections: {
-          type: "geojson",
-          data: `${apiBaseURL}/cross_sections.geojson?project_id=eq.${projectID}&order=name.asc&is_public=eq.true&clip_context_slug=eq.${clipSlug}`,
-        },
-        crossSectionEndpoints: {
-          type: "geojson",
-          data: `${apiBaseURL}/cross_section_endpoints.geojson?project_id=eq.${projectID}&is_public=eq.true&clip_context_slug=eq.${clipSlug}`,
-        },
-      },
-      layers: [
-        {
-          id: "cross-section-lines",
-          type: "line",
-          source: "crossSections",
-          paint: {
-            "line-color": "#000",
-            "line-width": 2.5,
-            "line-opacity": 1,
-          },
-        },
-        ...crossSectionLabelLayers,
-      ],
-    };
+    const crossSectionsStyle = buildCrossSectionsStyle({
+      showLabels: showCrossSectionLabels,
+      baseURL: apiBaseURL,
+      projectID,
+      clipSlug,
+    });
 
     if (baseStyle == null) return null;
 
@@ -287,6 +213,94 @@ export function useDisplayStyle(
 
     return style;
   }, [finalStyle, mapboxToken, terrainTileURL]);
+}
+
+export function buildCrossSectionsStyle({
+  showLabels = true,
+  baseURL,
+  projectID,
+  clipSlug,
+}) {
+  let crossSectionLabelLayers: maplibre.LayerSpecification[] = [];
+
+  if (showLabels) {
+    crossSectionLabelLayers = [
+      {
+        id: "cross-section-endpoints",
+        type: "circle",
+        source: "crossSectionEndpoints",
+        paint: {
+          "circle-color": "black",
+          "circle-radius": 3,
+          "circle-opacity": 1,
+        },
+      },
+      {
+        id: "cross-section-start-labels",
+        type: "symbol",
+        source: "crossSectionEndpoints",
+        layout: {
+          "text-field": ["get", "name"],
+          "text-font": ["Montserrat Bold"],
+          "text-size": 16,
+          "text-radial-offset": 0.5,
+          "text-allow-overlap": false,
+          "text-variable-anchor": ["right", "top", "bottom", "left"],
+        },
+        paint: {
+          "text-halo-color": "rgba(255,255,255, 0.5)",
+          "text-halo-width": 1,
+          "text-color": "black",
+        },
+        filter: ["==", ["get", "end_type"], "start"],
+      },
+      {
+        id: "cross-section-end-labels",
+        type: "symbol",
+        source: "crossSectionEndpoints",
+        layout: {
+          "text-field": ["concat", ["get", "name"], "'"],
+          "text-font": ["Montserrat Bold"],
+          "text-size": 16,
+          "text-radial-offset": 0.5,
+          "text-allow-overlap": false,
+          "text-variable-anchor": ["left", "bottom", "top", "right"],
+        },
+        paint: {
+          "text-halo-color": "rgba(255,255,255, 0.5)",
+          "text-halo-width": 1,
+          "text-color": "black",
+        },
+        filter: ["==", ["get", "end_type"], "end"],
+      },
+    ];
+  }
+
+  return {
+    sources: {
+      crossSections: {
+        type: "geojson",
+        data: `${baseURL}/cross_sections.geojson?project_id=eq.${projectID}&order=name.asc&is_public=eq.true&clip_context_slug=eq.${clipSlug}`,
+      },
+      crossSectionEndpoints: {
+        type: "geojson",
+        data: `${baseURL}/cross_section_endpoints.geojson?project_id=eq.${projectID}&is_public=eq.true&clip_context_slug=eq.${clipSlug}`,
+      },
+    },
+    layers: [
+      {
+        id: "cross-section-lines",
+        type: "line",
+        source: "crossSections",
+        paint: {
+          "line-color": "#000",
+          "line-width": 2.5,
+          "line-opacity": 1,
+        },
+      },
+      ...crossSectionLabelLayers,
+    ],
+  };
 }
 
 function useBaseStyle(baseStyleURL: string, mapboxToken: string) {

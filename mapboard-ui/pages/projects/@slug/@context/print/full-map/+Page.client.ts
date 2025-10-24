@@ -18,6 +18,7 @@ import { SourcesMap } from "./legend/sources-map";
 import { PrintArea } from "~/utils/print-area";
 import { Scalebar } from "~/map-scale";
 import { LegendPanel } from "./legend";
+import { useInitializeMap } from "./utils";
 
 const h = hyper.styled(styles);
 
@@ -39,10 +40,9 @@ export function Page() {
 
 function PageInner({ baseURL, context: ctx }) {
   const tileBounds = computeTiledBoundsForMap(ctx.bounds, {
-    metersPerPixel: 30,
+    metersPerPixel: 15,
     tileSize: 512,
   });
-  const transformRequest = useRequestTransformer(true);
   const style = useDisplayStyle(baseURL, {
     mapboxToken,
     projectID: ctx.project_id,
@@ -51,18 +51,7 @@ function PageInner({ baseURL, context: ctx }) {
     showCrossSectionLabels: true,
   });
 
-  const initializeMap = useCallback(
-    (opts: maplibre.MapOptions) => {
-      const map = new maplibre.Map({
-        ...opts,
-        transformRequest,
-        pixelRatio: 4,
-      });
-      setupStyleImageManager(map);
-      return map;
-    },
-    [transformRequest],
-  );
+  const initializeMap = useInitializeMap();
 
   if (style == null) return null;
 
@@ -81,13 +70,12 @@ function PageInner({ baseURL, context: ctx }) {
         style,
         initializeMap,
         ...sizeOpts,
-        internalScaleFactor: 0.5,
       },
       [
         h(Scalebar, {
           className: "map-scalebar",
           scale: tileBounds.realMetersPerPixel,
-          width: 200,
+          width: 1000,
           backgroundColor: "white",
         }),
       ],

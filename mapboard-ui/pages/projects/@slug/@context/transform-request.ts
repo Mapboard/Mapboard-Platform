@@ -1,5 +1,5 @@
 import { useMapState } from "./state";
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import {
   isMapboxURL,
   transformMapboxUrl,
@@ -7,6 +7,7 @@ import {
 import { mapboxToken } from "~/settings";
 import { atom, useAtomValue } from "jotai";
 import { query } from "express";
+import { MapState } from "./types";
 
 type SkuTokenObject = {
   token: string;
@@ -47,6 +48,24 @@ const useDEMTileLayer = () => {
 const demBaseURL = "https://mapboard.local/dem-tiles/tiles";
 const fallbackLayer =
   "https://api.mapbox.com/raster/v1/mapbox.mapbox-terrain-dem-v1";
+
+export function useMapboxRequestTransformer() {
+  const { token } = useAtomValue(skuTokenAtom);
+  return useCallback((url, resourceType) => {
+    let transformedURL = url;
+    if (isMapboxURL(url)) {
+      const res = transformMapboxUrl(url, resourceType, mapboxToken);
+      transformedURL = res.url;
+
+      // Add a sku token
+      const [base, queryString] = transformedURL.split("?");
+      const query = new URLSearchParams(queryString);
+      query.set("sku", token);
+      transformedURL = base + "?" + query.toString();
+    }
+    return { url: transformedURL };
+  }, []);
+}
 
 export function useRequestTransformer(
   transformMapboxRequests: boolean = false,

@@ -19,8 +19,6 @@ export function PrintButton({
     const el = elementRef.current;
     if (el == null) return;
 
-    console.log("Printing element:", el);
-
     const size = el.getBoundingClientRect();
     const orientation = size.width > size.height ? "landscape" : "portrait";
 
