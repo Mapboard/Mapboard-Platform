@@ -50,7 +50,8 @@
 
 .map-area {
   --scalebar-background: white;
-  --scalebar-font-family: "Montserrat", sans-serif;
+  --scalebar-font-family: var(-label-font);
+  --scalebar-font-size: 10px;
   outline: 2px solid black;
   position: relative;
 }

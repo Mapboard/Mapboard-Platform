@@ -94,55 +94,56 @@ export function Scalebar({
 
   const totalHeight = height + paddingTop + paddingBottom;
 
+  const widthText = `${barWidth}px`;
+
   return h("div.scalebar", [
     h(
       "div.scalebar-container",
       {
-        style: { ...styleVars },
+        style: { ...styleVars, "--scalebar-width": widthText },
         className,
       },
       [
-        h("div.scale", [
-          h(
-            "div.bar",
-            {
-              style: {
-                width: `${barWidth}px`,
-              },
+        h(
+          "div.scale-bar",
+          {
+            style: {
+              width: `${barWidth}px`,
             },
-            [
-              h(
-                "div.scale-overlay",
-                tickPairs.map(([a, b], i) =>
-                  h("div.scale-box", {
-                    key: i,
-                    style: {
-                      top: 0,
-                      left: `${x(a)}px`,
-                      width: `${x(b) - x(a)}px`,
-                    },
-                    className: i % 2 ? "even" : "",
-                  }),
-                ),
-              ),
-            ],
-          ),
-          h("div.tick-labels", { ref }, [
-            h("span.tick-hidden", "0"), // hidden tick to help with spacing
-            ticks.map((t, i) =>
-              h(
-                "div.label",
-                {
+          },
+          [
+            h(
+              "div.scale-overlay",
+              tickPairs.map(([a, b], i) =>
+                h("div.scale-box", {
                   key: i,
                   style: {
-                    left: x(t),
+                    top: 0,
+                    left: `${x(a)}px`,
+                    width: `${x(b) - x(a)}px`,
                   },
-                },
-                t / unitScalar,
+                  className: i % 2 ? "even" : "",
+                }),
               ),
             ),
-          ]),
-        ]),
+          ],
+        ),
+        h(
+          "div.tick-labels",
+          { ref },
+          ticks.map((t, i) =>
+            h(
+              "div.label",
+              {
+                key: i,
+                style: {
+                  left: x(t),
+                },
+              },
+              t / unitScalar,
+            ),
+          ),
+        ),
         h("div.unit-label", label),
       ],
     ),

@@ -42,8 +42,9 @@
   --map-context-stack-width: fit-content
 
 :root
-  --main-font: "Publico Text Serif", serif
+  --main-font: "Chaparral Pro", serif
   --heading-font: Montserrat, sans-serif
+  --label-font: Arial, sans-serif
 
 .main
   display: flex
@@ -63,7 +64,8 @@
 
 .map-area
   --scalebar-background: white
-  --scalebar-font-family: var(--heading-font)
+  --scalebar-font-family: var(-label-font)
+  --scalebar-font-size: 10px
   outline: 2px solid black
   position: relative
   width: fit-content
