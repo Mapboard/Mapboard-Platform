@@ -5,12 +5,8 @@ import { useData } from "vike-react/useData";
 import { MapStateProvider } from "../../state";
 // Import other components
 import styles from "./map.module.sass";
-import { setupStyleImageManager } from "../../style/pattern-manager";
-import { useRequestTransformer } from "../../transform-request";
 import { useDisplayStyle } from "../../display/style";
 
-import { useCallback } from "react";
-import maplibre from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { expandInnerSize } from "@macrostrat/ui-components";
 import { computeTiledBoundsForMap, TiledMapArea } from "~/maplibre";
@@ -44,12 +40,14 @@ function PageInner({ baseURL, context: ctx }) {
     metersPerPixel: 15,
     tileSize: 512 / internalScaleFactor,
   });
+
   const style = useDisplayStyle(baseURL, {
     mapboxToken,
     projectID: ctx.project_id,
     contextSlug: ctx.slug,
     crossSectionClipContext: "cross-section-aoi",
     showCrossSectionLabels: true,
+    showContours: true,
   });
 
   const initializeMap = useInitializeMap();

@@ -118,12 +118,12 @@ export function useDisplayStyle(
             ],
             maxzoom: 14,
           },
-          // terrain: {
-          //   type: "raster-dem",
-          //   url: terrainTileURL,
-          //   tileSize: 256,
-          //   maxzoom: 14,
-          // },
+          terrain: {
+            type: "raster-dem",
+            url: terrainTileURL,
+            tileSize: 256,
+            maxzoom: 14,
+          },
         },
         layers: [
           {
@@ -384,6 +384,9 @@ export function optimizeTerrain(
 ) {
   let deletedSourceKeys = [];
   for (const [key, source] of Object.entries(style.sources)) {
+    if (source.type === "raster-dem") {
+      console.log("Found DEM source:", key, source);
+    }
     if (source.type === "raster-dem" && source.url != terrainSourceURL) {
       delete style.sources[key];
       deletedSourceKeys.push(key);
@@ -391,11 +394,18 @@ export function optimizeTerrain(
   }
   deletedSourceKeys.push("mapbox://mapbox.terrain-rgb");
 
+  let vals = {};
+  if (terrainSourceURL?.includes("{x}")) {
+    vals["tiles"] = [terrainSourceURL];
+  } else {
+    vals["url"] = terrainSourceURL;
+  }
+
   style.sources.terrain = {
     type: "raster-dem",
-    url: terrainSourceURL,
     tileSize: 512,
     maxzoom: 14,
+    ...vals,
   };
 
   const [highlightColor, shadowColor] = hillshadeColors;

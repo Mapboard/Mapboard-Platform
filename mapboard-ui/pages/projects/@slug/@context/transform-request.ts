@@ -46,7 +46,7 @@ const useDEMTileLayer = () => {
 };
 
 const demBaseURL = "https://mapboard.local/dem-tiles/tiles";
-const fallbackLayer =
+export const fallbackLayer =
   "https://api.mapbox.com/raster/v1/mapbox.mapbox-terrain-dem-v1";
 
 export function useMapboxRequestTransformer() {

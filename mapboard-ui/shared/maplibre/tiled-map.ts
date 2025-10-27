@@ -181,6 +181,7 @@ export async function renderTiledMap(
 
   for await (const tile of tiles) {
     const { bounds, pixelSize } = tile;
+    console.log("Rendering tile:", tile, lngLatBounds(bounds));
     container.style.position = "absolute";
     container.style.visibility = "hidden";
     setSize(container, tile, internalScaleFactor);
@@ -280,9 +281,9 @@ export function computeTiledBounds(
 
   const padding = expandPadding(options.padding);
 
-  const [minX, minY, maxX, maxY] = bounds;
-  const ll0: [number, number] = [minX, minY];
-  const ur0: [number, number] = [maxX, maxY];
+  const [minX0, minY0, maxX0, maxY0] = bounds;
+  const ll0: [number, number] = [minX0, minY0];
+  const ur0: [number, number] = [maxX0, maxY0];
 
   const { metersPerPixel = 10, tileSize = 1024 } = options;
   const width = ur0[0] - ll0[0];
@@ -310,7 +311,6 @@ export function computeTiledBounds(
     ur[0],
     ur[1],
   ];
-
   const tilesX = Math.ceil(pixelWidth / tileSize);
   const tilesY = Math.ceil(pixelHeight / tileSize);
 
