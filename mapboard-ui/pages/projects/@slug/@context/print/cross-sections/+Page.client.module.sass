@@ -20,9 +20,13 @@
   --scalebar-background: none
   --scalebar-border-radius: 4px
   --scalebar-interior-color: white
+  --legend-swatch-size: 1.2rem
+  --main-font: "Chaparral Pro", serif
+  --heading-font: Montserrat, sans-serif
+  --label-font: Arial, sans-serif
 
 .cross-section-title
-  font-family: Montserrat, sans-serif
+  font-family: var(--heading-font)
   position: absolute
   top: 0.5rem
   left: var(--padding-left)
@@ -36,22 +40,25 @@
 
 .cross-section
   width: fit-content
+  --axis-label-font-size: 14px
+  --axis-tick-font-size: 12px
 
 .cross-sections
   padding: 1em
+  font-size: 16px
   --cross-section-scale: 1
   --text-color: #000
   page-break-after: always
 
 .cross-sections-container
   width: fit-content
-  height: fit-content
   position: relative
 
 .cross-section-inset-map
   position: absolute
-  top: 15em
+  top: 18rem
   right: 4em
+  border: 1px solid black
 
 
 .cross-section-map-container
@@ -91,6 +98,25 @@
     position: absolute
     transform: translate(-50%, -0.3em)
     font-size: 1.2em
+
+
+.cross-sections-legend
+  font-size: 1.1em
+  position: absolute
+  bottom: 2rem
+  left: 100rem
+  right: 4rem
+  display: flex
+  flex-direction: row
+  gap: 1em
+  :global(.legend-title-block)
+    max-width: 36em
+  :global(.legend-units-list)
+    --legend-unit-group-font: var(--main-font)
+    columns: 7
+  h1, h2
+    font-size: 1.2em
+
 
 
 // dark mode styles

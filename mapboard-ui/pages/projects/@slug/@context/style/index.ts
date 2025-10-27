@@ -114,14 +114,28 @@ export function useInsetMapStyle() {
     if (baseStyle == null) {
       return null;
     }
+
     // remove all layers of type "fill" to get rid of landcover
     baseStyle.layers = baseStyle.layers.filter(
-      (layer) => layer.id !== "national-parks",
+      (layer) =>
+        layer.type != "fill" || layer.id === "water" || layer.id == "snow",
     );
+
+    for (const layer of baseStyle.layers) {
+      if (layer.type == "background") {
+        layer.paint = {
+          ...layer.paint,
+          "background-color": "#ffffff",
+        };
+      }
+    }
 
     // Modernize the terrain source
     const style = prepareStyleForMaplibre(
-      optimizeTerrain(baseStyle, "mapbox://mapbox.mapbox-terrain-dem-v1"),
+      optimizeTerrain(baseStyle, "mapbox://mapbox.mapbox-terrain-dem-v1", [
+        "#ffffff",
+        "#aaaaaa",
+      ]),
     );
     return style;
   }, [baseStyle]);

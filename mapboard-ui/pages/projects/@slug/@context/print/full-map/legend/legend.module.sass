@@ -1,16 +1,25 @@
+.legend-inner
+  h1, h2, h3, h4, h5, h6
+    break-after: avoid
+    font-family: var(--heading-font, sans-serif)
+    margin: 0.2em 0 0.4em
 .swatch
-  width: 3rem
-  height: 3rem
+  width: var(--legend-swatch-size, 3rem)
+  height: var(--legend-swatch-size, 3rem)
   border: 1px solid #444
   border-radius: 0.2rem
   background-repeat: repeat
   background-size: 7rem
 
 .unit-group
-  font-size: 1.5em
+  font-size: 1.2em
 .unit-group
   .unit-group, .unit
+    font-weight: 500
     font-size: 0.9em
+    .unit-group
+      break-inside: avoid
+
 
 div.unit-group
   margin-bottom: 1em
@@ -25,7 +34,6 @@ div.unit-group
     text-transform: uppercase
     color: black
 
-
 div.unit
   display: flex
   flex-direction: row
@@ -37,24 +45,25 @@ div.unit
     flex-grow: 1
 
 .unit-name
-  font-size: 1rem
+  font-size: 1em
 
 .unit-name, .group-name
-  font-family: Montserrat, sans-serif
+  font-family: var(--legend-unit-group-font, var(--heading-font, sans-serif))
   font-weight: 600
   margin: 0.2em 0 0.2em
+  break-after: avoid
 
 
 .unit.composite-unit
   display: grid
-  grid-template-columns: 3rem 1fr
+  grid-template-columns: var(--legend-swatch-size, 3rem) 1fr
   grid-column-gap: 1em
 
   .composite-swatch
     grid-column: 1
     grid-row: 1 / span 2
-    width: 3rem
-    height: 4.5rem
+    width: var(--legend-swatch-size, 3rem)
+    height: calc(max(var(--legend-swatch-size, 3rem) * 1.5, 2em))
     border: 1px solid #444
     border-radius: 0.2rem
     background-repeat: repeat
@@ -113,16 +122,36 @@ div.unit
       content: ":"
     float: left
 
+.title-block
+  font-family: var(--main-font, serif)
+
+  h2
+    font-size: 1.1em
+
+  p
+    margin-top: 0.2em
+    margin-bottom: 0.3em
+
+.units-list
+  margin-top: 1em
+  &>:first-child
+    margin-top: 0
+
 h1.title
   margin-top: 0
 
-h2.subtitle
-  font-weight: 500
-  font-size: 1.2em
-  margin-top: 0
+  // If the subtitle is present, reduce the bottom margin of the title
+  + h2.subtitle
+    margin-bottom: 0
 
 h2.authors
-  font-size: 1.2em
+  font-weight: 500
+
+h2.subtitle
+  font-weight: 500
+  margin-top: 0
+  font-family: var(--main-font, serif)
+
 
 .source-list
   .domains

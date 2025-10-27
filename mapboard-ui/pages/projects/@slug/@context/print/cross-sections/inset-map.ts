@@ -1,10 +1,5 @@
 import { useMemo } from "react";
-import { apiBaseURL, mapboxToken } from "~/settings";
-import {
-  computeTiledBoundsForMap,
-  prepareStyleForMaplibre,
-  TiledMapArea,
-} from "~/maplibre";
+import { computeTiledBoundsForMap, TiledMapArea } from "~/maplibre";
 import hyper from "@macrostrat/hyper";
 import styles from "./+Page.client.module.sass";
 import { useInsetMapStyle } from "../../style";
@@ -45,7 +40,7 @@ export function InsetMap({
   initializeMap: any;
 }) {
   const tileBounds = computeTiledBoundsForMap(bounds, {
-    metersPerPixel: 160,
+    metersPerPixel: 120,
     tileSize: 512,
     padding: 20,
   });

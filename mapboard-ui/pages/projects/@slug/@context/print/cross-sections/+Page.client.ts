@@ -7,6 +7,7 @@ import { PrintArea } from "~/utils/print-area";
 import { CrossSectionsList } from "./cross-section";
 import { InsetMap } from "./inset-map";
 import { ContextDataExt } from "../map/+data";
+import { CrossSectionsLegend } from "../full-map/legend";
 
 const h = hyper.styled(styles);
 
@@ -32,6 +33,7 @@ export function Page() {
         projectID: data.project_id,
         baseURL,
       }),
+      h(CrossSectionsLegend, { className: "cross-sections-legend" }),
     ]),
   );
 }

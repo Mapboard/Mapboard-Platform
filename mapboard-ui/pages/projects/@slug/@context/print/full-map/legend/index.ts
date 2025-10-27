@@ -2,46 +2,68 @@ import hyper from "@macrostrat/hyper";
 import style from "./legend.module.sass";
 import { postgrest } from "~/utils/api-client";
 import { atom, useAtomValue } from "jotai";
-import classNames from "classnames";
 import { marked } from "marked";
 import { useMemo } from "react";
 
 const h = hyper.styled(style);
 
+export const mapTitle = "Geologic map of the southern Naukluft Mountains";
+
+export function LegendTitleBlock({ className, children, title }) {
+  return h("div.title-block.legend-title-block", [
+    h("h1.title", title ?? mapTitle),
+    h("h2.authors", "Daven Quinn"),
+    h("h2.subtitle", [
+      "Preliminary version, accompanying the manuscript ",
+      h(
+        "em",
+        "Tectonostratigraphy of the Zebra Series and the tectonic evolution of the Naukluft Mountains, Namibia",
+      ),
+    ]),
+    h("div.admonition", [
+      h(KeyValue, {
+        label: "Compilation date",
+        value: new Date().toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        }),
+      }),
+      children,
+    ]),
+  ]);
+}
+
 export function LegendPanel() {
   return h("div.map-legend", [
     h("div.legend-inner", {}, [
-      h("div.title-block", [
-        h("h1.title", "Geologic map of the southern Naukluft Mountains"),
-        h("h2.subtitle", [
-          "Preliminary version, accompanying the manuscript ",
-          h(
-            "em",
-            "Tectonostratigraphy of the Zebra Series and the tectonic evolution of the Naukluft Mountains, Namibia",
-          ),
-        ]),
-        h("h2.authors", "Daven Quinn, John Grotzinger, and Ted Present"),
-        h("div.admonition", [
-          h(KeyValue, {
-            label: "Compilation date",
-            value: new Date().toLocaleDateString("en-US", {
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-            }),
-          }),
-          h(KeyValue, {
-            label: "Contour interval",
-            value: "**Major**: 100 meters, **Minor**: 10 meters",
-          }),
-          h(KeyValue, {
-            label: "Projection",
-            value: "UTM Zone 33S, WGS84 (_rendered as Web Mercator_)",
-          }),
-        ]),
+      h(LegendTitleBlock, [
+        h(KeyValue, {
+          label: "Contour interval",
+          value: "**Major**: 100 meters, **Minor**: 10 meters",
+        }),
+        h(KeyValue, {
+          label: "Projection",
+          value: "UTM Zone 33S, WGS84 (_rendered as Web Mercator_)",
+        }),
       ]),
       h(MapLegendList),
     ]),
+  ]);
+}
+
+export function CrossSectionsLegend({ className }) {
+  return h("div.legend-inner", { className }, [
+    h(
+      LegendTitleBlock,
+      {
+        title: h(["Cross sections for ", h("em", mapTitle)]),
+      },
+      h("p", "No vertical exaggeration."),
+    ),
+
+    h(CrossSectionsLegendList),
+    // Add legend items here
   ]);
 }
 
@@ -56,10 +78,64 @@ function KeyValue({ label, value }: { label: string; value: string }) {
   ]);
 }
 
+function CrossSectionsLegendList() {
+  return h("div.cross-sections-units-list.units-list.legend-units-list", [
+    h("h3", "Units"),
+    g("Nama Group", [
+      u("urusis"),
+      g("Zaris Formation", [
+        u("urikos", "Urikos Member"),
+        u("houghland", "Hoogland Member"),
+        g("Omkyk Member", [
+          u("upper-omkyk", "Upper"),
+          u("middle-omkyk", "Middle"),
+          u("lower-omkyk", "Lower"),
+        ]),
+        u("dabis", "Dabis Member"),
+      ]),
+    ]),
+    g("Naukluft Nappe Complex", [
+      g("Zebra Series", [
+        g("Tafel Formation", [
+          u("adler", "Upper"),
+          u("zebra-limestone", "Lower"),
+        ]),
+        g("Onis Formation", [
+          u("upper-onis", "Upper"),
+          u("middle-onis", "Middle"),
+          u("lower-onis", "Lower"),
+        ]),
+        g("Lemoenputs Formation", [
+          u("upper-lemoenputs", "Upper"),
+          h(CompositeUnit, {
+            subsidiary: { id: "lemoenputs-ooid", name: "Bed B" },
+            main: { id: "middle-lemoenputs", name: "Middle" },
+            relationship: CompositeRelationship.OVERLIES,
+          }),
+          h(CompositeUnit, {
+            subsidiary: { id: "lemoenputs-a", name: "Bed A" },
+            main: { id: "lower-lemoenputs", name: "Lower" },
+            relationship: CompositeRelationship.OVERLIES,
+          }),
+        ]),
+        g("Tsams Formation", [
+          u("tsams-c", "Upper"),
+          u("tsams-b", "Middle"),
+          u("tsams-a", "Lower"),
+        ]),
+        u("ubisis", "Ubisis Formation"),
+        u("neuras", "Neuras Formation"),
+      ]),
+      u("dassie", "Dassie Series"),
+    ]),
+    u("basement", "Pre-Damara basement"),
+  ]);
+}
+
 function MapLegendList() {
   const undiv = "Undivided";
 
-  return h("div.map-units-list", [
+  return h("div.map-units-list.units-list.legend-units-list", [
     h("h3", "Map units"),
     g("Cover", [u("dune"), u("alluvium"), u("colluvium"), u("tufa")]),
     g("Nama Group", [

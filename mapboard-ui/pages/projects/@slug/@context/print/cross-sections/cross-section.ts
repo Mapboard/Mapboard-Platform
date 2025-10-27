@@ -91,7 +91,7 @@ export function CrossSectionMapView(props: MapViewProps) {
     children,
     className,
     elevationRange = [500, 2200],
-    metersPerPixel = 15,
+    metersPerPixel = 10,
     ...rest
   } = props;
 
@@ -237,7 +237,7 @@ function ElevationAxis({ scale, left = 0 }) {
         style: {
           textAnchor: "middle",
         },
-        fontSize: 12,
+        fontSize: "var(--axis-label-font-size, 12px)",
         transform: `translate(${x} ${y}) rotate(-90)`,
       },
       "Elevation (m)",
@@ -250,6 +250,7 @@ function ElevationAxis({ scale, left = 0 }) {
       tickLabelProps: {
         angle: -90,
         textAnchor: "middle",
+        fontSize: "var(--axis-tick-font-size, 10px)",
       },
     }),
   ]);
@@ -266,6 +267,9 @@ function DistanceAxis({ scale, top = 0 }) {
     scale,
     numTicks,
     top,
+    tickLabelProps: {
+      fontSize: "var(--axis-tick-font-size, 10px)",
+    },
     tickFormat(val) {
       if (val % 5000 === 0) {
         return `${val / 1000} km`;

@@ -380,6 +380,7 @@ export function useBasicDisplayStyle(
 export function optimizeTerrain(
   style: StyleSpecification | null,
   terrainSourceURL: string | null,
+  hillshadeColors: string[] = ["#ffffffcc", "#00000033"],
 ) {
   let deletedSourceKeys = [];
   for (const [key, source] of Object.entries(style.sources)) {
@@ -397,22 +398,24 @@ export function optimizeTerrain(
     maxzoom: 14,
   };
 
+  const [highlightColor, shadowColor] = hillshadeColors;
+
   // use a multidirectional hillshade (Maplibre only)
   for (const layer of style.layers) {
     if (layer.type === "hillshade") {
       layer.paint = {
         "hillshade-method": "multidirectional",
         "hillshade-highlight-color": [
-          "#ffffffcc",
-          "#ffffffcc",
-          "#ffffffcc",
-          "#ffffffcc",
+          highlightColor,
+          highlightColor,
+          highlightColor,
+          highlightColor,
         ],
         "hillshade-shadow-color": [
-          "#00000033",
-          "#00000033",
-          "#00000033",
-          "#00000033",
+          shadowColor,
+          shadowColor,
+          shadowColor,
+          shadowColor,
         ],
         "hillshade-illumination-direction": [270, 315, 0, 45],
         "hillshade-illumination-altitude": [30, 30, 30, 30],
