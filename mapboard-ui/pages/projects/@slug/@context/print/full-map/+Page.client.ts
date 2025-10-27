@@ -39,9 +39,10 @@ export function Page() {
 }
 
 function PageInner({ baseURL, context: ctx }) {
+  const internalScaleFactor = 0.25;
   const tileBounds = computeTiledBoundsForMap(ctx.bounds, {
     metersPerPixel: 15,
-    tileSize: 512,
+    tileSize: 512 / internalScaleFactor,
   });
   const style = useDisplayStyle(baseURL, {
     mapboxToken,
@@ -69,6 +70,7 @@ function PageInner({ baseURL, context: ctx }) {
         tileBounds,
         style,
         initializeMap,
+        internalScaleFactor,
         ...sizeOpts,
       },
       [

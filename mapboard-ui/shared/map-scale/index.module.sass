@@ -1,27 +1,51 @@
-.scalebar-root
+.scalebar-container
   --scalebar-color-INT: var(--scalebar-color, #888)
   --scalebar-background-INT: var(--scalebar-background, #fff)
+  --scalebar-height-INT: var(--scalebar-height, 10px)
+  position: absolute
+  background-color: var(--scalebar-background-INT)
+  display: flex
+  flex-direction: row
+  gap: 0.3em
+  padding: 0.5em 0.5em 0
+  align-items: baseline
 
-  text
-    font-family: var(--scalebar-font-family, Gotham, sans-serif)
+  .label, .unit-label
+    font-family: var(--scalebar-font-family, sans-serif)
     font-size: var(--scalebar-font-size, 12px)
-    fill: var(--scalebar-color-INT)
+    color: var(--scalebar-color-INT)
 
-  .label
-    text-anchor: middle
-  .unit-label
-    text-anchor: start
+.scale
+  position: relative
 
-
-.scalebar-underlay
-  fill: var(--scalebar-background-INT)
-
-.scale-background
-  fill: var(--scalebar-background-INT)
-  stroke: var(--scalebar-color-INT)
+.bar
+  background-color: var(--scalebar-background-INT)
+  border: 2px solid var(--scalebar-color-INT)
+  overflow: hidden
+  height: var(--scalebar-height-INT)
+  position: relative
 
 .scale-box
-  fill: var(--scalebar-background-INT)
+  position: absolute
+  height: var(--scalebar-height-INT)
+  background-color: var(--scalebar-background-INT)
   &.even
-    fill: var(--scalebar-color-INT)
+    background-color: var(--scalebar-color-INT)
 
+.tick-labels
+  margin-top: 0.25em
+  position: relative
+  .label
+    top: 0
+    text-align: center
+    width: 50px
+    margin-left: -25px
+    position: absolute
+    &:last-child
+      margin-left: -50px
+      text-align: right
+  .tick-hidden
+    visibility: hidden
+
+.unit-label
+  transform: translateY(-0.2em)

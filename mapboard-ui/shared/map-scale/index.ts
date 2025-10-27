@@ -38,7 +38,7 @@ function order(d: number) {
 export function Scalebar({
   scale,
   width,
-  height = 5,
+  height = 10,
   strokeWidth = 2,
   margin = 10,
   color,
@@ -60,7 +60,7 @@ export function Scalebar({
   const [lastLabelXVal, setXVal] = useState(0);
 
   const ref = useCallback((el) => {
-    const bbox = el.getBBox();
+    const bbox = el.getBoundingClientRect();
     setXVal(bbox.x + bbox.width);
   }, []);
 
@@ -94,63 +94,59 @@ export function Scalebar({
 
   const totalHeight = height + paddingTop + paddingBottom;
 
-  return h(
-    SVG,
-    {
-      style: { ...styleVars, width: lastLabelXVal + 40, height: totalHeight },
-      className: `scalebar-root ${className ?? ""}`.trim(),
-    },
-    [
-      h("rect.scalebar-underlay", {
-        x: 0,
-        y: 0,
-        width: lastLabelXVal + 40,
-        height: totalHeight,
-      }),
-      h("g.scale", { transform: "translate(10,20)" }, [
-        h("rect.scale-background", {
-          width: barWidth,
-          height,
-          strokeWidth,
-        }),
-        h(
-          "g.scale-overlay",
-          tickPairs.map(([a, b], i) =>
-            h("rect.scale-box", {
-              key: i,
-              x: x(a),
-              width: x(b) - x(a),
-              height,
-              className: i % 2 ? "even" : "",
-            }),
-          ),
-        ),
-        h(
-          "g.tick-labels",
-          { ref },
-          ticks.map((t, i) =>
-            h(
-              "text.label",
-              {
-                key: i,
-                x: x(t),
-                y: -5,
+  return h("div.scalebar", [
+    h(
+      "div.scalebar-container",
+      {
+        style: { ...styleVars },
+        className,
+      },
+      [
+        h("div.scale", [
+          h(
+            "div.bar",
+            {
+              style: {
+                width: `${barWidth}px`,
               },
-              t / unitScalar,
-            ),
+            },
+            [
+              h(
+                "div.scale-overlay",
+                tickPairs.map(([a, b], i) =>
+                  h("div.scale-box", {
+                    key: i,
+                    style: {
+                      top: 0,
+                      left: `${x(a)}px`,
+                      width: `${x(b) - x(a)}px`,
+                    },
+                    className: i % 2 ? "even" : "",
+                  }),
+                ),
+              ),
+            ],
           ),
-        ),
-        h(
-          "text.unit-label",
-          {
-            x: (lastLabelXVal ?? 0) + 5,
-            y: -5,
-          },
-          label,
-        ),
-      ]),
-    ],
-  );
+          h("div.tick-labels", { ref }, [
+            h("span.tick-hidden", "0"), // hidden tick to help with spacing
+            ticks.map((t, i) =>
+              h(
+                "div.label",
+                {
+                  key: i,
+                  style: {
+                    left: x(t),
+                  },
+                },
+                t / unitScalar,
+              ),
+            ),
+          ]),
+        ]),
+        h("div.unit-label", label),
+      ],
+    ),
+  ]);
 }
 
 function SVG(props) {
