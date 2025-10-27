@@ -11,6 +11,8 @@ import { apiBaseURL, mapboxToken } from "~/settings";
 import { useMapRef } from "@macrostrat/mapbox-react";
 import { StyleSpecification } from "mapbox-gl";
 import { createStationsLayer } from "./station-layers";
+import { optimizeTerrain } from "../display/style";
+import { prepareStyleForMaplibre } from "~/maplibre";
 
 export { buildMapOverlayStyle };
 
@@ -113,10 +115,11 @@ export function useInsetMapStyle() {
       return null;
     }
     // Modernize the terrain source
-    let style = baseStyle;
-    style.sources["mapbox://mapbox.terrain-rgb"].url =
-      "mapbox://mapbox.mapbox-terrain-dem-v1";
-    return baseStyle;
+    const style = prepareStyleForMaplibre(
+      optimizeTerrain(baseStyle, "mapbox://mapbox.mapbox-terrain-dem-v1"),
+    );
+    console.log(style);
+    return style;
   }, [baseStyle]);
 }
 

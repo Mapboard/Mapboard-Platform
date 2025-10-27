@@ -1,7 +1,6 @@
 import { useMemo } from "react";
 import { apiBaseURL, mapboxToken } from "~/settings";
 import {
-  computeTiledBounds,
   computeTiledBoundsForMap,
   prepareStyleForMaplibre,
   TiledMapArea,
@@ -13,6 +12,7 @@ import maplibre from "maplibre-gl";
 import { useMapboxRequestTransformer } from "../../transform-request";
 import { mergeStyles } from "@macrostrat/mapbox-utils";
 import { buildCrossSectionsStyle } from "../../display/style";
+import { Scalebar } from "~/map-scale";
 
 const h = hyper.styled(styles);
 
@@ -26,7 +26,7 @@ export function useCrossSectionsInsetStyle({ baseURL, projectID, clipSlug }) {
 
     const crossSectionsStyle = buildCrossSectionsStyle({
       showLabels: true,
-      baseURL,
+      baseURL: "/pg-api",
       projectID,
       clipSlug,
     });
@@ -46,6 +46,7 @@ export function InsetMap({
   const tileBounds = computeTiledBoundsForMap(bounds, {
     metersPerPixel: 150,
     tileSize: 512,
+    padding: 20,
   });
 
   const transformRequest = useMapboxRequestTransformer();
@@ -58,15 +59,23 @@ export function InsetMap({
 
   if (style == null) return null;
 
-  return h(TiledMapArea, {
-    tileBounds: tileBounds,
-    style: prepareStyleForMaplibre(style, mapboxToken),
-    initializeMap(opts: maplibre.MapOptions) {
-      return new maplibre.Map({
-        ...opts,
-        transformRequest,
-        pixelRatio: 4,
-      });
+  return h(
+    TiledMapArea,
+    {
+      tileBounds: tileBounds,
+      style: prepareStyleForMaplibre(style, mapboxToken),
+      initializeMap(opts: maplibre.MapOptions) {
+        return new maplibre.Map({
+          ...opts,
+          transformRequest,
+          pixelRatio: 4,
+        });
+      },
     },
-  });
+    h(Scalebar, {
+      className: "map-scalebar",
+      scale: tileBounds.realMetersPerPixel,
+      width: 100,
+    }),
+  );
 }

@@ -1,4 +1,4 @@
-import maplibre from "maplibre-gl";
+import maplibre, { PaddingOptions } from "maplibre-gl";
 import { SphericalMercator } from "@mapbox/sphericalmercator";
 import { setupStyleImageManager } from "../../pages/projects/@slug/@context/style/pattern-manager";
 import { StrictPadding } from "@macrostrat/ui-components";
@@ -35,6 +35,11 @@ interface TileBoundsResult {
     width: number;
     height: number;
   };
+  innerSize: {
+    width: number;
+    height: number;
+  };
+  padding: PaddingOptions;
   bounds: MercatorBBox;
   metersPerPixel: number;
 }
@@ -42,6 +47,7 @@ interface TileBoundsResult {
 interface TileComputationOptions {
   metersPerPixel?: number;
   tileSize?: number;
+  padding?: PaddingOptions | number;
 }
 
 export type MercatorBBox = [number, number, number, number];
@@ -213,6 +219,29 @@ export interface MapTileBoundsResult extends TileBoundsResult {
   realMetersPerPixel: number;
 }
 
+function expandPadding(
+  padding: PaddingOptions | number | null | undefined,
+): PaddingOptions {
+  let defaultPadding = 0;
+  if (typeof padding === "number") {
+    defaultPadding = padding;
+  }
+  const defaultPadding2 = {
+    top: defaultPadding,
+    bottom: defaultPadding,
+    left: defaultPadding,
+    right: defaultPadding,
+  };
+  if (padding == null || typeof padding === "number") {
+    return defaultPadding2;
+  }
+
+  return {
+    ...padding,
+    ...defaultPadding2,
+  };
+}
+
 export function computeTiledBoundsForMap(
   _input: GeoJSON.Geometry | [number, number, number, number],
   options: TileComputationOptions = {},
@@ -229,7 +258,7 @@ export function computeTiledBoundsForMap(
   const res = computeTiledBounds(bounds, options);
   return {
     ...res,
-    realMetersPerPixel: getWidthOfMapView(lngLatBBox) / res.pixelSize.width,
+    realMetersPerPixel: getWidthOfMapView(lngLatBBox) / res.innerSize.width,
   };
 }
 
@@ -241,6 +270,9 @@ export function computeTiledBounds(
    *   Bounds are provided in raw mercator coordinates. This allows the
    *   function to be used for non-map contexts (e.g., cross-sections).
    */
+
+  const padding = expandPadding(options.padding);
+
   const [minX, minY, maxX, maxY] = bounds;
   const ll: [number, number] = [minX, minY];
   const ur: [number, number] = [maxX, maxY];
@@ -294,6 +326,12 @@ export function computeTiledBounds(
       width: pixelWidth,
       height: pixelHeight,
     },
+    // Size excluding padding
+    innerSize: {
+      width: pixelWidth,
+      height: pixelHeight,
+    },
+    padding,
     bounds,
     metersPerPixel,
   };

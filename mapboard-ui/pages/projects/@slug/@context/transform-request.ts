@@ -53,9 +53,11 @@ export function useMapboxRequestTransformer() {
   const { token } = useAtomValue(skuTokenAtom);
   return useCallback((url, resourceType) => {
     let transformedURL = url;
-    if (isMapboxURL(url)) {
-      const res = transformMapboxUrl(url, resourceType, mapboxToken);
-      transformedURL = res.url;
+    if (url.includes("mapbox.com") || url.startsWith("mapbox://")) {
+      if (isMapboxURL(url)) {
+        const res = transformMapboxUrl(url, resourceType, mapboxToken);
+        transformedURL = res.url;
+      }
 
       // Add a sku token
       const [base, queryString] = transformedURL.split("?");

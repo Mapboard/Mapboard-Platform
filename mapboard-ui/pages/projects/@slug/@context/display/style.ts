@@ -377,23 +377,27 @@ export function useBasicDisplayStyle(
   }, [finalStyle, mapboxToken, demURL]);
 }
 
-function optimizeTerrain(
+export function optimizeTerrain(
   style: StyleSpecification | null,
   terrainSourceURL: string | null,
 ) {
+  let deletedSourceKeys = [];
   for (const [key, source] of Object.entries(style.sources)) {
     if (source.type === "raster-dem" && source.url != terrainSourceURL) {
       delete style.sources[key];
+      deletedSourceKeys.push(key);
     }
   }
+  deletedSourceKeys.push("mapbox://mapbox.terrain-rgb");
 
   style.sources.terrain = {
     type: "raster-dem",
-    tiles: [terrainSourceURL],
+    url: terrainSourceURL,
     tileSize: 512,
     maxzoom: 14,
   };
 
+  // use a multidirectional hillshade (Maplibre only)
   for (const layer of style.layers) {
     if (layer.type === "hillshade") {
       layer.paint = {
@@ -416,10 +420,8 @@ function optimizeTerrain(
     }
   }
 
-  const oldRasterID = "mapbox://mapbox.terrain-rgb";
-  delete style.sources[oldRasterID];
   style.layers = style.layers.map((l) => {
-    if (l.source === "mapbox-dem" || l.source === oldRasterID) {
+    if (deletedSourceKeys.includes(l.source)) {
       return {
         ...l,
         source: "terrain",
@@ -428,6 +430,7 @@ function optimizeTerrain(
     return l;
   });
 
+  // We don't need 3d terrain for Maplibre
   delete style.terrain;
 
   return style;

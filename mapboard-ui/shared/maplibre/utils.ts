@@ -117,7 +117,5 @@ export function prepareStyleForMaplibre(
 
   delete newStyle.projection;
 
-  //delete newStyle.sources["terrain"];
-
   return newStyle;
 }
