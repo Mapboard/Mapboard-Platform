@@ -24,14 +24,14 @@ export function Page() {
     {
       filename: "cross-sections.pdf",
     },
-    [
+    h("div.cross-sections-container", [
       h(CrossSectionsList, { data: crossSections }),
       h(InsetMap, {
-        className: "cross-section-map",
+        className: "cross-section-inset-map",
         bounds: data.bounds,
         projectID: data.project_id,
         baseURL,
       }),
-    ],
+    ]),
   );
 }

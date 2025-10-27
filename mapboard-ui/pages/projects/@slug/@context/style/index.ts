@@ -114,11 +114,15 @@ export function useInsetMapStyle() {
     if (baseStyle == null) {
       return null;
     }
+    // remove all layers of type "fill" to get rid of landcover
+    baseStyle.layers = baseStyle.layers.filter(
+      (layer) => layer.id !== "national-parks",
+    );
+
     // Modernize the terrain source
     const style = prepareStyleForMaplibre(
       optimizeTerrain(baseStyle, "mapbox://mapbox.mapbox-terrain-dem-v1"),
     );
-    console.log(style);
     return style;
   }, [baseStyle]);
 }

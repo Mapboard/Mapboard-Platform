@@ -39,12 +39,13 @@ export function InsetMap({
   baseURL,
   projectID,
   bounds,
+  className,
 }: {
   bounds: any;
   initializeMap: any;
 }) {
   const tileBounds = computeTiledBoundsForMap(bounds, {
-    metersPerPixel: 150,
+    metersPerPixel: 160,
     tileSize: 512,
     padding: 20,
   });
@@ -60,22 +61,26 @@ export function InsetMap({
   if (style == null) return null;
 
   return h(
-    TiledMapArea,
-    {
-      tileBounds: tileBounds,
-      style: prepareStyleForMaplibre(style, mapboxToken),
-      initializeMap(opts: maplibre.MapOptions) {
-        return new maplibre.Map({
-          ...opts,
-          transformRequest,
-          pixelRatio: 4,
-        });
+    "div.inset-map",
+    { className },
+    h(
+      TiledMapArea,
+      {
+        tileBounds: tileBounds,
+        style,
+        initializeMap(opts: maplibre.MapOptions) {
+          return new maplibre.Map({
+            ...opts,
+            transformRequest,
+            pixelRatio: 8,
+          });
+        },
       },
-    },
-    h(Scalebar, {
-      className: "map-scalebar",
-      scale: tileBounds.realMetersPerPixel,
-      width: 100,
-    }),
+      h(Scalebar, {
+        className: "map-scalebar",
+        scale: tileBounds.realMetersPerPixel,
+        width: 100,
+      }),
+    ),
   );
 }

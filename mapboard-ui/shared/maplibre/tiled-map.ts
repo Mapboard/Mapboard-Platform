@@ -39,7 +39,8 @@ interface TileBoundsResult {
     width: number;
     height: number;
   };
-  padding: PaddingOptions;
+  padding: Padding;
+  innerBounds: MercatorBBox;
   bounds: MercatorBBox;
   metersPerPixel: number;
 }
@@ -219,9 +220,16 @@ export interface MapTileBoundsResult extends TileBoundsResult {
   realMetersPerPixel: number;
 }
 
+interface Padding {
+  top: number;
+  bottom: number;
+  left: number;
+  right: number;
+}
+
 function expandPadding(
   padding: PaddingOptions | number | null | undefined,
-): PaddingOptions {
+): Padding {
   let defaultPadding = 0;
   if (typeof padding === "number") {
     defaultPadding = padding;
@@ -252,7 +260,6 @@ export function computeTiledBoundsForMap(
   } else {
     lngLatBBox = _input;
   }
-  console.log("Lng lat bounds", lngLatBBox);
 
   const bounds = mercatorBBox(lngLatBBox);
   const res = computeTiledBounds(bounds, options);
@@ -274,15 +281,35 @@ export function computeTiledBounds(
   const padding = expandPadding(options.padding);
 
   const [minX, minY, maxX, maxY] = bounds;
-  const ll: [number, number] = [minX, minY];
-  const ur: [number, number] = [maxX, maxY];
+  const ll0: [number, number] = [minX, minY];
+  const ur0: [number, number] = [maxX, maxY];
 
   const { metersPerPixel = 10, tileSize = 1024 } = options;
-  const width = ur[0] - ll[0];
-  const height = ur[1] - ll[1];
+  const width = ur0[0] - ll0[0];
+  const height = ur0[1] - ll0[1];
 
-  const pixelWidth = width / metersPerPixel;
-  const pixelHeight = height / metersPerPixel;
+  const innerWidth = width / metersPerPixel;
+  const innerHeight = height / metersPerPixel;
+
+  // Now that the meters per pixel is known, we can add the padding to the bounds
+  const ll: [number, number] = [
+    ll0[0] - padding.left * metersPerPixel,
+    ll0[1] - padding.bottom * metersPerPixel,
+  ];
+  const ur: [number, number] = [
+    ur0[0] + padding.right * metersPerPixel,
+    ur0[1] + padding.top * metersPerPixel,
+  ];
+
+  const pixelWidth = innerWidth + padding.left + padding.right;
+  const pixelHeight = innerHeight + padding.top + padding.bottom;
+
+  const paddedBounds: [number, number, number, number] = [
+    ll[0],
+    ll[1],
+    ur[0],
+    ur[1],
+  ];
 
   const tilesX = Math.ceil(pixelWidth / tileSize);
   const tilesY = Math.ceil(pixelHeight / tileSize);
@@ -328,11 +355,12 @@ export function computeTiledBounds(
     },
     // Size excluding padding
     innerSize: {
-      width: pixelWidth,
-      height: pixelHeight,
+      width: innerWidth,
+      height: innerHeight,
     },
     padding,
-    bounds,
+    innerBounds: bounds,
+    bounds: paddedBounds,
     metersPerPixel,
   };
 }
