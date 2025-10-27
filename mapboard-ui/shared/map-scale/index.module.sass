@@ -4,7 +4,7 @@
   --scalebar-height-INT: var(--scalebar-height, 10px)
   position: absolute
   background-color: var(--scalebar-background-INT)
-  padding: 0.2em 0 0 0.5em
+  padding: 0.2em 0.2em 0 0.5em
   display: grid
   gap: 0.2em
   bottom: 0
@@ -15,6 +15,15 @@
     font-family: var(--scalebar-font-family, sans-serif)
     color: var(--scalebar-color-INT)
     font-weight: var(--scalebar-font-weight, 400)
+
+  &.scalebar-labels-top
+    padding: 0 0.2em 0.2em 0.5em
+    .scale-bar
+      grid-row: 2 / 2
+    .unit-label
+      grid-row: 1 / 1
+    .tick-labels
+      grid-row: 1 / 1
 
 .scale-bar
   background-color: var(--scalebar-interior-color, var(--scalebar-background-INT))

@@ -2,6 +2,7 @@ import hyper from "@macrostrat/hyper";
 import { scaleLinear } from "@visx/scale";
 import styles from "./index.module.sass";
 import { createElement, useCallback, useMemo, useRef, useState } from "react";
+import classNames from "classnames";
 
 console.log(styles);
 
@@ -25,6 +26,7 @@ export type ScaleBarProps = {
   color?: string;
   backgroundColor?: string;
   className?: string;
+  labelPosition?: "top" | "bottom";
 };
 
 function roundToNearest(d: number, i = 1) {
@@ -40,6 +42,7 @@ export function Scalebar({
   width,
   height = 10,
   strokeWidth = 2,
+  labelPosition = "bottom",
   margin = 10,
   color,
   backgroundColor,
@@ -101,7 +104,7 @@ export function Scalebar({
       "div.scalebar-container",
       {
         style: { ...styleVars, "--scalebar-width": widthText },
-        className,
+        className: classNames(className, `scalebar-labels-${labelPosition}`),
       },
       [
         h(
@@ -148,12 +151,4 @@ export function Scalebar({
       ],
     ),
   ]);
-}
-
-function SVG(props) {
-  return createElement("svg", {
-    xmlns: "http://www.w3.org/2000/svg",
-    xmlnsXlink: "http://www.w3.org/1999/xlink",
-    ...props,
-  });
 }

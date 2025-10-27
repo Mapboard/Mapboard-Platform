@@ -57,7 +57,7 @@ function PageInner({ baseURL, context: ctx }) {
       const map = new maplibre.Map({
         ...opts,
         transformRequest,
-        pixelRatio: 4,
+        pixelRatio: 8,
       });
       setupStyleImageManager(map, 4);
       return map;
@@ -82,14 +82,14 @@ function PageInner({ baseURL, context: ctx }) {
         initializeMap,
         className: "map-area",
         ...sizeOpts,
-        internalScaleFactor: 2,
+        //internalScaleFactor: 2,
       },
       [
         h(Scalebar, {
           className: "map-scalebar",
           scale: tileBounds.realMetersPerPixel,
           width: 200,
-          backgroundColor: "white",
+          labelPosition: "top",
         }),
       ],
     ),
