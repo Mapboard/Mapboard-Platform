@@ -209,7 +209,13 @@ export function buildCrossSectionStyle(
       type: "symbol",
       id: "thrust-fault-symbols",
       layout: {
-        "icon-image": "cross-section:thrust-fault-movement",
+        "icon-image": [
+          "case",
+          [">", ["get", "azimuth"], Math.PI / 2],
+          "cross-section:fault-movement-right",
+          "cross-section:fault-movement-left",
+        ],
+
         "icon-pitch-alignment": "map",
         "icon-allow-overlap": true,
         "symbol-avoid-edges": false,

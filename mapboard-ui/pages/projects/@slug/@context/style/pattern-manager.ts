@@ -1,10 +1,12 @@
 import { useEffect } from "react";
 import { createSolidColorImage, loadImage } from "./pattern-images";
 import { useMapInitialized, useMapRef } from "@macrostrat/mapbox-react";
-import thrustFaultMovement from "./symbols/thrust-fault-movement.svg";
+import faultMovementRight from "./symbols/fault-movement-right.svg";
+import faultMovementLeft from "./symbols/fault-movement-left.svg";
 
 const crossSectionSymbols = {
-  "thrust-fault-movement": thrustFaultMovement,
+  "fault-movement-right": faultMovementRight,
+  "fault-movement-left": faultMovementLeft,
 };
 
 export function useStyleImageManager() {
