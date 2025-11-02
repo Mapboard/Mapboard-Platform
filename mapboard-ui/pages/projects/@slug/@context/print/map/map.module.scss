@@ -49,10 +49,15 @@
 }
 
 .map-area {
+  --scalebar-interior-color: white;
+  --scalebar-font-family: var(--label-font);
+  --scalebar-height: 8px;
+  --scalebar-color: black;
   --scalebar-background: white;
-  --scalebar-font-family: var(-label-font);
+  --scalebar-border-radius: 4px;
   --scalebar-font-size: 10px;
-  outline: 2px solid black;
+  border: 2px solid black;
+  overflow: hidden;
   position: relative;
 }
 

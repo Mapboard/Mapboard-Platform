@@ -82,7 +82,7 @@ function CrossSectionsLegendList() {
   return h("div.cross-sections-units-list.units-list.legend-units-list", [
     h("h3", "Units"),
     g("Nama Group", [
-      u("urusis"),
+      u("urusis", "Nudaus Formation"),
       g("Zaris Formation", [
         u("urikos", "Urikos Member"),
         u("houghland", "Hoogland Member"),
@@ -139,7 +139,7 @@ function MapLegendList() {
     h("h3", "Map units"),
     g("Cover", [u("dune"), u("alluvium"), u("colluvium"), u("tufa")]),
     g("Nama Group", [
-      u("urusis"),
+      u("urusis", "Nudaus Formation"),
       g("Zaris Formation", [
         u("urikos", "Urikos Member"),
         u("houghland", "Hoogland Member"),

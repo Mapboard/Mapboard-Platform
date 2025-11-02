@@ -35,7 +35,7 @@ export function Page() {
 }
 
 function PageInner({ baseURL, context: ctx }) {
-  const internalScaleFactor = 0.25;
+  const internalScaleFactor = 1;
   const tileBounds = computeTiledBoundsForMap(ctx.bounds, {
     metersPerPixel: 15,
     tileSize: 512 / internalScaleFactor,

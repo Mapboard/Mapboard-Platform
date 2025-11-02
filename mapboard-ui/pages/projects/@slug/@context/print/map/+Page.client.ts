@@ -85,7 +85,7 @@ function PageInner({ baseURL, context: ctx }) {
           className: "map-scalebar",
           scale: tileBounds.realMetersPerPixel,
           width: 200,
-          backgroundColor: "white",
+          labelPosition: "top",
         }),
       ],
     ),

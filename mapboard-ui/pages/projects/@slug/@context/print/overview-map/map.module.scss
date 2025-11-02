@@ -43,7 +43,8 @@
   --scalebar-font-family: "Montserrat", sans-serif;
   --scalebar-height: 8px;
   --scalebar-color: black;
-  //--scalebar-border-radius: 4px;
+  --scalebar-background: none;
+  --scalebar-border-radius: 4px;
   outline: 2px solid black;
   position: relative;
 }

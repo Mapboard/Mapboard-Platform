@@ -57,9 +57,9 @@ function PageInner({ baseURL, context: ctx }) {
       const map = new maplibre.Map({
         ...opts,
         transformRequest,
-        pixelRatio: 8,
+        pixelRatio: 4,
       });
-      setupStyleImageManager(map, 4);
+      setupStyleImageManager(map, 6);
       return map;
     },
     [transformRequest],
