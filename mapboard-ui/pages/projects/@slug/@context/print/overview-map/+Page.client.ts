@@ -16,6 +16,7 @@ import { expandInnerSize } from "@macrostrat/ui-components";
 import { computeTiledBoundsForMap, TiledMapArea } from "~/maplibre";
 import { Scalebar } from "~/map-scale";
 import { PrintArea } from "~/utils/print-area";
+import { LegendPanel, OverviewLegendList } from "../full-map/legend";
 
 const h = hyper.styled(styles);
 
@@ -57,7 +58,7 @@ function PageInner({ baseURL, context: ctx }) {
       const map = new maplibre.Map({
         ...opts,
         transformRequest,
-        pixelRatio: 4,
+        pixelRatio: 8,
       });
       setupStyleImageManager(map, 6);
       return map;
@@ -84,14 +85,16 @@ function PageInner({ baseURL, context: ctx }) {
         ...sizeOpts,
         //internalScaleFactor: 2,
       },
-      [
-        h(Scalebar, {
-          className: "map-scalebar",
-          scale: tileBounds.realMetersPerPixel,
-          width: 200,
-          labelPosition: "top",
-        }),
-      ],
+      [],
     ),
+    h("div.legend-sidebar", [
+      h(OverviewLegendList),
+      h(Scalebar, {
+        className: "map-scalebar",
+        scale: tileBounds.realMetersPerPixel,
+        width: 150,
+        labelPosition: "top",
+      }),
+    ]),
   ]);
 }

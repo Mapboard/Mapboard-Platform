@@ -1,11 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="SqlDialectMappings">
+    <file url="file://$PROJECT_DIR$/py-modules/cli/core-fixtures/01-schema.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/py-modules/cli/core-fixtures/02.0-api.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/py-modules/cli/core-fixtures/02.1-api-transitional.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/py-modules/cli/mapboard/cli/fixtures/stations-layer.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/py-modules/cross-sections/mapboard/cross_sections/fixtures/03-mapping.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/py-modules/cross-sections/mapboard/cross_sections/fixtures/04-piercing-points.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/py-modules/cross-sections/mapboard/cross_sections/procedures/copy-info-to-mapboard-database.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/py-modules/topology-manager/mapboard/topology_manager/fixtures/04-topology-views.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/py-modules/topology-manager/mapboard/topology_manager/fixtures/09-topology-notify.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/../../Naukluft/versioned/defs/stratigraphy-views/fixtures/lines-planes.sql" dialect="PostgreSQL" />
   </component>
 </project>

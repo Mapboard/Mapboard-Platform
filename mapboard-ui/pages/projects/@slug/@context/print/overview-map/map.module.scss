@@ -37,7 +37,7 @@
   --map-context-stack-width: fit-content;
 }
 
-.map-area {
+:root {
   //--scalebar-background: none;
   --scalebar-interior-color: white;
   --scalebar-font-family: "Montserrat", sans-serif;
@@ -55,6 +55,25 @@
   left: var(--padding-left);
   z-index: 20;
 }
+
+:root {
+  --main-font: "Chaparral Pro", serif;
+  --heading-font: Montserrat, sans-serif;
+  --label-font: Arial, sans-serif;
+  --legend-unit-group-font: var(--main-font, serif);
+  --legend-swatch-size: 2em;
+}
+
+.main {
+  display: flex;
+  flex-direction: row;
+  gap: 1em;
+}
+
+.legend-sidebar {
+  position: relative;
+}
+
 
 // Ensure the scalebar prints
 @media print {

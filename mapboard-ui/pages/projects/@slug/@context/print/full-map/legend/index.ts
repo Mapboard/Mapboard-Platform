@@ -132,6 +132,47 @@ function CrossSectionsLegendList() {
   ]);
 }
 
+export function OverviewLegendList() {
+  return h("div.legend-list.legend-units-list.legend-innder", [
+    g("Naukluft Nappe Complex", [
+      g("Zebra Series", [
+        h("p", "Zebra River Group"),
+        g("Tafel Formation", [
+          u("adler", "Upper"),
+          u("zebra-limestone", "Lower"),
+        ]),
+        g("Onis Formation", [
+          u("upper-onis", "Upper"),
+          u("middle-onis", "Middle"),
+          u("lower-onis", "Lower"),
+        ]),
+        g("Lemoenputs Formation", [
+          u("upper-lemoenputs", "Upper"),
+          h(CompositeUnit, {
+            subsidiary: { id: "lemoenputs-ooid", name: "Bed B" },
+            main: { id: "middle-lemoenputs", name: "Middle" },
+            relationship: CompositeRelationship.OVERLIES,
+          }),
+          h(CompositeUnit, {
+            subsidiary: { id: "lemoenputs-a", name: "Bed A" },
+            main: { id: "lower-lemoenputs", name: "Lower" },
+            relationship: CompositeRelationship.OVERLIES,
+          }),
+        ]),
+        g("Tsams Formation", [
+          u("tsams-c", "Upper"),
+          u("tsams-b", "Middle"),
+          u("tsams-a", "Lower"),
+        ]),
+        u("ubisis", "Ubisis Formation"),
+        u("neuras", "Neuras Formation"),
+      ]),
+      u("dassie", "Dassie Series"),
+      u("kudu", "Kudu Series"),
+    ]),
+  ]);
+}
+
 function MapLegendList() {
   const undiv = "Undivided";
 
