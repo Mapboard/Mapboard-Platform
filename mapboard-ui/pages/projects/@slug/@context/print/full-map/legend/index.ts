@@ -136,7 +136,6 @@ export function OverviewLegendList() {
   return h("div.legend-list.legend-units-list.legend-innder", [
     g("Naukluft Nappe Complex", [
       g("Zebra Series", [
-        h("p", "Zebra River Group"),
         g("Tafel Formation", [
           u("adler", "Upper"),
           u("zebra-limestone", "Lower"),

@@ -60,7 +60,7 @@ function PageInner({ baseURL, context: ctx }) {
         transformRequest,
         pixelRatio: 8,
       });
-      setupStyleImageManager(map, 6);
+      setupStyleImageManager(map, 3);
       return map;
     },
     [transformRequest],
@@ -83,7 +83,7 @@ function PageInner({ baseURL, context: ctx }) {
         initializeMap,
         className: "map-area",
         ...sizeOpts,
-        //internalScaleFactor: 2,
+        internalScaleFactor: 2,
       },
       [],
     ),
