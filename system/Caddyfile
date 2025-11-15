@@ -47,6 +47,13 @@ mapboard.local, :8000 {
   }
 
   handle_path /* {
+    reverse_proxy frontend:3000
+  }
+}
+
+dev.mapboard.local {
+  tls internal
+  handle_path /* {
     reverse_proxy docker.host.internal:3002
   }
 }
