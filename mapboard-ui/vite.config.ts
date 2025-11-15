@@ -13,6 +13,7 @@ export default defineConfig({
     alias: {
       "~": path.resolve("./shared"),
     },
+    // Load images from source
   },
   ssr: {
     noExternal: [
@@ -20,6 +21,7 @@ export default defineConfig({
        * should be listed here.
        */
       "@macrostrat/ui-components",
+      "@macrostrat/data-sheet",
     ],
   },
   server: {
@@ -28,6 +30,7 @@ export default defineConfig({
       "localhost",
       // For local development
       "mapboard.local",
+      "daven-quinn.local",
     ],
     watch: {
       // We reload .env files using Nodemon when in development

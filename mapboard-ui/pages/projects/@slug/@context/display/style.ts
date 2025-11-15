@@ -1,0 +1,450 @@
+import { useEffect, useMemo, useState } from "react";
+import { StyleSpecification } from "mapbox-gl";
+import { getMapboxStyle, mergeStyles } from "@macrostrat/mapbox-utils";
+import {
+  buildBasicOverlayStyle,
+  buildDisplayOverlayStyle,
+  buildSimpleOverlayStyle,
+} from "../style/overlay";
+import { apiBaseURL } from "~/settings";
+import { createStationsLayer } from "../style/station-layers";
+import { useDEMTileURL } from "../transform-request";
+import mlcontour from "maplibre-contour";
+import maplibre from "maplibre-gl";
+import { prepareStyleForMaplibre } from "~/maplibre";
+
+interface DisplayStyleOptions {
+  mapboxToken: string;
+  showOverlay?: boolean;
+  projectID: number;
+  contextSlug: string;
+  showCrossSectionLabels?: boolean;
+  // Context slug to clip by for viewing a subset of the cross section
+  crossSectionClipContext?: string;
+  showContours?: boolean;
+}
+
+export function useDisplayStyle(
+  baseURL: string,
+  {
+    mapboxToken,
+    showOverlay = true,
+    showCrossSectionLabels = true,
+    projectID,
+    contextSlug,
+    crossSectionClipContext,
+    showContours = true,
+  }: DisplayStyleOptions,
+) {
+  const baseStyleURL = "mapbox://styles/jczaplewski/cmggy9lqq005l01ryhb5o2eo4";
+
+  const [baseStyle, setBaseStyle] = useState<StyleSpecification | null>(null);
+  useEffect(() => {
+    if (baseStyleURL == null) return;
+    getMapboxStyle(baseStyleURL, {
+      access_token: mapboxToken,
+    }).then((baseStyle) => {
+      setBaseStyle(baseStyle);
+    });
+  }, [baseStyleURL]);
+
+  const overlayStyle = useMemo(() => {
+    if (!showOverlay) {
+      return null;
+    }
+    return buildDisplayOverlayStyle(baseURL, {
+      selectedLayer: 22, // composite layer
+    });
+  }, [showOverlay]);
+
+  const demURL = useDEMTileURL();
+
+  const demSource = useMemo(() => {
+    if (demURL == null || !showContours) return null;
+    const src = new mlcontour.DemSource({
+      url: demURL,
+      encoding: "mapbox", // "mapbox" or "terrarium" default="terrarium"
+      maxzoom: 14,
+      worker: true, // offload isoline computation to a web worker to reduce jank
+      cacheSize: 50, // number of most-recent tiles to cache
+      timeoutMs: 20_000, // timeout on fetch requests
+    });
+    src.setupMaplibre(maplibre);
+    return src;
+  }, [demURL, showContours]);
+
+  const terrainTileURL = demSource?.sharedDemProtocolUrl ?? demURL;
+
+  const finalStyle = useMemo(() => {
+    if (baseStyle == null && overlayStyle == null) {
+      return null;
+    }
+
+    const mainStyle: mapboxgl.StyleSpecification = {
+      version: 8,
+      name: "Mapboard",
+      glyphs: "mapbox://fonts/openmaptiles/{fontstack}/{range}.pbf",
+      layers: [
+        // We need to add this so that the style doesn't randomly reload
+        {
+          id: "sky",
+          type: "sky",
+          paint: {
+            "sky-type": "atmosphere",
+            "sky-atmosphere-sun": [0.0, 0.0],
+            "sky-atmosphere-sun-intensity": 15,
+          },
+        },
+      ],
+      sources: {},
+    };
+
+    let contourStyle = null;
+    if (demSource != null) {
+      contourStyle = {
+        sources: {
+          contour: {
+            type: "vector",
+            tiles: [
+              demSource.contourProtocolUrl({
+                thresholds: {
+                  10: [20, 200],
+                  12: [10, 100],
+                },
+                contourLayer: "contours",
+                elevationKey: "ele",
+                levelKey: "level",
+              }),
+            ],
+            maxzoom: 14,
+          },
+          terrain: {
+            type: "raster-dem",
+            url: terrainTileURL,
+            tileSize: 256,
+            maxzoom: 14,
+          },
+        },
+        layers: [
+          {
+            id: "contour-lines",
+            type: "line",
+            source: "contour",
+            "source-layer": "contours",
+            paint: {
+              "line-color": "#aaaaaa",
+              // level = highest index in thresholds array the elevation is a multiple of
+              "line-width": ["match", ["get", "level"], 1, 1, 0.5],
+            },
+          },
+          // {
+          //   id: "contour-labels",
+          //   type: "symbol",
+          //   source: "contour",
+          //   "source-layer": "contours",
+          //   filter: [">", ["get", "level"], 0],
+          //   layout: {
+          //     "symbol-placement": "line",
+          //     "text-size": 10,
+          //     "text-field": ["to-string", ["get", "ele"]],
+          //     "text-font": ["PT Serif Regular"],
+          //     "symbol-spacing": 1,
+          //     "text-max-angle": 45,
+          //   },
+          //   paint: {
+          //     "text-halo-color": "white",
+          //     "text-halo-width": 1,
+          //     "text-color": "#aaaaaa",
+          //   },
+          // },
+        ],
+      };
+    }
+
+    const clipSlug = crossSectionClipContext ?? contextSlug;
+
+    const crossSectionsStyle = buildCrossSectionsStyle({
+      showLabels: showCrossSectionLabels,
+      baseURL: apiBaseURL,
+      projectID,
+      clipSlug,
+    });
+
+    if (baseStyle == null) return null;
+
+    //return baseStyle;
+
+    // Stations
+
+    const stationsStyle: Partial<StyleSpecification> = {
+      sources: {
+        stations: {
+          type: "geojson",
+          data: `${apiBaseURL}/stations.geojson?project_id=eq.${projectID}`,
+        },
+      },
+      layers: [
+        createStationsLayer({
+          id: "orientations",
+          sourceID: "stations",
+          showOrientations: true,
+          showAll: false,
+        }),
+      ],
+    };
+
+    let style1 = mergeStyles(
+      baseStyle,
+      mainStyle,
+      contourStyle,
+      overlayStyle,
+      crossSectionsStyle,
+      stationsStyle,
+    );
+    return style1;
+  }, [baseStyle, overlayStyle, demSource, showContours]);
+
+  return useMemo(() => {
+    if (finalStyle == null) return null;
+    const style = prepareStyleForMaplibre(
+      optimizeTerrain(finalStyle, terrainTileURL),
+      mapboxToken,
+    );
+
+    return style;
+  }, [finalStyle, mapboxToken, terrainTileURL]);
+}
+
+export function buildCrossSectionsStyle({
+  showLabels = true,
+  baseURL,
+  projectID,
+  clipSlug,
+}) {
+  let crossSectionLabelLayers: maplibre.LayerSpecification[] = [];
+
+  if (showLabels) {
+    crossSectionLabelLayers = [
+      {
+        id: "cross-section-endpoints",
+        type: "circle",
+        source: "crossSectionEndpoints",
+        paint: {
+          "circle-color": "black",
+          "circle-radius": 3,
+          "circle-opacity": 1,
+        },
+      },
+      {
+        id: "cross-section-start-labels",
+        type: "symbol",
+        source: "crossSectionEndpoints",
+        layout: {
+          "text-field": ["get", "name"],
+          "text-font": ["Montserrat Bold"],
+          "text-size": 16,
+          "text-radial-offset": 0.5,
+          "text-allow-overlap": false,
+          "text-variable-anchor": ["right", "top", "bottom", "left"],
+        },
+        paint: {
+          "text-halo-color": "rgba(255,255,255, 0.5)",
+          "text-halo-width": 1,
+          "text-color": "black",
+        },
+        filter: ["==", ["get", "end_type"], "start"],
+      },
+      {
+        id: "cross-section-end-labels",
+        type: "symbol",
+        source: "crossSectionEndpoints",
+        layout: {
+          "text-field": ["concat", ["get", "name"], "'"],
+          "text-font": ["Montserrat Bold"],
+          "text-size": 16,
+          "text-radial-offset": 0.5,
+          "text-allow-overlap": false,
+          "text-variable-anchor": ["left", "bottom", "top", "right"],
+        },
+        paint: {
+          "text-halo-color": "rgba(255,255,255, 0.5)",
+          "text-halo-width": 1,
+          "text-color": "black",
+        },
+        filter: ["==", ["get", "end_type"], "end"],
+      },
+    ];
+  }
+
+  return {
+    sources: {
+      crossSections: {
+        type: "geojson",
+        data: `${baseURL}/cross_sections.geojson?project_id=eq.${projectID}&order=name.asc&is_public=eq.true&clip_context_slug=eq.${clipSlug}`,
+      },
+      crossSectionEndpoints: {
+        type: "geojson",
+        data: `${baseURL}/cross_section_endpoints.geojson?project_id=eq.${projectID}&is_public=eq.true&clip_context_slug=eq.${clipSlug}`,
+      },
+    },
+    layers: [
+      {
+        id: "cross-section-lines",
+        type: "line",
+        source: "crossSections",
+        paint: {
+          "line-color": "#000",
+          "line-width": 2.5,
+          "line-opacity": 1,
+        },
+      },
+      ...crossSectionLabelLayers,
+    ],
+  };
+}
+
+function useBaseStyle(baseStyleURL: string, mapboxToken: string) {
+  const [baseStyle, setBaseStyle] = useState<StyleSpecification | null>(null);
+  useEffect(() => {
+    if (baseStyleURL == null) return;
+    getMapboxStyle(baseStyleURL, {
+      access_token: mapboxToken,
+    }).then((baseStyle) => {
+      setBaseStyle(baseStyle);
+    });
+  }, [baseStyleURL]);
+
+  return baseStyle;
+}
+
+export function useBasicDisplayStyle(
+  baseURL: string,
+  { mapboxToken, showOverlay = true }: DisplayStyleOptions,
+) {
+  const baseStyle = useBaseStyle(
+    "mapbox://styles/jczaplewski/cmggy9lqq005l01ryhb5o2eo4",
+    mapboxToken,
+  );
+
+  const overlayStyle = useMemo(() => {
+    if (!showOverlay) {
+      return null;
+    }
+    return buildBasicOverlayStyle(baseURL, {
+      selectedLayer: 22, // composite layer
+    });
+  }, [showOverlay]);
+
+  const demURL = useDEMTileURL();
+
+  const finalStyle = useMemo(() => {
+    if (baseStyle == null && overlayStyle == null) {
+      return null;
+    }
+
+    const mainStyle: mapboxgl.StyleSpecification = {
+      version: 8,
+      name: "Mapboard",
+      glyphs: "mapbox://fonts/openmaptiles/{fontstack}/{range}.pbf",
+      layers: [
+        // We need to add this so that the style doesn't randomly reload
+        {
+          id: "sky",
+          type: "sky",
+          paint: {
+            "sky-type": "atmosphere",
+            "sky-atmosphere-sun": [0.0, 0.0],
+            "sky-atmosphere-sun-intensity": 15,
+          },
+        },
+      ],
+      sources: {},
+    };
+
+    if (baseStyle == null) return null;
+
+    return mergeStyles(baseStyle, mainStyle, overlayStyle);
+  }, [baseStyle, overlayStyle]);
+
+  return useMemo(() => {
+    if (finalStyle == null) return null;
+    const style = prepareStyleForMaplibre(
+      optimizeTerrain(finalStyle, demURL),
+      mapboxToken,
+    );
+
+    return style;
+  }, [finalStyle, mapboxToken, demURL]);
+}
+
+export function optimizeTerrain(
+  style: StyleSpecification | null,
+  terrainSourceURL: string | null,
+  hillshadeColors: string[] = ["#ffffffcc", "#00000033"],
+) {
+  let deletedSourceKeys = [];
+  for (const [key, source] of Object.entries(style.sources)) {
+    if (source.type === "raster-dem") {
+      console.log("Found DEM source:", key, source);
+    }
+    if (source.type === "raster-dem" && source.url != terrainSourceURL) {
+      delete style.sources[key];
+      deletedSourceKeys.push(key);
+    }
+  }
+  deletedSourceKeys.push("mapbox://mapbox.terrain-rgb");
+
+  let vals = {};
+  if (terrainSourceURL?.includes("{x}")) {
+    vals["tiles"] = [terrainSourceURL];
+  } else {
+    vals["url"] = terrainSourceURL;
+  }
+
+  style.sources.terrain = {
+    type: "raster-dem",
+    tileSize: 512,
+    maxzoom: 14,
+    ...vals,
+  };
+
+  const [highlightColor, shadowColor] = hillshadeColors;
+
+  // use a multidirectional hillshade (Maplibre only)
+  for (const layer of style.layers) {
+    if (layer.type === "hillshade") {
+      layer.paint = {
+        "hillshade-method": "multidirectional",
+        "hillshade-highlight-color": [
+          highlightColor,
+          highlightColor,
+          highlightColor,
+          highlightColor,
+        ],
+        "hillshade-shadow-color": [
+          shadowColor,
+          shadowColor,
+          shadowColor,
+          shadowColor,
+        ],
+        "hillshade-illumination-direction": [270, 315, 0, 45],
+        "hillshade-illumination-altitude": [30, 30, 30, 30],
+      };
+    }
+  }
+
+  style.layers = style.layers.map((l) => {
+    if (deletedSourceKeys.includes(l.source)) {
+      return {
+        ...l,
+        source: "terrain",
+      };
+    }
+    return l;
+  });
+
+  // We don't need 3d terrain for Maplibre
+  delete style.terrain;
+
+  return style;
+}

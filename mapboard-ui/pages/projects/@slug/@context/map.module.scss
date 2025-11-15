@@ -112,10 +112,6 @@
   }
 }
 
-.selection-mode-control {
-  align-items: center;
-  justify-content: space-between;
-}
 
 .subsidiary-switches {
   transform: scale(0.85);
@@ -126,3 +122,25 @@
 .terrain-exaggeration input:global(.bp5-input) {
   width: 3em;
 }
+
+.map-viewer {
+  height: 100vh;
+}
+
+// Adjustments for maplibre
+:global(.maplibregl-map) {
+  position: absolute !important;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+
+
+  /** These styles seem to help with weird map zooming behavior */
+:global(.maplibregl-canvas), :global(.maplibregl-canvas-container) {
+  position: relative;
+  left: 0;
+  top: 0;
+}
+

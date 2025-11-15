@@ -1,0 +1,68 @@
+#map-legend
+  min-width: 20em
+  max-width: 30em
+  width: 20%
+  border-left: 2px solid #444
+  height: 100vh
+  overflow-y scroll
+  padding: 1em
+  h2:first-child
+    margin-top: 0
+
+  &.settings-enter
+    width: 0em
+    padding: 0em
+    &.settings-enter-active
+      transition: width 1000ms, padding 1000ms, border-left-width 1000m
+      padding 1em
+      border-left-width 2px
+      width: width
+
+  &.settings-leave
+    width: width
+    padding: 0em
+    &.settings-leave-active
+      width: 0em
+      transition: width 1000ms, border-left-width 1000ms, padding 1000ms
+      padding 0em
+      border-left-width: 0
+
+div.title-block
+  font-style bold
+  h1
+    font-size 1.5em
+    line-height inherit
+
+div.admonition
+  background-color #ffd
+  border 1px solid #888
+  padding 0.5em
+
+
+ul.controls
+  position: absolute
+  top 0
+  right 0
+  margin: 1em
+  z-index: 18
+  li
+    display: inline-block
+    margin-left: 0.5em
+    a
+      background-color: #ccc
+      border: 2px solid #999
+      color: #666
+      margin-bottom: 1em
+      text-decoration: none
+      padding 0.4em
+      padding-top: 0.4em
+      width: 3em
+      height: 3em
+      text-align: center
+      border-radius: 1.5em
+      display: block
+      &:hover
+        color: white
+        background-color: dodgerblue
+        border-color: darken(dodgerblue, 20%)
+

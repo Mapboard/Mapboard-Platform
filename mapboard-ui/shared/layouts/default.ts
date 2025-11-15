@@ -2,7 +2,7 @@ import "./style.css";
 import "@blueprintjs/core/lib/css/blueprint.css";
 import "@macrostrat/style-system/dist/style-system.css";
 import { DarkModeProvider } from "@macrostrat/ui-components";
-import styles from "./layouts.module.css";
+import styles from "./layouts.module.scss";
 import React from "react";
 import { Link } from "~/components";
 import hyper from "@macrostrat/hyper";
@@ -18,6 +18,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
   let main: React.ReactNode;
   if (layout === "fullscreen") {
     main = h(FullscreenLayout, children);
+  } else if (layout === "fullscreen-padded") {
+    main = h("div.page-container.fullscreen.padded", children);
+  } else if (layout === "wide") {
+    main = h(WideLayout, children);
   } else {
     main = h(DefaultLayout, children);
   }
@@ -41,6 +45,10 @@ function DefaultLayout({ children }: { children: React.ReactNode }) {
       h(Content, children),
     ],
   );
+}
+
+export function WideLayout({ children }: { children: React.ReactNode }) {
+  return h("div.page-container.wide", children);
 }
 
 function Sidebar({ children }: { children: React.ReactNode }) {

@@ -1,56 +1,47 @@
-import { allFeatureModes, FeatureMode } from "../state";
-import { PolygonStyleIndex } from "./pattern-fills";
-import {
-  createLineSymbolLayer,
-  createLineSymbolLayers,
-  LineSymbolIndex,
-} from "./line-symbols";
-
-export interface SourceChangeTimestamps {
-  [key: FeatureMode]: number | null;
-}
+import { createLineSymbolLayers, structureColor } from "./line-symbols";
+import { allFeatureModes, FeatureMode } from "../types";
+import { StyleSpecification } from "mapbox-gl";
 
 export interface CrossSectionConfig {
   layerID: number;
   enabled: boolean;
 }
 
-interface MapOverlayOptions {
+export interface MapOverlayOptions {
   selectedLayer: number | null;
-  sourceChangeTimestamps: SourceChangeTimestamps;
   enabledFeatureModes?: Set<FeatureMode>;
   showLineEndpoints?: boolean;
   showFacesWithNoUnit?: boolean;
+  showTopologyPrimitives?: boolean;
   useSymbols?: boolean;
-  polygonSymbolIndex?: PolygonStyleIndex | null;
-  lineSymbolIndex?: LineSymbolIndex | null;
-  crossSectionConfig?: CrossSectionConfig;
+  styleMode?: "display" | "edit";
+  // Restrict to bounds
+  clipToContextBounds?: boolean;
+  opacity?: number;
+  revision?: number;
+  visible: boolean;
 }
 
 export function buildMapOverlayStyle(
   baseURL: string,
   options: MapOverlayOptions,
-) {
+): mapboxgl.StyleSpecification {
   const {
     showLineEndpoints = true,
     selectedLayer,
     enabledFeatureModes = allFeatureModes,
-    sourceChangeTimestamps,
-    polygonSymbolIndex,
-    lineSymbolIndex,
-    crossSectionConfig,
     useSymbols = true,
     showFacesWithNoUnit = false,
-  } = options;
+    showTopologyPrimitives = false,
+    clipToContextBounds = false,
+    styleMode = "edit",
+    opacity = 1.0,
+    revision,
+    visible = true,
+  } = options ?? {};
 
   // Disable rivers and roads by default
-  let disabledLayers: number[] = [3, 4];
-  if (crossSectionConfig != null) {
-    console.log("Cross section config", crossSectionConfig);
-    if (!crossSectionConfig.enabled) {
-      disabledLayers.push(crossSectionConfig.layerID);
-    }
-  }
+  let disabledLayers: number[] = [];
 
   let featureModes: Set<FeatureMode> = enabledFeatureModes;
 
@@ -58,105 +49,84 @@ export function buildMapOverlayStyle(
 
   if (selectedLayer == null) {
     filter = ["!", ["in", ["get", "map_layer"], ["literal", disabledLayers]]];
-    featureModes = new Set([FeatureMode.Line, FeatureMode.Topology]);
   }
 
   let params = new URLSearchParams();
 
   let selectedLayerOpacity = (a, b) => {
-    return a;
-  };
-  if (selectedLayer != null) {
-    params.set("map_layer", selectedLayer.toString());
-    selectedLayerOpacity = (a, b) => {
-      return ["case", ["==", ["get", "map_layer"], selectedLayer], a, b];
-    };
-  }
-
-  let sources: Record<string, mapboxgl.SourceSpecification> = {
-    "mapbox-dem": {
-      type: "raster-dem",
-      url: "mapbox://mapbox.mapbox-terrain-dem-v1",
-      tileSize: 512,
-      maxzoom: 14,
-    },
+    return a * opacity;
   };
 
-  params.set(
-    "changed",
-    getMostRecentTimestamp(sourceChangeTimestamps).toString(),
-  );
+  const overlayLayers: mapboxgl.Layer[] = [];
 
-  let suffix = params.toString();
-  if (suffix.length > 0) {
-    suffix = "?" + suffix;
-  }
-
-  const lyr = Array.from(featureModes).join(",");
-  /** Could also consider separate sources per layer */
-  sources["mapboard"] = {
-    type: "vector",
-    tiles: [baseURL + `/tile/${lyr}/{z}/{x}/{y}${suffix}`],
-    volatile: true,
-  };
+  let sources: Record<string, mapboxgl.SourceSpecification> = {};
 
   let layers: mapboxgl.Layer[] = [];
 
-  if ((polygonSymbolIndex == null || lineSymbolIndex == null) && useSymbols) {
-    return {
-      version: 8,
-      sources,
-      layers,
+  if (selectedLayer != null) {
+    params.set("map_layer", selectedLayer.toString());
+    selectedLayerOpacity = (a, b) => {
+      return [
+        "case",
+        ["==", ["get", "map_layer"], selectedLayer],
+        a * opacity,
+        b * opacity,
+      ];
     };
   }
 
-  if (featureModes.has(FeatureMode.Topology)) {
-    let paint = {
-      "fill-color": ["get", "color"],
-      //"fill-opacity": selectedLayerOpacity(0.5, 0.3),
-    };
+  // always include all feature modes to ensure that styles reload quickly
+  // we could change this eventually...
+  const allModes = new Set<FeatureMode>([
+    FeatureMode.Fill,
+    FeatureMode.Line,
+    FeatureMode.Polygon,
+  ]);
+  const tilesetArray = Array.from(allModes).map(tileLayerNameForFeatureMode);
 
+  if (showTopologyPrimitives) {
+    tilesetArray.push("nodes");
+    tilesetArray.push("edges");
+    overlayLayers.push(...buildTopologyLayers());
+  }
+
+  if (tilesetArray.length == 0) {
+    // We can't have an empty layer at the moment, so we request line data
+    tilesetArray.push("line");
+  }
+
+  const compositeTileset = tilesetArray.join(",");
+
+  let p0: any = {
+    map_layer: selectedLayer,
+    revision,
+  };
+  if (clipToContextBounds) {
+    p0.clip = true;
+  }
+
+  const suffix = getTileQueryParams(p0);
+
+  sources["mapboard"] = {
+    type: "vector",
+    tiles: [baseURL + `/tile/${compositeTileset}/{z}/{x}/{y}${suffix}`],
+    volatile: false,
+  };
+
+  if (featureModes.has(FeatureMode.Fill)) {
     let topoFilters = [filter];
 
-    if (!showFacesWithNoUnit) {
-      topoFilters.push(["has", "type"]);
+    if (!showFacesWithNoUnit || styleMode === "display") {
+      topoFilters.push(["has", "unit"]);
     }
 
-    // Fill pattern layers
-    layers.push({
-      id: "topology_colors",
-      type: "fill",
-      source: "mapboard",
-      "source-layer": "faces",
-      paint: {
-        "fill-color": ["get", "color"],
-        "fill-opacity": selectedLayerOpacity(0.5, 0.3),
-      },
-      filter: ["all", ...topoFilters],
-    });
-
-    if (useSymbols) {
-      const ix = ["literal", polygonSymbolIndex];
-
-      const mapSymbolFilter: any[] = ["has", ["get", "type"], ix];
-
-      layers.push({
-        id: "unit_patterns",
-        type: "fill",
+    layers.push(
+      ...buildFillLayers({
+        opacity: selectedLayerOpacity(0.5, 0.3),
+        filter: ["all", ...topoFilters],
         source: "mapboard",
-        "source-layer": "faces",
-        paint: {
-          "fill-color": ["get", "color"],
-          "fill-pattern": [
-            "coalesce",
-            ["image", ["get", ["get", "type"], ix]],
-            ["image", "transparent"],
-          ],
-          "fill-opacity": selectedLayerOpacity(0.5, 0.3),
-        },
-        filter: ["all", ...topoFilters, mapSymbolFilter],
-      });
-    }
+      }),
+    );
   }
 
   if (featureModes.has(FeatureMode.Polygon)) {
@@ -186,21 +156,40 @@ export function buildMapOverlayStyle(
     ["get", "color"],
   ];
 
-  let lineWidth: any = 1;
+  let baseLineWidth = 0.5;
+  if (styleMode === "display") {
+    // In display mode, we use a smaller base line width
+    baseLineWidth = 0.5;
+  }
+
+  let displayCases: any = [];
+
+  if (styleMode === "display") {
+    // Add special cases for certain layers
+    displayCases = [["==", ["get", "layer"], 8], 3];
+  }
+
+  let lineWidth: any = baseLineWidth;
   lineWidth = [
     "case",
+    ...displayCases,
     [
       "in",
       ["get", "type"],
       ["literal", ["thrust-fault", "normal-fault", "fault"]],
     ],
-    1.5,
-    1,
+    2 * baseLineWidth,
+    baseLineWidth,
   ];
 
-  let lineFilter = filter;
+  let lineFilter = ["all", ["!", ["get", "covered"]], filter];
+
   if (selectedLayer == null) {
-    lineFilter = ["all", filter, ["!=", ["get", "layer"], "none"]];
+    lineFilter.push(["!=", ["get", "layer"], "none"]);
+  }
+
+  if (styleMode === "display") {
+    lineFilter.push(["!=", ["get", "type"], "mapboard:arbitrary"]);
   }
 
   if (featureModes.has(FeatureMode.Line)) {
@@ -218,8 +207,8 @@ export function buildMapOverlayStyle(
       filter: lineFilter,
     });
 
-    if (lineSymbolIndex != null && useSymbols) {
-      layers.push(...createLineSymbolLayers(lineSymbolIndex, lineFilter));
+    if (useSymbols) {
+      layers.push(...createLineSymbolLayers(lineFilter));
     }
   }
 
@@ -242,6 +231,31 @@ export function buildMapOverlayStyle(
     });
   }
 
+  layers.push(...overlayLayers);
+
+  if (revision != null) {
+    const rev = revision % 2;
+    // rekey sources and layers to force reload
+    let sourcesNew: StyleSpecification["sources"] = {};
+    for (const [key, value] of Object.entries(sources)) {
+      const ix = `${key}-${rev}`;
+      sourcesNew[ix] = value;
+    }
+
+    sources = sourcesNew;
+    for (let layer of layers) {
+      layer.id = layer.id + `-${rev}`;
+      layer.source = `${layer.source}-${rev}`;
+    }
+  }
+
+  if (!visible) {
+    for (let layer of layers) {
+      layer.layout ??= {};
+      layer.layout.visibility = "none";
+    }
+  }
+
   return {
     version: 8,
     sources,
@@ -249,6 +263,392 @@ export function buildMapOverlayStyle(
   };
 }
 
-function getMostRecentTimestamp(timestamps: SourceChangeTimestamps): number {
-  return Math.max(...Object.values(timestamps).map((x) => x ?? 0));
+export function buildDisplayOverlayStyle(
+  baseURL: string,
+  options: MapOverlayOptions,
+): mapboxgl.StyleSpecification {
+  const { selectedLayer } = options ?? {};
+
+  let params = new URLSearchParams();
+
+  let sources: Record<string, mapboxgl.SourceSpecification> = {};
+
+  params.set("map_layer", selectedLayer.toString());
+
+  const suffix = getTileQueryParams({
+    map_layer: selectedLayer,
+    clip: true,
+  });
+
+  sources["mapboard"] = {
+    type: "vector",
+    tiles: [baseURL + `/tile/fills,lines/{z}/{x}/{y}${suffix}`],
+    volatile: false,
+  };
+
+  sources["rivers"] = {
+    type: "vector",
+    tiles: [baseURL + `/tile/lines/{z}/{x}/{y}?map_layer=3&clip=true`],
+  };
+
+  function inTypes(typeList: string[]) {
+    return ["in", ["get", "type"], ["literal", typeList]];
+  }
+
+  let lineColor = [
+    "case",
+    inTypes(["thrust-fault", "normal-fault", "fault"]),
+    "#000000",
+    inTypes(["anticline-hinge", "syncline-hinge"]),
+    structureColor,
+    ["get", "color"],
+  ];
+
+  let lineWidth: any = [
+    "case",
+    // special case for NNC bounding surface
+    ["==", ["get", "source_layer"], 8],
+    2,
+    // faults and structures
+    inTypes(["anticline-hinge", "syncline-hinge"]),
+    1.5,
+    inTypes(["thrust-fault", "normal-fault", "fault"]),
+    1.2,
+    0.4,
+  ];
+
+  let lineFilter = [
+    "all",
+    ["!", ["coalesce", ["get", "covered"], false]],
+    //inFaultsAndStructures, // only use faults and structures
+    ["!", ["in", ["get", "type"], ["literal", ["mapboard:arbitrary"]]]],
+  ];
+
+  const lineSymbolFilter = [...lineFilter, ["!=", ["get", "source_layer"], 8]];
+  // exclude nappe bounding surface
+
+  let layers = [
+    {
+      id: "rivers",
+      type: "line",
+      source: "rivers",
+      "source-layer": "lines",
+      paint: {
+        "line-color": "hsl(215, 84%, 69%)",
+        "line-width": 1.5,
+      },
+    },
+    {
+      id: "fills-without-symbols",
+      type: "fill",
+      source: "mapboard",
+      "source-layer": "fills",
+      paint: {
+        "fill-color": ["get", "color"],
+        "fill-opacity": 0.5,
+        "fill-outline-color": "transparent",
+      },
+      filter: ["has", "unit"],
+    },
+    {
+      id: "fills-with-symbols",
+      type: "fill",
+      source: "mapboard",
+      "source-layer": "fills",
+      paint: {
+        "fill-pattern": [
+          "image",
+          [
+            "case",
+            ["has", "symbol"],
+            [
+              "concat",
+              ["get", "symbol"],
+              ":",
+              ["get", "symbol_color"],
+              ":transparent",
+            ],
+            ["concat", "color:", ["get", "color"]],
+          ],
+        ],
+        "fill-opacity": 0.8,
+        "fill-outline-color": "transparent",
+      },
+      filter: ["all", ["has", "symbol"], ["has", "unit"]],
+    },
+    // A single layer for all lines
+    {
+      id: "lines",
+      type: "line",
+      source: "mapboard",
+      "source-layer": "lines",
+      paint: {
+        "line-color": lineColor,
+        "line-width": lineWidth,
+        "line-opacity": 1,
+      },
+      layout: {
+        "line-cap": "round",
+        "line-join": "round",
+        "line-sort-key": [
+          "case",
+          inTypes(["anticline-hinge", "syncline-hinge"]),
+          2,
+          inTypes(["thrust-fault", "normal-fault", "fault"]),
+          1,
+          0,
+        ],
+      },
+      filter: lineFilter,
+    },
+    ...createLineSymbolLayers(lineSymbolFilter),
+  ];
+
+  return {
+    version: 8,
+    sources,
+    layers,
+  };
+}
+
+export function buildBasicOverlayStyle(
+  baseURL: string,
+  options: MapOverlayOptions,
+): mapboxgl.StyleSpecification {
+  const { selectedLayer } = options ?? {};
+
+  function inTypes(typeList: string[]) {
+    return ["in", ["get", "type"], ["literal", typeList]];
+  }
+
+  let lineColor = [
+    "case",
+    inTypes(["thrust-fault", "normal-fault", "fault"]),
+    "#000000",
+    inTypes(["anticline-hinge", "syncline-hinge"]),
+    structureColor,
+    ["get", "color"],
+  ];
+
+  let lineWidth: any = [
+    "case",
+    // special case for NNC bounding surface
+    ["==", ["get", "source_layer"], 8],
+    1.5,
+    // faults and structures
+    inTypes(["anticline-hinge", "syncline-hinge"]),
+    0.8,
+    inTypes(["thrust-fault", "normal-fault", "fault"]),
+    0.5,
+    0,
+  ];
+
+  let lineFilter = [
+    "all",
+    ["!", ["coalesce", ["get", "covered"], false]],
+    ["!", ["in", ["get", "type"], ["literal", ["mapboard:arbitrary"]]]],
+  ];
+
+  const lineSymbolFilter = [...lineFilter, ["!=", ["get", "source_layer"], 8]];
+  // exclude nappe bounding surface
+
+  let layers = [
+    {
+      id: "fills-without-symbols",
+      type: "fill",
+      source: "mapboard",
+      "source-layer": "fills",
+      paint: {
+        "fill-color": ["get", "color"],
+        "fill-opacity": 0.5,
+        "fill-outline-color": "transparent",
+      },
+      filter: ["has", "unit"],
+    },
+    {
+      id: "fills-with-symbols",
+      type: "fill",
+      source: "mapboard",
+      "source-layer": "fills",
+      paint: {
+        "fill-pattern": [
+          "image",
+          [
+            "case",
+            ["has", "symbol"],
+            [
+              "concat",
+              ["get", "symbol"],
+              ":",
+              ["get", "symbol_color"],
+              ":transparent",
+            ],
+            ["concat", "color:", ["get", "color"]],
+          ],
+        ],
+        "fill-opacity": 0.8,
+        "fill-outline-color": "transparent",
+      },
+      filter: ["all", ["has", "symbol"], ["has", "unit"]],
+    },
+    // A single layer for all lines
+    {
+      id: "lines",
+      type: "line",
+      source: "mapboard",
+      "source-layer": "lines",
+      paint: {
+        "line-color": lineColor,
+        "line-width": lineWidth,
+        "line-opacity": 1,
+      },
+      layout: {
+        "line-cap": "round",
+        "line-join": "round",
+        "line-sort-key": [
+          "case",
+          inTypes(["anticline-hinge", "syncline-hinge"]),
+          2,
+          inTypes(["thrust-fault", "normal-fault", "fault"]),
+          1,
+          0,
+        ],
+      },
+      filter: lineFilter,
+    },
+    ...createLineSymbolLayers(lineSymbolFilter, 1.5),
+  ];
+
+  return {
+    version: 8,
+    sources: {
+      mapboard: {
+        type: "vector",
+        tiles: [
+          baseURL + `/tile/fills,lines/{z}/{x}/{y}?map_layer=${selectedLayer}`,
+        ],
+        volatile: false,
+      },
+    },
+    layers,
+  };
+}
+
+export function buildFillLayers({ opacity, filter, source = "mapboard" }): any {
+  return [
+    {
+      id: "fills-without-symbols",
+      type: "fill",
+      source,
+      "source-layer": "fills",
+      paint: {
+        "fill-color": ["get", "color"],
+        "fill-opacity": opacity,
+        "fill-outline-color": "transparent",
+      },
+      filter: ["all", ["!", ["has", "symbol"]], filter],
+    },
+    {
+      id: "fills-with-symbols",
+      type: "fill",
+      source,
+      "source-layer": "fills",
+      paint: {
+        "fill-pattern": [
+          "image",
+          [
+            "case",
+            ["has", "symbol"],
+            [
+              "concat",
+              ["get", "symbol"],
+              ":",
+              ["get", "symbol_color"],
+              ":",
+              ["get", "color"],
+            ],
+            ["concat", "color:", ["get", "color"]],
+          ],
+        ],
+        "fill-opacity": opacity,
+        "fill-outline-color": "transparent",
+      },
+      filter: ["all", ["has", "symbol"], filter],
+    },
+  ];
+}
+
+export function buildTopologyLayers() {
+  return [
+    // Edges
+    {
+      id: "edges",
+      type: "line",
+      source: "mapboard",
+      "source-layer": "edges",
+      paint: {
+        "line-width": ["interpolate", ["linear"], ["zoom"], 0, 0.5, 12, 2],
+        "line-color": "#4f11ab",
+      },
+    },
+    // Nodes
+    {
+      id: "nodes",
+      type: "circle",
+      source: "mapboard",
+      "source-layer": "nodes",
+      "min-zoom": 4,
+      layout: {
+        "circle-sort-key": ["get", "n_edges"],
+      },
+      paint: {
+        // Small radius when zoomed out and larger when zoomed in
+        "circle-radius": ["interpolate", ["linear"], ["zoom"], 0, 0.5, 12, 3],
+        "circle-color": [
+          "interpolate",
+          ["linear"],
+          ["get", "n_edges"],
+          1,
+          "#d20045",
+          2,
+          "#4f11ab",
+          4,
+          "#606ad9",
+        ],
+      },
+    },
+  ];
+}
+
+function tileLayerNameForFeatureMode(mode: FeatureMode): string {
+  switch (mode) {
+    case FeatureMode.Fill:
+      return "fills";
+    case FeatureMode.Line:
+      return "lines";
+    case FeatureMode.Polygon:
+      return "polygons";
+  }
+}
+
+export function getTileQueryParams(params: Record<string, any>) {
+  let suffix = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value == null) {
+      continue;
+    }
+    let val = value;
+    // If has "toString" method, use it
+    if (value.toString) {
+      val = value.toString();
+    }
+    suffix.set(key, val);
+  }
+
+  let str = suffix.toString();
+  if (str.length > 0) {
+    str = "?" + str;
+  }
+
+  return str;
 }

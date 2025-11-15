@@ -1,0 +1,36 @@
+# EditorConfig is awesome: https://EditorConfig.org
+
+root = true
+
+# Default settings
+[*]
+end_of_line = lf
+insert_final_newline = true
+charset = utf-8
+trim_trailing_whitespace = true
+
+# 2-space indent for TypeScript and SQL
+[*.ts]
+indent_style = space
+indent_size = 2
+
+[*.tsx]
+indent_style = space
+indent_size = 2
+
+[*.sql]
+indent_style = space
+indent_size = 2
+
+[*.sass]
+indent_style = space
+indent_size = 2
+
+# 4-space indent for Python
+[*.py]
+indent_style = space
+indent_size = 4
+
+[Caddyfile]
+indent_style = space
+indent_size = 2

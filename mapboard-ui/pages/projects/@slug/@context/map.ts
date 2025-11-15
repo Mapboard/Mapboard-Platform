@@ -1,25 +1,24 @@
 // Import other components
 import hyper from "@macrostrat/hyper";
 import {
-  BaseInfoDrawer,
   FloatingNavbar,
   MapAreaContainer,
   MapView,
   PanelCard,
 } from "@macrostrat/map-interface";
 import styles from "./map.module.scss";
-import { SelectionMode, useMapActions, useMapState } from "./state";
-import { SphericalMercator } from "@mapbox/sphericalmercator";
+import { useMapActions, useMapState } from "./state";
 import { useMapRef } from "@macrostrat/mapbox-react";
-import { buildMapOverlayStyle, useMapStyle } from "./style";
-import { BoxSelectionManager } from "./_tools";
-import { SelectionActionsPanel } from "./selection";
-import { FormGroup, OptionProps, SegmentedControl } from "@blueprintjs/core";
-
-const mercator = new SphericalMercator({
-  size: 256,
-  antimeridian: true,
-});
+import { useMapStyle } from "./style";
+import { useStyleImageManager } from "./style/pattern-manager";
+import { BoxSelectionManager, SelectionDrawer } from "./selection";
+import { MapReloadWatcher } from "./change-watcher";
+import type { RequestTransformFunction } from "mapbox-gl";
+import { CrossSectionPanel, CrossSectionsLayer } from "./cross-sections";
+import { Allotment } from "allotment";
+import "allotment/dist/style.css";
+import { useRequestTransformer } from "./transform-request";
+import { BBox, expandBounds, MapMarker } from "./map-utils";
 
 export const h = hyper.styled(styles);
 
@@ -30,9 +29,11 @@ export function MapArea({
   bounds = null,
   headerElement = null,
   isMapView = true,
+  contextPanel = null,
 }: {
   headerElement?: React.ReactElement;
-  transformRequest?: mapboxgl.TransformRequestFunction;
+  transformRequest?: RequestTransformFunction;
+  contextPanel?: React.ReactElement;
   children?: React.ReactNode;
   mapboxToken?: string | null;
   baseURL: string;
@@ -42,16 +43,25 @@ export function MapArea({
 }) {
   const isOpen = useMapState((state) => state.layerPanelIsOpen);
 
+  const activeCrossSection = useMapState((state) => state.activeCrossSection);
+  const setActiveCrossSection = useMapState(
+    (state) => state.setActiveCrossSection,
+  );
+
+  /** Add a cross section assistant panel if a cross section is active */
+  let bottomPanel = null;
+  if (activeCrossSection != null) {
+    bottomPanel = h(CrossSectionPanel, { id: activeCrossSection });
+  }
+
+  const transformRequest = useRequestTransformer();
+
   let projection = { name: "globe" };
   if (!isMapView) {
     projection = { name: "mercator" };
   }
-  // const toolsCard = h(PanelCard, { className: "tools-panel" }, [
-  //   h("h4", "Tools"),
-  //   h(Button, { icon: "selection", small: true }, "Select"),
-  // ]);
 
-  return h(
+  const mainArea = h(
     MapAreaContainer,
     {
       navbar: h(FloatingNavbar, {
@@ -59,89 +69,67 @@ export function MapArea({
         width: "fit-content",
         height: "fit-content",
       }),
-      contextPanel: h(PanelCard, [children]),
+      contextPanel: h.if(contextPanel != null)(PanelCard, null, contextPanel),
       contextPanelOpen: isOpen,
-      fitViewport: true,
-      //detailPanel: h("div.right-elements", [toolsCard, h(InfoDrawer)]),
-      detailPanel: h(InfoDrawer),
+      fitViewport: false,
+      detailPanel: h(SelectionDrawer),
       className: "mapboard-map",
     },
     [
+      h(CrossSectionsLayer),
       h(MapInner, {
-        mapPosition: null,
         projection,
         boxZoom: false,
         mapboxToken,
         bounds,
         fitBounds: !isMapView,
+        maxZoom: 22,
         baseURL,
         isMapView,
+        transformRequest,
       }),
       h(BoxSelectionManager),
+      h(MapMarker),
+      h(MapReloadWatcher, { baseURL }),
+      children,
     ],
   );
-}
-
-const featureTypes = ["lines", "points", "polygons"];
-
-function InfoDrawer() {
-  const selection = useMapState((state) => state.selection);
-  const selectFeatures = useMapActions((a) => a.selectFeatures);
-  if (selection == null) {
-    return null;
-  }
 
   return h(
-    BaseInfoDrawer,
+    Allotment,
     {
-      title: "Selection",
-      onClose() {
-        selectFeatures(null);
+      vertical: true,
+      onVisibleChange(paneIndex, visible) {
+        // When the bottom panel is closed, clear the active cross-section
+        if (paneIndex === 1 && !visible) {
+          setActiveCrossSection(null);
+        }
       },
     },
     [
-      h("div.selection-counts", [
-        featureTypes.map((type) => {
-          const count = selection[type]?.length;
-          if (count == null || count == 0) {
-            return null;
-          }
-          return h("p", `${count} ${type} selected`);
-        }),
-      ]),
-      h(SelectionModePicker),
-      h(SelectionActionsPanel),
+      h(
+        Allotment.Pane,
+        {
+          preferredSize: "80%",
+          minSize: 300,
+        },
+        mainArea,
+      ),
+      h(
+        Allotment.Pane,
+        {
+          preferredSize: "20%",
+          minSize: 100,
+          snap: true,
+          visible: activeCrossSection != null,
+        },
+        bottomPanel,
+      ),
     ],
   );
 }
 
-const modes: OptionProps<string>[] = [
-  { value: SelectionMode.Add, label: "Add" },
-  { value: SelectionMode.Subtract, label: "Subtract" },
-  { value: SelectionMode.Replace, label: "Replace" },
-];
-
-function SelectionModePicker() {
-  /** Picker to define how we are selecting features */
-  const setSelectionMode = useMapActions((a) => a.setSelectionMode);
-  const activeMode = useMapState((state) => state.selectionMode);
-  return h(
-    FormGroup,
-    {
-      className: "selection-mode-control",
-      inline: true,
-      label: "Selection mode",
-    },
-    h(SegmentedControl, {
-      options: modes,
-      value: activeMode,
-      onValueChange: setSelectionMode,
-      small: true,
-    }),
-  );
-}
-
-function MapInner({
+export function MapInner({
   baseURL,
   fitBounds,
   bounds,
@@ -153,9 +141,16 @@ function MapInner({
 
   const mapRef = useMapRef();
 
+  const setMapPosition = useMapActions((a) => a.setMapPosition);
+  const mapPosition = useMapState((state) => state.mapPosition);
+  const projectID = useMapState((d) => d.context.project_id);
+
+  useStyleImageManager();
+
   const style = useMapStyle(baseURL, {
     isMapView,
     mapboxToken,
+    projectID,
   });
   if (style == null) {
     return null;
@@ -172,40 +167,33 @@ function MapInner({
     maxBounds = expandBounds(bounds, aspectRatio);
   }
 
-  return h(MapView, { maxBounds, bounds, mapboxToken, style, ...rest });
-}
-
-type BBox = [number, number, number, number];
-
-function expandBounds(bounds: BBox, aspectRatio = 1, margin = 0.1) {
-  // Make bounds square and expand to ensure that the entire cross-section can be viewed
-  if (bounds == null) {
-    return null;
-  }
-  const webMercatorBBox = mercator.convert(bounds, "900913");
-  const [minX, minY, maxX, maxY] = webMercatorBBox;
-
-  const center = [(minX + maxX) / 2, (minY + maxY) / 2];
-  let dx = maxX - minX;
-  let dy = maxY - minY;
-
-  const m = (Math.max(dx, dy) * margin) / 2;
-
-  dx += m;
-  dy += m;
-
-  let bbox2: BBox;
-  if (dx > dy) {
-    dy = dx / aspectRatio;
+  let _bounds = null;
+  let _mapPosition = null;
+  if (mapPosition == null) {
+    _bounds = bounds;
   } else {
-    dx = dy * aspectRatio;
+    _mapPosition = mapPosition;
   }
 
-  bbox2 = [
-    center[0] - dx / 2,
-    center[1] - dy / 2,
-    center[0] + dx / 2,
-    center[1] + dy / 2,
-  ];
-  return mercator.convert(bbox2, "WGS84");
+  return h(MapView, {
+    maxBounds,
+    bounds: _bounds,
+    mapPosition: _mapPosition,
+    mapboxToken,
+    style,
+    onMapMoved: setMapPosition,
+    loadingIgnoredSources: ["crossSectionCursor"],
+    ...rest,
+  });
 }
+
+enum ExistingLayersAction {
+  Replace = "replace",
+  Merge = "merge",
+  Skip = "skip",
+}
+
+type StyleUpdateConfig = {
+  onExistingLayers?: ExistingLayersAction;
+  removeLayers?: string[];
+};

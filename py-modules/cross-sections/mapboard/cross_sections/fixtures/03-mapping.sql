@@ -6,6 +6,8 @@ DECLARE
   layer_id integer;
   bedrock_id integer;
   outcrop_id integer;
+  nnc_id integer;
+  nappes_id integer;
 BEGIN
 
 INSERT INTO linework_type (id, name, color)
@@ -28,6 +30,17 @@ VALUES ('terrain', layer_id),
       ('bounds', layer_id)
 ON CONFLICT DO NOTHING;
 
+-- Create sky and subsurface units and add them to the polygon types for the context
+INSERT INTO cross_section.polygon_type (id, name, color)
+VALUES ('sky', 'Sky', '#005A9C'),
+       ('subsurface', 'Subsurface', '#ffffff')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO map_layer_polygon_type (type, map_layer)
+VALUES ('sky', layer_id),
+       ('subsurface', layer_id)
+ON CONFLICT DO NOTHING;
+
 -- Create a bounds box
 DELETE FROM linework
 WHERE type = 'terrain' AND map_layer = layer_id;
@@ -41,9 +54,8 @@ SELECT ST_Multi(
 ), 'terrain', layer_id
 FROM cross_section.section;
 
-
 DELETE FROM linework WHERE type = 'bounds' AND map_layer = layer_id;
-  
+
 INSERT INTO linework (map_layer, type, geometry)
 SELECT layer_id, 'bounds', ST_ExteriorRing(
   ST_MakeEnvelope(
@@ -60,10 +72,28 @@ ON CONFLICT DO NOTHING;
 and line types of the main mapping schema. */
 
 -- Layers for data
+
+/** Hierarchical layers for tectonic elements */
 INSERT INTO map_layer (name, topological, parent)
-VALUES ('Bedrock', true, layer_id)
+VALUES ('Nappe complex', true, layer_id)
 ON CONFLICT (name) DO UPDATE SET
-  topological = true
+  topological = true,
+  parent = layer_id
+RETURNING id INTO nnc_id;
+
+/** Create a layer for nappes */
+INSERT INTO map_layer (name, topological, parent)
+VALUES ('Nappes', true, nnc_id)
+ON CONFLICT (name) DO UPDATE SET
+  topological = true,
+  parent = nnc_id
+RETURNING id INTO nappes_id;
+
+INSERT INTO map_layer (name, topological, parent)
+VALUES ('Bedrock', true, nappes_id)
+ON CONFLICT (name) DO UPDATE SET
+  topological = true,
+  parent = nappes_id
 RETURNING id INTO bedrock_id;
 
 /** Create empty layer for outcrop polygons */
@@ -73,6 +103,7 @@ ON CONFLICT (name) DO UPDATE SET
   topological = false,
   parent = layer_id
 RETURNING id INTO outcrop_id;
+
 
 
 WITH poly_types AS (
@@ -90,6 +121,10 @@ INSERT INTO map_layer_polygon_type (type, map_layer)
 SELECT id, bedrock_id FROM poly_types
 UNION ALL
 SELECT id, outcrop_id FROM poly_types
+UNION ALL
+SELECT id, nappes_id FROM poly_types
+UNION ALL
+SELECT id, nnc_id FROM poly_types
 ON CONFLICT DO NOTHING;
 
 WITH linework_types AS (
@@ -129,7 +164,7 @@ SELECT
 FROM sec_unit
 ),
 s1 AS (
-SELECT 
+SELECT
   unit_id,
   ST_Intersection(
     ST_MakeEnvelope(

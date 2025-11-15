@@ -2,6 +2,7 @@ import h from "@macrostrat/hyper";
 import { useParams } from "~/utils/routing";
 import { useData } from "vike-react/useData";
 import type { Data } from "./+data";
+import { Spinner } from "@blueprintjs/core";
 
 export function Page() {
   const { slug } = useParams();
@@ -16,10 +17,14 @@ export function Page() {
     h("p", ["Created on ", strDate]),
     h("p", ["SRID: ", srid]),
     h(Contexts, { contexts }),
+    h("a", { href: `./${slug}/legend-items` }, "View legend items"),
   ]);
 }
 
 function Contexts({ contexts }) {
+  if (contexts == null) {
+    return h(Spinner);
+  }
   // Group contexts by type
   const ctxMap = contexts.reduce((acc, ctx) => {
     const { type } = ctx;
@@ -31,9 +36,16 @@ function Contexts({ contexts }) {
   const maps = ctxMap["map"] ?? [];
   const crossSections = ctxMap["cross-section"] ?? [];
 
+  const project_slug = contexts[0]?.project_slug;
+
   return h("div.contexts", [
     h(ContextList, { name: "Maps", contexts: maps }),
     h(ContextList, { name: "Cross sections", contexts: crossSections }),
+    h(
+      "a.print-products",
+      { href: `./${project_slug}/map/print` },
+      "Print products",
+    ),
   ]);
 }
 

@@ -5,10 +5,11 @@ from subprocess import run
 from sys import stdin
 from typing import Optional
 from rich.console import Console
+from datetime import datetime
 
 from macrostrat.app_frame.compose import console
-from macrostrat.database import run_sql, run_query
-from macrostrat.database.transfer.utils import raw_database_url
+from macrostrat.database import run_sql
+from macrostrat.database.transfer import pg_dump_to_file
 from macrostrat.dinosaur import create_migration
 from macrostrat.utils.shell import run
 from mapboard.topology_manager.database import Database
@@ -18,6 +19,7 @@ from typer import Argument, Context, Option, Typer
 from .fixtures import apply_core_fixtures, apply_fixtures, create_core_fixtures
 from mapboard.core.settings import connection_string, core_db
 from mapboard.core.database import project_params, setup_database
+import asyncio
 
 db_app = Typer(name="db", no_args_is_help=True)
 
@@ -26,7 +28,7 @@ db_app = Typer(name="db", no_args_is_help=True)
 def create_fixtures(
     project: Optional[str] = None,
 ):
-    """Create database fixtures"""
+    """Create database fixtures, either for the core database or a specific project"""
     if project is None:
         return create_core_fixtures()
 
@@ -66,7 +68,7 @@ def psql(ctx: Context, database: Optional[str] = None):
 def run_procedure(project: str, name: Optional[str] = Argument(None)):
     """Run a predefined stored procedure in a project database.
     If no name is provided, list available procedures."""
-    proc_dir = Path(__file__).parent.parent.parent.parent / "migrations"
+    proc_dir = Path(__file__).parent.parent.parent.parent.parent / "migrations"
     if name is None:
         console.print("[bold]Available procedures:")
         for proc in proc_dir.glob("*.sql"):
@@ -85,8 +87,9 @@ def migrate(
     apply: bool = False,
     allow_unsafe: bool = False,
 ):
-    console = Console(file=sys.stderr)
     """Migrate a Mapboard project database to the latest version"""
+
+    console = Console(file=sys.stderr)
     if project is None:
         project = "mapboard"
         database = "mapboard"
@@ -149,3 +152,22 @@ def disconnect(project: Optional[str] = None):
 
         """
     )
+
+
+@db_app.command()
+def dump(project: str, dumpfile: Optional[Path] = None):
+    """Dump a Mapboard project database to a file"""
+    if project == "mapboard" or project == "-":
+        project = "mapboard"
+        db = core_db
+    else:
+        params = project_params(project)
+        database = params.pop("database")
+        db = Database(connection_string(database))
+
+    if dumpfile is None:
+        date_string = datetime.now().strftime("%Y-%m-%d")
+        dumpfile = Path(f"{project}-{date_string}.pg-dump")
+
+    task = pg_dump_to_file(db.engine, dumpfile)
+    asyncio.run(task)

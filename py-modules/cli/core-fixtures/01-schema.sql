@@ -40,12 +40,16 @@ CREATE TABLE IF NOT EXISTS mapboard.context (
   srid        integer REFERENCES spatial_ref_sys (srid) DEFAULT 4326,
   tolerance   numeric NOT NULL DEFAULT 0.00001,
   bounds      geometry(MultiPolygon),
+  is_public   boolean DEFAULT true,
   parent      integer REFERENCES mapboard.context (id),
   parent_geom geometry(Geometry),
   offset_x    numeric DEFAULT 0,
   offset_y    numeric DEFAULT 0,
   UNIQUE (project_id, slug)
 );
+
+ALTER TABLE mapboard.context
+  ADD COLUMN IF NOT EXISTS is_public boolean DEFAULT true;
 
 
 ALTER TABLE mapboard.project
@@ -71,8 +75,36 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER check_bounds_overlap
-  BEFORE INSERT OR UPDATE
-  ON mapboard.context
-  FOR EACH ROW
-EXECUTE FUNCTION mapboard.check_bounds_overlap();
+-- CREATE TRIGGER check_bounds_overlap
+--   BEFORE INSERT OR UPDATE
+--   ON mapboard.context
+--   FOR EACH ROW
+-- EXECUTE FUNCTION mapboard.check_bounds_overlap();
+
+-- Overlapping contexts are OK, actually...
+DROP TRIGGER IF EXISTS check_bounds_overlap ON mapboard.context;
+
+/** Base layers
+ Table that defines standardized base layers for mapboard contexts.
+
+ Base layers of several types can be defined, including:
+ - DEMs
+ - Imagery
+
+ Base layers can either be tile service URLs or COGs that will be served as tiles.
+ */
+
+CREATE TABLE IF NOT EXISTS mapboard.base_layer (
+  id          serial PRIMARY KEY,
+  name        text NOT NULL,
+  description text,
+  type        text NOT NULL, -- e.g. 'dem', 'imagery'
+  url         text NOT NULL, -- URL to tile service or COG
+  created_at  timestamp DEFAULT current_timestamp
+);
+
+CREATE TABLE IF NOT EXISTS mapboard.context_base_layer (
+  context_id    integer REFERENCES mapboard.context (id) ON DELETE CASCADE,
+  base_layer_id integer REFERENCES mapboard.base_layer (id) ON DELETE CASCADE,
+  PRIMARY KEY (context_id, base_layer_id)
+);

@@ -1,22 +1,24 @@
 import { useEffect, useMemo, useState } from "react";
-import { useAsyncEffect, useInDarkMode } from "@macrostrat/ui-components";
+import { useInDarkMode } from "@macrostrat/ui-components";
 import { BasemapType, useMapState } from "../state";
 import { getMapboxStyle, mergeStyles } from "@macrostrat/mapbox-utils";
-import { buildMapOverlayStyle, CrossSectionConfig } from "./overlay";
-import { buildSelectionLayers } from "../_tools";
-import {
-  PolygonPatternConfig,
-  PolygonStyleIndex,
-  setupStyleImages,
-} from "./pattern-fills";
-import { useMapRef, useMapStatus } from "@macrostrat/mapbox-react";
-import { lineSymbols } from "./line-symbols";
-import { loadImage } from "./pattern-images";
+import { buildMapOverlayStyle, MapOverlayOptions } from "./overlay";
+import { buildSelectionLayers } from "../selection";
+import { Atom, atom, useAtom, useAtomValue } from "jotai";
+import { atomWithStorage } from "jotai/utils";
+import { acceptedRevisionAtom, mapReloadCounterAtom } from "../change-watcher";
+import { apiBaseURL, mapboxToken } from "~/settings";
+import { useMapRef } from "@macrostrat/mapbox-react";
+import { StyleSpecification } from "mapbox-gl";
+import { createStationsLayer } from "./station-layers";
+import { optimizeTerrain } from "../display/style";
+import { prepareStyleForMaplibre } from "~/maplibre";
 
 export { buildMapOverlayStyle };
 
-function useBaseMapStyle(basemapType: BasemapType) {
+export function useBaseMapStyle(basemapType: BasemapType) {
   const isEnabled = useInDarkMode();
+
   let baseStyle = isEnabled
     ? "mapbox://styles/mapbox/dark-v10"
     : "mapbox://styles/mapbox/light-v10";
@@ -26,214 +28,279 @@ function useBaseMapStyle(basemapType: BasemapType) {
     baseStyle = isEnabled
       ? "mapbox://styles/jczaplewski/ckfxmukdy0ej619p7vqy19kow"
       : "mapbox://styles/jczaplewski/ckxcu9zmu4aln14mfg4monlv3";
+
+    //     // mapbox://styles/jczaplewski/cmggy9lqq005l01ryhb5o2eo4
   }
   return baseStyle;
 }
 
-interface MapStyleOptions {
+export interface MapStyleOptions {
   mapboxToken: string;
   isMapView: boolean;
+  projectID: number;
+}
+
+const overlayStyleAtom = atom<mapboxgl.StyleSpecification | null>(null);
+
+export const showStationsAtom = atomWithStorage<boolean>(
+  "mapboard:show-stations",
+  true,
+);
+
+const styleLayerIDsAtom = atom<string[]>((get) => {
+  const overlayStyle = get(overlayStyleAtom);
+  if (overlayStyle == null) return [];
+  return overlayStyle.layers.map((l) => l.id);
+});
+
+export function useStyleLayerIDs() {
+  return useAtomValue(styleLayerIDsAtom);
+}
+
+export const overlayClipAtom = atomWithStorage<boolean>(
+  "mapboard:clip-overlay",
+  false,
+);
+
+export const overlayOpacityAtom = atomWithStorage<number>(
+  "mapboard:overlay-opacity",
+  1.0,
+);
+
+export function useMapRevision(revisionAtom: Atom<number>): [number, number] {
+  const mapRef = useMapRef();
+  const revision = useAtomValue(revisionAtom);
+  const [acceptedRevision, setAcceptedRevision] = useState<number>(revision);
+
+  // When loading completes, update accepted revision
+  useEffect(() => {
+    const map = mapRef.current;
+    if (map == null) return;
+    // Listen for source load
+    if (revision === acceptedRevision) return;
+    const callback = (evt) => {
+      const key = `mapboard-${revision}`;
+      if (evt.sourceId != key) return;
+      if (!evt.isSourceLoaded) return;
+      // Only tile requests, as this signifies that the source has actually loaded data
+      if (evt.tile == null) return;
+      console.log("Accepting revision", revision);
+      setAcceptedRevision(revision);
+    };
+    map.on("data", callback);
+    return () => {
+      map.off("data", callback);
+    };
+  }, [revision, acceptedRevision]);
+
+  return [revision, acceptedRevision];
+}
+
+export function useInsetMapStyle() {
+  /** Inset map style for basic context map use */
+  const baseStyleURL = "mapbox://styles/jczaplewski/ckxcu9zmu4aln14mfg4monlv3";
+
+  const [baseStyle, setBaseStyle] = useState<StyleSpecification | null>(null);
+  useEffect(() => {
+    if (baseStyleURL == null) return;
+    getMapboxStyle(baseStyleURL, {
+      access_token: mapboxToken,
+    }).then((baseStyle) => {
+      setBaseStyle(baseStyle);
+    });
+  }, [baseStyleURL]);
+
+  return useMemo(() => {
+    if (baseStyle == null) {
+      return null;
+    }
+
+    // remove all layers of type "fill" to get rid of landcover
+    baseStyle.layers = baseStyle.layers.filter(
+      (layer) =>
+        layer.type != "fill" || layer.id === "water" || layer.id == "snow",
+    );
+
+    for (const layer of baseStyle.layers) {
+      if (layer.type == "background") {
+        layer.paint = {
+          ...layer.paint,
+          "background-color": "#ffffff",
+        };
+      }
+    }
+
+    // Modernize the terrain source
+    const style = prepareStyleForMaplibre(
+      optimizeTerrain(baseStyle, "mapbox://mapbox.mapbox-terrain-dem-v1", [
+        "#ffffff",
+        "#aaaaaa",
+      ]),
+    );
+    return style;
+  }, [baseStyle]);
 }
 
 export function useMapStyle(
   baseURL: string,
-  { mapboxToken, isMapView = true }: MapStyleOptions,
+  { mapboxToken, isMapView = true, projectID }: MapStyleOptions,
 ) {
   const activeLayer = useMapState((state) => state.activeLayer);
   const basemapType = useMapState((state) => state.baseMap);
-  const changeTimestamps = useMapState((state) => state.lastChangeTime);
   const showLineEndpoints = useMapState((state) => state.showLineEndpoints);
   const enabledFeatureModes = useMapState((state) => state.enabledFeatureModes);
-  const crossSectionLayerID: number | null = useMapState(
-    (state) => state.mapLayers?.find((d) => d.name == "Sections")?.id,
-  );
-  const showCrossSectionLines = useMapState((d) => d.showCrossSectionLines);
+
   const showFacesWithNoUnit = useMapState((d) => d.showFacesWithNoUnit);
   const showOverlay = useMapState((d) => d.showOverlay);
   const exaggeration = useMapState((d) => d.terrainExaggeration);
+  const showTopologyPrimitives = useMapState((d) => d.showTopologyPrimitives);
+  const styleMode = useMapState((d) => d.styleMode);
+  const showStations = useAtomValue(showStationsAtom);
+
+  const [revision, acceptedRevision] = useMapRevision(mapReloadCounterAtom);
 
   const baseStyleURL = useBaseMapStyle(basemapType);
 
-  const [baseStyle, setBaseStyle] = useState(null);
-  const [overlayStyle, setOverlayStyle] = useState(null);
+  const [overlayStyle, setOverlayStyle] = useAtom(overlayStyleAtom);
+  const clipToContextBounds = useAtomValue(overlayClipAtom);
 
-  const polygonSymbolIndex = useMapSymbols();
-  const lineSymbolIndex = useLineSymbols();
+  const overlayOpacity = useAtomValue(overlayOpacityAtom);
 
-  const crossSectionConfig: CrossSectionConfig = {
-    layerID: crossSectionLayerID,
-    enabled: showCrossSectionLines,
-  };
-
+  const [baseStyle, setBaseStyle] = useState<StyleSpecification | null>(null);
   useEffect(() => {
-    if (!isMapView) {
-      setBaseStyle(null);
-      return;
-    }
+    if (baseStyleURL == null) return;
     getMapboxStyle(baseStyleURL, {
       access_token: mapboxToken,
-    }).then(setBaseStyle);
-  }, [baseStyleURL, mapboxToken, isMapView]);
+    }).then((baseStyle) => {
+      console.log(baseStyle);
+      setBaseStyle(baseStyle);
+    });
+  }, [baseStyleURL]);
 
-  useAsyncEffect(async () => {
+  useEffect(() => {
     if (!showOverlay) {
       setOverlayStyle(null);
       return;
     }
-    const style = buildMapOverlayStyle(baseURL, {
-      selectedLayer: activeLayer,
-      sourceChangeTimestamps: changeTimestamps,
+
+    const styleOpts: MapOverlayOptions = {
+      selectedLayer: isMapView ? activeLayer : null,
       enabledFeatureModes,
       showLineEndpoints,
-      polygonSymbolIndex,
-      lineSymbolIndex,
-      crossSectionConfig,
       showFacesWithNoUnit,
+      showTopologyPrimitives,
+      styleMode,
+      clipToContextBounds,
+      opacity: overlayOpacity,
+    };
+
+    const style = buildMapOverlayStyle(baseURL, {
+      ...styleOpts,
+      revision: acceptedRevision,
+      visible: true,
     });
-    const selectionStyle: any = { layers: buildSelectionLayers() };
-    setOverlayStyle(mergeStyles(style, selectionStyle));
+
+    let nextStyle = {};
+    if (revision !== acceptedRevision) {
+      nextStyle = buildMapOverlayStyle(baseURL, {
+        ...styleOpts,
+        revision,
+        visible: true,
+      });
+    }
+
+    let stationsStyle: Partial<StyleSpecification> = {};
+    if (showStations) {
+      stationsStyle = {
+        sources: {
+          stations: {
+            type: "geojson",
+            data: `${apiBaseURL}/stations.geojson?project_id=eq.${projectID}`,
+          },
+        },
+        layers: [
+          createStationsLayer({
+            id: "orientations",
+            sourceID: "stations",
+            showOrientations: true,
+          }),
+        ],
+      };
+    }
+
+    const selectionStyle: any = {
+      layers: buildSelectionLayers(`mapboard-${acceptedRevision}`),
+    };
+
+    setOverlayStyle(
+      mergeStyles(style, nextStyle, stationsStyle, selectionStyle),
+    );
   }, [
     activeLayer,
-    changeTimestamps,
     showLineEndpoints,
     enabledFeatureModes,
-    polygonSymbolIndex,
-    lineSymbolIndex,
-    showCrossSectionLines,
     showFacesWithNoUnit,
     showOverlay,
+    revision,
+    acceptedRevision,
+    showTopologyPrimitives,
+    clipToContextBounds,
+    overlayOpacity,
+    showStations,
   ]);
 
   return useMemo(() => {
-    if (baseStyle == null && overlayStyle == null) {
+    if (baseStyleURL == null || overlayStyle == null) {
       return null;
     }
 
-    const terrainSources = {
+    const mainStyle: mapboxgl.StyleSpecification = {
+      version: 8,
+      name: "Mapboard",
+      layers: [
+        // We need to add this so that the style doesn't randomly reload
+        {
+          id: "sky",
+          type: "sky",
+          paint: {
+            "sky-type": "atmosphere",
+            "sky-atmosphere-sun": [0.0, 0.0],
+            "sky-atmosphere-sun-intensity": 15,
+          },
+        },
+      ],
       sources: {
-        "mapbox-dem": {
+        terrain: {
           type: "raster-dem",
           url: "mapbox://mapbox.mapbox-terrain-dem-v1",
           tileSize: 512,
+          maxzoom: 14,
         },
       },
       terrain: {
-        source: "mapbox-dem",
+        source: "terrain",
         exaggeration,
       },
+      fog: {
+        range: [0.8, 8],
+        color: "#c6d0e0",
+        "horizon-blend": 0.5,
+        "high-color": "#245bde",
+        "space-color": "#000000",
+        "star-intensity": 0.15,
+      },
+
+      // Use the new imports syntax for basemap styles.
+      // This allows us to provide our own sprites
+      // imports: [
+      //   {
+      //     id: "basemap",
+      //     url: baseStyleURL,
+      //   },
+      // ],
     };
 
-    let style = mergeStyles(baseStyle, overlayStyle, terrainSources);
-
-    return replaceRasterDEM(style, "mapbox-dem");
+    const style = mergeStyles(baseStyle, overlayStyle, mainStyle);
+    return style;
   }, [baseStyle, overlayStyle, exaggeration]);
-}
-
-function replaceRasterDEM(style, sourceName) {
-  /** Replace all raster DEM sources with a single source */
-  let removedSources = [];
-  let newSources: any = {};
-  for (const [key, source] of Object.entries(style.sources)) {
-    if (source.type == "raster-dem" && key != sourceName) {
-      removedSources.push(key);
-    } else {
-      newSources[key] = source;
-    }
-  }
-
-  console.log(newSources, removedSources);
-
-  const newLayers = style.layers.map((layer) => {
-    if (removedSources.includes(layer.source)) {
-      return {
-        ...layer,
-        source: sourceName,
-      };
-    }
-    return layer;
-  });
-  let terrain = undefined;
-  if (style.terrain != null) {
-    terrain = { ...style.terrain, source: sourceName };
-  }
-
-  return { ...style, sources: newSources, layers: newLayers, terrain };
-}
-
-const color = "#e350a3";
-
-export function useMapSymbols(): PolygonStyleIndex | null {
-  const polygonTypes = useMapState((state) => state.dataTypes.polygon);
-
-  const map = useMapRef();
-  const isInitialized = useMapStatus((state) => state.isInitialized);
-
-  return useAsyncMemo(async () => {
-    if (map.current == null || polygonTypes == null) {
-      return null;
-    }
-
-    const symbols: PolygonPatternConfig[] = polygonTypes
-      ?.map((d) => {
-        const sym = d.symbology;
-        return {
-          color: d.color,
-          id: d.id,
-          symbol: sym?.name,
-          symbolColor: sym?.color,
-        };
-      })
-      .filter((d) => d.symbol != null);
-
-    await setupLineSymbols(map.current);
-
-    const patternBaseURL = "/assets/geologic-patterns/svg";
-    console.log("Setting up style images", symbols);
-    return await setupStyleImages(map.current, symbols, { patternBaseURL });
-  }, [polygonTypes, isInitialized]);
-}
-
-type LineStyleIndex = { [key: string]: string };
-
-export function useLineSymbols(): LineStyleIndex | null {
-  const map = useMapRef();
-  const isInitialized = useMapStatus((state) => state.isInitialized);
-
-  return useAsyncMemo(async () => {
-    if (map.current == null) {
-      return null;
-    }
-    return await setupLineSymbols(map.current);
-  }, [isInitialized]);
-}
-
-function useAsyncMemo<T>(fn: () => Promise<T>, deps: any[]): T | null {
-  const [value, setValue] = useState<T | null>(null);
-  useEffect(() => {
-    fn().then(setValue);
-  }, deps);
-  return value;
-}
-
-const vizBaseURL = "//visualization-assets.s3.amazonaws.com";
-const lineSymbolsURL = vizBaseURL + "/geologic-line-symbols/png";
-
-async function setupLineSymbols(map) {
-  const symbols = await Promise.all(
-    lineSymbols.map(async function (symbol) {
-      console.log("Loading line symbol", symbol);
-      if (map.hasImage(symbol)) return symbol;
-      const image = await loadImage(lineSymbolsURL + `/${symbol}.png`);
-      if (map.hasImage(symbol)) return symbol;
-      map.addImage(symbol, image, { sdf: true, pixelRatio: 3 });
-      return symbol;
-    }),
-  );
-
-  return symbols
-    .filter((d) => d != null)
-    .reduce((acc: LineStyleIndex, d) => {
-      acc[d] = d;
-      return acc;
-    }, {});
 }

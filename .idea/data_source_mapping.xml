@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="DataSourcePerFileMappings">
+    <file url="file://$APPLICATION_CONFIG_DIR$/consoles/db/16c77b32-447a-4d96-86d1-727ea6f75a22/console.sql" value="16c77b32-447a-4d96-86d1-727ea6f75a22" />
+    <file url="file://$APPLICATION_CONFIG_DIR$/consoles/db/16c77b32-447a-4d96-86d1-727ea6f75a22/console_7.sql" value="16c77b32-447a-4d96-86d1-727ea6f75a22" />
+    <file url="file://$APPLICATION_CONFIG_DIR$/consoles/db/16c77b32-447a-4d96-86d1-727ea6f75a22/console_8.sql" value="16c77b32-447a-4d96-86d1-727ea6f75a22" />
+    <file url="file://$APPLICATION_CONFIG_DIR$/consoles/db/16c77b32-447a-4d96-86d1-727ea6f75a22/console_9.sql" value="16c77b32-447a-4d96-86d1-727ea6f75a22" />
+    <file url="file://$PROJECT_DIR$/py-modules/cli/core-fixtures/01-schema.sql" value="16c77b32-447a-4d96-86d1-727ea6f75a22" />
+    <file url="file://$PROJECT_DIR$/py-modules/cli/core-fixtures/02.0-api.sql" value="16c77b32-447a-4d96-86d1-727ea6f75a22" />
+    <file url="file://$PROJECT_DIR$/py-modules/cli/core-fixtures/02.1-api-transitional.sql" value="16c77b32-447a-4d96-86d1-727ea6f75a22" />
+    <file url="file://$PROJECT_DIR$/py-modules/cli/mapboard/cli/fixtures/stations-layer.sql" value="16c77b32-447a-4d96-86d1-727ea6f75a22" />
+    <file url="file://$PROJECT_DIR$/py-modules/cross-sections/mapboard/cross_sections/fixtures/03-mapping.sql" value="16c77b32-447a-4d96-86d1-727ea6f75a22" />
+    <file url="file://$PROJECT_DIR$/py-modules/cross-sections/mapboard/cross_sections/fixtures/04-piercing-points.sql" value="16c77b32-447a-4d96-86d1-727ea6f75a22" />
+    <file url="file://$PROJECT_DIR$/py-modules/topology-manager/mapboard/topology_manager/fixtures/04-topology-views.sql" value="16c77b32-447a-4d96-86d1-727ea6f75a22" />
+    <file url="file://$PROJECT_DIR$/py-modules/topology-manager/mapboard/topology_manager/fixtures/09-topology-notify.sql" value="16c77b32-447a-4d96-86d1-727ea6f75a22" />
+    <file url="file://$PROJECT_DIR$/../../Naukluft/versioned/defs/stratigraphy-views/fixtures/lines-planes.sql" value="16c77b32-447a-4d96-86d1-727ea6f75a22" />
+  </component>
+</project>

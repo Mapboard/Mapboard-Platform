@@ -1,0 +1,21 @@
+.print-area-container
+  position: relative
+  width: fit-content
+  height: fit-content
+
+.print-area
+  padding: 4px
+  outline: 1px solid crimson
+
+.controls
+  position: fixed
+  top: 5px
+  right: 5px
+  z-index: 10
+
+@media print
+  .controls
+    display: none
+
+  .print-area
+    outline: none

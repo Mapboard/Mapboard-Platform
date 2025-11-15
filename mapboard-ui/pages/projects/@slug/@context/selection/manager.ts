@@ -1,0 +1,332 @@
+/* Map tool for box selection
+ *
+ * https://docs.mapbox.com/mapbox-gl-js/example/using-box-queryrenderedfeatures/
+ *  */
+
+import { useMapRef, useMapStyleOperator } from "@macrostrat/mapbox-react";
+import styles from "./manager.module.sass";
+import mapboxgl from "mapbox-gl";
+import hyper from "@macrostrat/hyper";
+import { renderToString } from "react-dom/server";
+import { useMapActions, useMapState } from "../state";
+import { useEffect, useRef, useState } from "react";
+import { DataField } from "@macrostrat/data-components";
+import { allFeatureModes, FeatureMode } from "../types";
+import { acceptedRevisionAtom } from "../change-watcher";
+import { useAtomValue } from "jotai";
+
+const h = hyper.styled(styles);
+
+type BoxSelectionProps = {
+  layer: string;
+};
+
+export function buildSelectionLayers(source, color: string = "#ff0000") {
+  const filter = ["in", ["get", "id"], ["literal", []]];
+  let layers = [
+    {
+      id: "lines-selected",
+      type: "line",
+      source,
+      "source-layer": "lines",
+      paint: {
+        "line-color": color,
+        "line-width": 3,
+        "line-opacity": 0.75,
+      },
+      filter,
+    },
+    {
+      id: "lines-selected-endpoints",
+      type: "circle",
+      source,
+      "source-layer": "endpoints",
+      paint: {
+        "circle-color": color,
+        "circle-radius": 3,
+      },
+      filter,
+    },
+  ];
+
+  for (const layer of ["polygons", "fills"]) {
+    layers.push({
+      id: `${layer}-selected`,
+      type: "fill",
+      source,
+      "source-layer": layer,
+      paint: {
+        "fill-color": color,
+        "fill-opacity": 0.5,
+      },
+      filter,
+    });
+  }
+
+  return layers;
+}
+
+export function layerNameForFeatureMode(
+  mode: FeatureMode,
+  revision: number | null = null,
+) {
+  let suffix = "";
+  if (revision != null) {
+    suffix = `-${revision}`;
+  }
+  switch (mode) {
+    case FeatureMode.Line:
+      return "lines" + suffix;
+    case FeatureMode.Polygon:
+      return "polygons" + suffix;
+    case FeatureMode.Fill:
+      return "fills" + suffix;
+  }
+}
+
+export function BoxSelectionManager(props: BoxSelectionProps) {
+  const activeLayer = useMapState((state) => state.activeLayer);
+  const selectFeatures = useMapActions((actions) => actions.selectFeatures);
+  const selectedFeatures = useMapState((state) => state.selection);
+  const mapLayerIDMap = useMapState((state) => state.mapLayerIDMap);
+  const selectionFeatureMode = useMapState(
+    (state) => state.selectionFeatureMode,
+  );
+
+  const acceptedRevision = useAtomValue(acceptedRevisionAtom);
+
+  const [hoveredFeature, setHoveredFeature] = useState<any | null>(null);
+  const [hoverLocation, setHoverLocation] =
+    useState<mapboxgl.LngLatLike | null>(null);
+
+  const popup = useRef(new mapboxgl.Popup({ closeButton: false }));
+  const mapRef = useMapRef();
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (map == null) {
+      return;
+    }
+
+    if (hoveredFeature == null) {
+      popup.current.remove();
+      map.getCanvas().style.cursor = "";
+      return;
+    }
+
+    const f: any = hoveredFeature;
+    const mapLayer = mapLayerIDMap.get(f.map_layer);
+
+    // render html with react
+    const _html = h("div.map-popover", [
+      h("h3", f.id),
+      h(DataField, { label: "Layer", value: mapLayer?.name }),
+      h(DataField, { label: "Type", value: f.type }),
+    ]);
+
+    // Change the cursor style as a UI indicator.
+    map.getCanvas().style.cursor = "pointer";
+    const html = renderToString(_html);
+    popup.current.setHTML(html).addTo(map);
+  }, [hoveredFeature]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (map == null || hoverLocation == null) {
+      return;
+    }
+
+    popup.current.setLngLat(hoverLocation);
+  }, [hoverLocation]);
+
+  useMapStyleOperator(
+    (map) => {
+      if (map == null) return;
+      const features = selectedFeatures?.features ?? [];
+      const selectedFeatureType = selectedFeatures?.type;
+
+      for (const type of allFeatureModes) {
+        const lyr = layerNameForFeatureMode(type);
+        const layerID = `${lyr}-selected`;
+        let selected = selectedFeatureType == type ? features : [];
+
+        const selectionFilter: any = [
+          "in",
+          ["get", "id"],
+          ["literal", selected],
+        ];
+
+        if (map.getLayer(layerID) != null) {
+          map.setFilter(layerID, selectionFilter);
+        }
+        if (type == FeatureMode.Line) {
+          const endpointsLayerID = `${lyr}-endpoints-selected`;
+          if (map.getLayer(endpointsLayerID) != null) {
+            map.setFilter(endpointsLayerID, selectionFilter);
+          }
+        }
+      }
+    },
+    [selectedFeatures, acceptedRevision],
+  );
+
+  useMapStyleOperator(
+    (map) => {
+      if (map == null) return;
+
+      // If active layer is not set, don't allow selection
+      if (activeLayer == null) {
+        return;
+      }
+
+      // Disable default box zooming.
+      map.boxZoom.disable();
+
+      const canvas = map.getCanvasContainer();
+
+      // Variable to hold the starting xy coordinates
+      // when `mousedown` occured.
+      let start;
+
+      // Variable to hold the current xy coordinates
+      // when `mousemove` or `mouseup` occurs.
+      let current;
+
+      // Variable for the draw box element.
+      let box;
+
+      // Set `true` to dispatch the event before other functions
+      // call it. This is necessary for disabling the default map
+      // dragging behaviour.
+      canvas.addEventListener("mousedown", mouseDown, true);
+
+      // Return the xy coordinates of the mouse position
+      function mousePos(e) {
+        const rect = canvas.getBoundingClientRect();
+        return new mapboxgl.Point(
+          e.clientX - rect.left - canvas.clientLeft,
+          e.clientY - rect.top - canvas.clientTop,
+        );
+      }
+
+      function mouseDown(e) {
+        // Continue the rest of the function if the shiftkey is pressed.
+        if (!(e.shiftKey && e.button === 0)) return;
+
+        // Disable default drag zooming when the shift key is held down.
+        map.dragPan.disable();
+
+        // Call functions for the following events
+        document.addEventListener("mousemove", onMouseMove);
+        document.addEventListener("mouseup", onMouseUp);
+        document.addEventListener("keydown", onKeyDown);
+
+        // Capture the first xy coordinates
+        start = mousePos(e);
+      }
+
+      function onMouseMove(e) {
+        // Capture the ongoing xy coordinates
+        current = mousePos(e);
+
+        // Append the box element if it doesnt exist
+        if (!box) {
+          box = document.createElement("div");
+          box.classList.add(styles["box-draw"]);
+          canvas.appendChild(box);
+        }
+
+        const minX = Math.min(start.x, current.x),
+          maxX = Math.max(start.x, current.x),
+          minY = Math.min(start.y, current.y),
+          maxY = Math.max(start.y, current.y);
+
+        // Adjust width and xy position of the box element ongoing
+        const pos = `translate(${minX}px, ${minY}px)`;
+        box.style.transform = pos;
+        box.style.width = maxX - minX + "px";
+        box.style.height = maxY - minY + "px";
+      }
+
+      function onMouseUp(e) {
+        // Capture xy coordinates
+        finish([start, mousePos(e)]);
+      }
+
+      function onKeyDown(e) {
+        // If the ESC key is pressed
+        if (e.keyCode === 27) finish();
+      }
+
+      const baseLayerName = layerNameForFeatureMode(selectionFeatureMode);
+      const layerName = layerNameForFeatureMode(
+        selectionFeatureMode,
+        acceptedRevision,
+      );
+
+      function finish(bbox) {
+        // Remove these events now that finish has been called.
+        document.removeEventListener("mousemove", onMouseMove);
+        document.removeEventListener("keydown", onKeyDown);
+        document.removeEventListener("mouseup", onMouseUp);
+
+        if (box) {
+          box.parentNode.removeChild(box);
+          box = null;
+        }
+
+        // If bbox exists. use this value as the argument for `queryRenderedFeatures`
+        if (bbox) {
+          let filter = undefined;
+          if (activeLayer) {
+            filter = ["==", "map_layer", activeLayer];
+          }
+
+          const features = map.queryRenderedFeatures(bbox, {
+            layers: [layerName],
+            filter,
+          });
+
+          if (features.length >= 1000) {
+            return window.alert("Select a smaller number of features");
+          }
+
+          // Run through the selected features and set a filter
+          // to match features with unique FIPS codes to activate
+          // the `counties-highlighted` layer.
+          const fips = features.map((feature) => feature.properties.id);
+          const featureTypes = new Set<string>(
+            features.map((f: any) => f.properties.type),
+          );
+
+          selectFeatures({
+            type: selectionFeatureMode,
+            features: fips,
+            dataTypes: featureTypes,
+          });
+        }
+
+        map.dragPan.enable();
+      }
+
+      const listener = (e) => {
+        const features = map.queryRenderedFeatures(e.point, {
+          layers: [`${baseLayerName}-selected`],
+        });
+
+        const f: any = features[0]?.properties;
+        setHoveredFeature(f);
+        setHoverLocation(e.lngLat);
+      };
+
+      map.on("mousemove", listener);
+
+      return () => {
+        map.off("mousemove", listener);
+      };
+    },
+    [activeLayer, selectionFeatureMode, acceptedRevision],
+  );
+
+  return null;
+}

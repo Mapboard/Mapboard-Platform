@@ -6,6 +6,8 @@ import { vikeHandler } from "./vike-handler";
 import { createHandler } from "@universal-middleware/express";
 import express from "express";
 import { createDevMiddleware } from "vike/server";
+import stylesRouter from "./styles/index";
+import { geologicPatternsBasePath } from "./styles/utils";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -29,14 +31,11 @@ export default (await startServer()) as unknown;
 async function startServer() {
   const app = express();
 
-  // Assets and static files
-  // Serve FGDC assets
-  const fgdcPatterns = join(
-    dirname(fileURLToPath(import.meta.resolve("geologic-patterns"))),
-    "assets",
+  app.use(
+    "/assets/geologic-patterns",
+    express.static(geologicPatternsBasePath),
   );
-
-  app.use("/assets/geologic-patterns", express.static(fgdcPatterns));
+  app.use("/styles", stylesRouter);
 
   if (process.env.NODE_ENV === "production") {
     app.use(express.static(`${root}/dist/client`));

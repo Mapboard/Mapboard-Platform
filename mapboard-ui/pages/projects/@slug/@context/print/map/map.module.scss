@@ -1,0 +1,68 @@
+.mapboard-map {
+  height: 100vh;
+}
+
+.layer-control-panel {
+  line-height: 1;
+
+  & > :first-child {
+    margin-top: 0;
+  }
+
+  & > :last-child {
+    margin-bottom: 0 !important
+  }
+}
+
+.layer-control-panel {
+  :global(.bp5-form-group) {
+    justify-content: space-between;
+    margin-bottom: 0.5em;
+  }
+}
+
+.layer-list .active {
+  font-weight: 800;
+  background: var(--background-active);
+}
+
+.feature-panel {
+  position: relative;
+  margin: 0 -1em;
+}
+
+.back-to-project {
+  text-overflow: ellipsis;
+  text-wrap: nowrap;
+  justify-content: start;
+}
+
+.map-viewer {
+  --map-context-stack-width: fit-content;
+}
+
+.main, .cross-sections {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.map-area {
+  --scalebar-interior-color: white;
+  --scalebar-font-family: var(--label-font);
+  --scalebar-height: 8px;
+  --scalebar-color: black;
+  --scalebar-background: white;
+  --scalebar-border-radius: 4px;
+  --scalebar-font-size: 10px;
+  border: 2px solid black;
+  overflow: hidden;
+  position: relative;
+}
+
+.map-scalebar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+}

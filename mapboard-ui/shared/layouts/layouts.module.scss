@@ -1,0 +1,26 @@
+.page-container.fullscreen {
+  width: 100vw;
+  height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  &.padded {
+    padding: 2em
+  }
+}
+
+.page-container.wide {
+  min-width: 100vw;
+  padding: 2em;
+  width: fit-content;
+  height: fit-content;
+}
+
+:global body {
+  --background-secondary: var(--panel-secondary-background-color);
+  --background-highlight: var(--background-active);
+  --background-active: var(--accent-secondary-color);
+  --panel-border: 1px solid var(--panel-rule-color);
+}

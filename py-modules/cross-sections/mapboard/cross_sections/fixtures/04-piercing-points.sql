@@ -25,8 +25,10 @@ INSERT INTO map_layer_linework_type (type, map_layer)
 SELECT 'cross-section', _layer_id
 ON CONFLICT DO NOTHING;
 
+-- delete all piercing point information
 DELETE FROM linework WHERE map_layer = _layer_id;
 DELETE FROM polygon WHERE map_layer = _layer_id;
+DELETE FROM polygon WHERE source = 'Piercing point units';
 
 END $$;
 
@@ -46,7 +48,6 @@ JOIN cross_section.section s2
 with_geometry AS (
 	SELECT
 		*,
-		(SELECT id FROM cross_section.map_layer WHERE name = 'Piercing points') map_layer,
 		ST_SetSRID(ST_MakeLine(
 			ST_MakePoint(distance, (vertical_offset-10000+4000)*vertical_exaggeration()),
 			ST_MakePoint(distance, (vertical_offset+3000)*vertical_exaggeration())
@@ -58,7 +59,6 @@ units AS (
 	SELECT
 		s.id,
 		other.id other_id,
-		s.map_layer,
 		f.unit_id,
 		/** Get the geometry of the bedrock units in the other section, and
 		translate them to their overlapping position in the current section. */
@@ -70,38 +70,35 @@ units AS (
 			),
 			s.distance-other.distance,
 			(s.vertical_offset-other.vertical_offset)*vertical_exaggeration()
-		) geometry
+		) geometry,
+	    coalesce(f.source_layer, f.map_layer) map_layer
 	FROM with_geometry s
 	JOIN with_geometry other
 		ON s.other_id = other.id
+	 AND s.id = other.other_id
 	JOIN cross_section_topology.map_face f
-		ON f.map_layer = (SELECT id FROM cross_section.map_layer WHERE name = 'Bedrock')
-	AND ST_Intersects(f.geometry, other.vertical_geometry)
+	  ON ST_Intersects(f.geometry, other.vertical_geometry)
 	WHERE f.unit_id IS NOT NULL
 ),
 piercing_points_insert AS (
-	INSERT INTO linework (name, type, map_layer, geometry)
+	INSERT INTO linework (name, type, map_layer, geometry, source)
 	SELECT
 		other_id name,
 		'cross-section' type,
-		map_layer,
-		vertical_geometry
+    (SELECT id FROM cross_section.map_layer WHERE name = 'Piercing points') map_layer,
+		vertical_geometry,
+		'Piercing points'
 	FROM with_geometry
-),
--- Allow unit types to be inserted into the 'Piercing Points' map layer
-unit_type_insert AS (
-	INSERT INTO map_layer_polygon_type (type, map_layer)
-	SELECT unit_id, map_layer FROM units
-	ON CONFLICT DO NOTHING
 ),
 -- Insert the unit polygons
 unit_insert AS (
-	INSERT INTO polygon (name, type, map_layer, geometry)
+	INSERT INTO polygon (name, type, map_layer, geometry, source)
 	SELECT
 		other_id name,
 		unit_id type,
 		map_layer,
-		geometry
+		geometry,
+		'Piercing point units' source
 	FROM units
 )
 SELECT 1;

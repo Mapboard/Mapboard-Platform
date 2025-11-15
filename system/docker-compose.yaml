@@ -36,16 +36,26 @@ services:
   postgrest:
     image: "postgrest/postgrest:latest"
     restart: unless-stopped
+    depends_on:
+      - database
     environment:
       - PGRST_DB_URI=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@database:5432/${POSTGRES_DB}
       - PGRST_DB_SCHEMA=mapboard_api
       - PGRST_DB_ANON_ROLE=web_anon
+  elevation_tiler:
+    image: elevation-tiler:v0.1.0
+    restart: unless-stopped
+    command: [ "fastapi", "run", "--root-path", "/dem-tiles", "elevation_tiler" ]
+    volumes:
+      - ../data:/data
   mapboard_server:
     build: ${MAPBOARD_SERVER_SRC_DIR}
     image: mapboard-server
     restart: unless-stopped
     profiles:
       - production
+    depends_on:
+      - database
     environment:
       - MAPBOARD_DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@database:5432/${POSTGRES_DB}
       - LOG_LEVEL=info

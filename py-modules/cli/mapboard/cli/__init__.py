@@ -10,7 +10,7 @@ from macrostrat.app_frame.compose import compose, console
 from macrostrat.database import Database
 from macrostrat.dinosaur import temp_database
 from macrostrat.utils import setup_stderr_logs
-
+import logging
 from mapboard.core.settings import MAPBOARD_ROOT, connection_string
 from mapboard.core.workers import watch_topology, send_event
 
@@ -42,13 +42,16 @@ app_ = Application(
     log_modules=[
         "mapboard.server",
         "mapboard.cli",
+        "mapboard.topology_manager",
+        # "macrostrat.database",
     ],
     compose_files=[MAPBOARD_ROOT / "system" / "docker-compose.yaml"],
     env=prepare_compose_env,
 )
-app_.setup_logs(verbose=True)
-setup_stderr_logs("macrostrat.utils", level=logging.DEBUG)
+# setup_stderr_logs("macrostrat.utils", level=logging.DEBUG)
 app = app_.control_command()
+app_.setup_logs(verbose=True)
+setup_stderr_logs("mapboard.topology_manager", level=logging.INFO)
 
 app.add_typer(projects_app, help="Manage Mapboard projects")
 app.add_typer(db_app, help="Database management")
@@ -59,6 +62,10 @@ app.command(name="send-event")(send_event)
 from .ingest import ingest_map
 
 app.command(name="ingest")(ingest_map)
+
+from .ops import app as ops_app
+
+app.add_typer(ops_app, name="ops", help="Misc. operations")
 
 from mapboard.cross_sections import app as xs_app
 
@@ -78,7 +85,6 @@ app.add_typer(cdr_app, help="CriticalMAAS CDR commands", rich_help_panel="Subsys
 def _topology(ctx: typer.Context, project: str):
     """Watch a project's topology for changes"""
     params = project_params(project)
-    console.print(params)
     database = params.pop("database")
 
     db_url = connection_string(database, container_internal=False)

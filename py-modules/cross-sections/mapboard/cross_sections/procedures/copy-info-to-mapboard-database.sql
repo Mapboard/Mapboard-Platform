@@ -48,8 +48,8 @@ INTO mapboard.context (
 )
 SELECT
     (SELECT id FROM prj) AS project_id,
-    s.name,
-    s.id,
+    'Section ' || s.id AS name,
+    'section-' || lower(s.id),
     'cross-section',
     'naukluft',
     'cross_section',
@@ -63,27 +63,32 @@ SELECT
        mapboard.context ctx,
        prj
      WHERE
-         slug = 'main'
+         slug = 'map'
      AND project_id = prj.id),
-    linework.geometry,
+    s.geometry,
     hash
 FROM
   naukluft_cross_sections.section s
-  JOIN naukluft_map_data.linework
-    ON line_id = linework.id;
+WHERE 'Section ' || s.id NOT IN (
+    SELECT
+      name
+    FROM
+      mapboard.context
+    WHERE
+      type = 'cross-section'
+  );
 
 /** Create bounding polygons around sections */
 UPDATE mapboard.context c
 SET
   bounds = st_setsrid(st_makeenvelope(
                         0,
-                        (offset_y - 10000 + 4000),
+                        (offset_y - 3000),
                         st_length(c.parent_geom),
                         (offset_y + 3000)
                       ), 3857)
-WHERE
-    type = 'cross-section'
-AND project_id = (SELECT id FROM mapboard.project WHERE slug = 'naukluft');
+WHERE type = 'cross-section'
+  AND c.parent_geom IS NOT NULL;
 
 
 /** Update project boundaries for Naukluft project */
@@ -91,7 +96,7 @@ UPDATE
   mapboard.context
 SET
   -- location for namibia
-  bounds = st_setsrid(st_makeenvelope(15.5, -24.5, 17, -23.7), 4326),
+  bounds = st_setsrid(st_makeenvelope(15.89, -24.6, 16.36, -24.08), 4326),
   name = 'Main map',
   slug = 'map'
 WHERE

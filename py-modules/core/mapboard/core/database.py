@@ -11,7 +11,6 @@ def project_params(project: str):
         "SELECT database, data_schema, topo_schema, srid, tolerance FROM projects WHERE slug = :slug",
         dict(slug=project),
     ).one()
-    print(res)
     return dict(
         database=res.database,
         data_schema=res.data_schema,

@@ -1,22 +1,28 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<module type="WEB_MODULE" version="4">
+<module type="JAVA_MODULE" version="4">
   <component name="NewModuleRootManager" inherit-compiler-output="true">
     <exclude-output />
     <content url="file://$MODULE_DIR$">
-      <sourceFolder url="file://$MODULE_DIR$/mapboard-cli" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/task-runner" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/topology-manager" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/mapboard-ui" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/py-modules/api" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/py-modules/cli" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/py-modules/core" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/py-modules/cross-sections" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/py-modules/tasks" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/py-modules/topology-manager" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/py-modules/cross-sections" isTestSource="false" />
-      <excludeFolder url="file://$MODULE_DIR$/.tmp" />
-      <excludeFolder url="file://$MODULE_DIR$/temp" />
-      <excludeFolder url="file://$MODULE_DIR$/tmp" />
+      <excludeFolder url="file://$MODULE_DIR$/cfg" />
+      <excludeFolder url="file://$MODULE_DIR$/data" />
+      <excludeFolder url="file://$MODULE_DIR$/mapboard-ui/.idea" />
     </content>
+    <content url="file://$MODULE_DIR$/mapboard-ui/.yarn/unplugged/prettier-npm-3.5.3-787132ce04/node_modules/prettier" />
+    <content url="file://$MODULE_DIR$/mapboard-ui/.yarn/unplugged/prettier-npm-3.6.0-a98891c29b/node_modules/prettier" />
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
+  </component>
+  <component name="PackageRequirementsSettings">
+    <option name="requirementsPath" value="" />
+  </component>
+  <component name="TestRunnerService">
+    <option name="PROJECT_TEST_RUNNER" value="py.test" />
   </component>
 </module>

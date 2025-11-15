@@ -1,0 +1,84 @@
+.layer-control-panel {
+  line-height: 1;
+
+  & > :first-child {
+    margin-top: 0;
+  }
+
+  & > :last-child {
+    margin-bottom: 0 !important
+  }
+}
+
+.layer-control-panel {
+  :global(.bp5-form-group) {
+    justify-content: space-between;
+    margin-bottom: 0.5em;
+  }
+}
+
+.layer-list .active {
+  font-weight: 800;
+  background: var(--background-active);
+}
+
+.feature-panel {
+  position: relative;
+  margin: 0 -1em;
+}
+
+.back-to-project {
+  text-overflow: ellipsis;
+  text-wrap: nowrap;
+  justify-content: start;
+}
+
+.map-viewer {
+  --map-context-stack-width: fit-content;
+}
+
+:root {
+  //--scalebar-background: none;
+  --scalebar-interior-color: white;
+  --scalebar-font-family: "Montserrat", sans-serif;
+  --scalebar-height: 8px;
+  --scalebar-color: black;
+  --scalebar-background: none;
+  --scalebar-border-radius: 4px;
+  outline: 2px solid black;
+  position: relative;
+}
+
+.map-scalebar {
+  position: absolute;
+  bottom: var(--padding-bottom);
+  left: var(--padding-left);
+  z-index: 20;
+}
+
+:root {
+  --main-font: "Chaparral Pro", serif;
+  --heading-font: Montserrat, sans-serif;
+  --label-font: Arial, sans-serif;
+  --legend-unit-group-font: var(--main-font, serif);
+  --legend-swatch-size: 2em;
+  --legend-swatch-opacity: 0.8
+}
+
+.main {
+  display: flex;
+  flex-direction: row;
+  gap: 1em;
+}
+
+.legend-sidebar {
+  position: relative;
+}
+
+
+// Ensure the scalebar prints
+@media print {
+  .map-scalebar {
+    display: block !important;
+  }
+}

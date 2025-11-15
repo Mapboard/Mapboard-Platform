@@ -1,26 +1,52 @@
 # Caddyfile for reverse proxy config
-localhost, mapboard.local {
-    tls internal
+{
+  http_port 8000
+}
 
-    header {
-        Access-Control-Allow-Origin *
-        Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
-        Access-Control-Allow-Headers "Origin, X-Requested-With, Content-Type, Accept, Authorization"
+mapboard.local, :8000 {
+  tls internal
+
+  header {
+    Access-Control-Allow-Origin *
+    Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+    Access-Control-Allow-Headers "Origin, X-Requested-With, Content-Type, Accept, Authorization"
+  }
+
+  handle_path /pg-api/* {
+    # Match requests for GeoJSON files
+    @geojson {
+        path *.geojson
     }
 
-    handle_path /pg-api/* {
-        reverse_proxy postgrest:3000 {
-            header_down -Access-Control-Allow-Origin
-            header_down -Access-Control-Allow-Credentials
-            header_down -Access-Control-Allow-Methods
-        }
+    uri @geojson strip_suffix .geojson
+
+    reverse_proxy @geojson postgrest:3000 {
+      header_down -Access-Control-Allow-Origin
+      header_down -Access-Control-Allow-Credentials
+      header_down -Access-Control-Allow-Methods
+      header_up Accept application/geo+json
     }
 
-    handle_path /api/* {
-        reverse_proxy {$MAPBOARD_API_ADDRESS:"mapboard_server:8080"}
+    reverse_proxy postgrest:3000 {
+      header_down -Access-Control-Allow-Origin
+      header_down -Access-Control-Allow-Credentials
+      header_down -Access-Control-Allow-Methods
     }
+  }
 
-    handle_path /* {
-        reverse_proxy docker.host.internal:3002
+  handle_path /api/* {
+    reverse_proxy {$MAPBOARD_API_ADDRESS:"mapboard_server:8080"}
+  }
+
+  handle_path /dem-tiles/* {
+    reverse_proxy elevation_tiler:8000 {
+      header_down -Access-Control-Allow-Origin
+      header_down -Access-Control-Allow-Credentials
+      header_down -Access-Control-Allow-Methods
     }
+  }
+
+  handle_path /* {
+    reverse_proxy docker.host.internal:3002
+  }
 }
