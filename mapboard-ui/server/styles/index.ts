@@ -2,11 +2,15 @@
 
 import { Request, Response, Router } from "express";
 
-import { createPatternSVG, convertSVGToPNG,  PatternArgss } from "./utils";
+import { createPatternSVG, convertSVGToPNG, PatternArgss } from "./utils";
 
 // Create a set of express routes
 
 const app = Router();
+
+app.get("/", (req: Request, res: Response) => {
+  res.send("Pattern service is running");
+});
 
 app.get("/pattern/:patternID.:format", async (req, res) => {
   let { patternID, format } = req.params;
@@ -41,8 +45,11 @@ async function sendPatternResponse(res: Response<any, any>, args: PatternArgs) {
 
   if (format === "png") {
     // Convert SVG to PNG
-    const svgResult = await createPatternSVG({patternID, scale, format});
-    const result = await convertSVGToPNG(svgResult.svg, {color, backgroundColor});
+    const svgResult = await createPatternSVG({ patternID, scale, format });
+    const result = await convertSVGToPNG(svgResult.svg, {
+      color,
+      backgroundColor,
+    });
     res.setHeader("Content-Type", "image/png");
     res.send(result.buffer);
   } else {

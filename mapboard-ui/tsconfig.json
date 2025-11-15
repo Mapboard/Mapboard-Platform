@@ -19,6 +19,7 @@
     "types": [
       "vite/client",
       "vike-react",
+      "node",
       "./global.d.ts"
     ],
     "jsx": "preserve",

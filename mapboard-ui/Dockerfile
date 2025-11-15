@@ -9,6 +9,7 @@ RUN apt-get update && apt-get install -y \
   libjpeg-dev \
   libgif-dev \
   librsvg2-dev \
+  libuuid-dev \
   libtool \
   autoconf \
   automake \
