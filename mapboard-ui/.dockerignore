@@ -3,3 +3,6 @@
 .cache
 node_modules
 .yarn/cache
+.yarn/unplugged
+.yarn/install-state.gz
+.yarn/__virtual__

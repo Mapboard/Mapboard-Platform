@@ -9,7 +9,8 @@ RUN apt-get update && apt-get install -y \
   libjpeg-dev \
   libgif-dev \
   librsvg2-dev \
-  libuuid-dev \
+  libfontconfig-dev \
+  libfreetype6-dev \
   libtool \
   autoconf \
   automake \
@@ -23,6 +24,8 @@ COPY .yarn/releases ./.yarn/releases
 RUN yarn install --immutable
 
 COPY . .
+
+RUN yarn install --immutable
 
 RUN yarn build
 
