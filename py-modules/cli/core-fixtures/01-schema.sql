@@ -46,18 +46,12 @@ CREATE TABLE IF NOT EXISTS mapboard.canvas (
 CREATE TABLE IF NOT EXISTS mapboard.context (
   id          integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   project_id  integer NOT NULL REFERENCES mapboard.project (id),
-  canvas_id   integer REFERENCES mapboard.canvas (id),
+  canvas_id   integer NOT NULL REFERENCES mapboard.canvas (id),
   name        text NOT NULL,
   description text,
   slug        text NOT NULL,
   uuid        uuid NOT NULL DEFAULT gen_random_uuid() UNIQUE,
-  type        mapboard.context_type NOT NULL,
   created_at  timestamp DEFAULT current_timestamp,
-  database    text NOT NULL,
-  data_schema text NOT NULL,
-  topo_schema text NOT NULL,
-  srid        integer REFERENCES spatial_ref_sys (srid) DEFAULT 4326,
-  tolerance   numeric NOT NULL DEFAULT 0.00001,
   bounds      geometry(MultiPolygon),
   is_public   boolean DEFAULT true,
   parent      integer REFERENCES mapboard.context (id),
@@ -80,8 +74,7 @@ BEGIN
              FROM
                mapboard.context c
              WHERE
-                 c.database = new.database
-             AND c.data_schema = new.data_schema
+               c.canvas_id = new.canvas_id
              AND c.bounds && new.bounds
              AND c.id <> new.id) THEN
     RAISE EXCEPTION 'Bounds overlap with another context in the same data_schema, database combo';

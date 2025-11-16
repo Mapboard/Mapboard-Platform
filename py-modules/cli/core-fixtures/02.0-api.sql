@@ -29,6 +29,7 @@ SELECT
   canvas_id,
   ca.type,
   c.created_at,
+  c.is_public,
   ca.srid,
   ca.tolerance,
   ca.database,
