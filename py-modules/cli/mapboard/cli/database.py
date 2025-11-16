@@ -1,5 +1,4 @@
 import sys
-from os import environ
 from pathlib import Path
 from subprocess import run
 from sys import stdin
@@ -17,6 +16,7 @@ from sqlalchemy import text
 from typer import Argument, Context, Option, Typer
 
 from .fixtures import apply_core_fixtures, apply_fixtures, create_core_fixtures
+from .backup_cluster import pg_dump_cluster
 from mapboard.core.settings import connection_string, core_db
 from mapboard.core.database import project_params, setup_database
 import asyncio
@@ -32,6 +32,7 @@ def create_fixtures(
     if project is None:
         return create_core_fixtures()
 
+    # TODO: this needs to be removed since all projects will be in the same schema...
     console.print(f"Creating fixtures for project [cyan bold]{project}[/]...")
     db = setup_database(project)
     apply_fixtures(db)
@@ -170,4 +171,30 @@ def dump(project: str, dumpfile: Optional[Path] = None):
         dumpfile = Path(f"{project}-{date_string}.pg-dump")
 
     task = pg_dump_to_file(db.engine, dumpfile)
+    asyncio.run(task)
+
+
+@db_app.command()
+def dump_cluster(
+    dump_dir: Path = Argument(
+        ...,
+        help="Directory to store the database dumps",
+    ),
+    user: str = Option(
+        "postgres",
+        help="Database user",
+    ),
+    postgres_container: str = Option(
+        "postgres:15",
+        help="Postgres container image",
+    ),
+):
+    """Dump all databases in the Mapboard cluster to a directory"""
+    engine = core_db.engine
+    task = pg_dump_cluster(
+        engine,
+        dump_dir=dump_dir,
+        user=user,
+        postgres_container=postgres_container,
+    )
     asyncio.run(task)
