@@ -25,9 +25,28 @@ CREATE TABLE IF NOT EXISTS mapboard.project (
 
 CREATE TYPE mapboard.context_type AS enum ('map', 'cross-section');
 
+-- A mapping canvas is a view within a project that shares a single topology and
+-- set of contexts.
+CREATE TABLE IF NOT EXISTS mapboard.canvas (
+  id          serial PRIMARY KEY,
+  project_id  integer NOT NULL REFERENCES mapboard.project (id),
+  type        mapboard.context_type NOT NULL DEFAULT 'map',
+  uuid        uuid NOT NULL DEFAULT gen_random_uuid() UNIQUE,
+  created_at  timestamp DEFAULT current_timestamp,
+  database    text NOT NULL,
+  data_schema text NOT NULL,
+  topo_schema text NOT NULL,
+  srid        integer REFERENCES spatial_ref_sys (srid) DEFAULT 4326,
+  tolerance   numeric NOT NULL DEFAULT 0.00001,
+  legacy      boolean DEFAULT false,
+  UNIQUE (project_id, type, database, data_schema, topo_schema)
+);
+
+
 CREATE TABLE IF NOT EXISTS mapboard.context (
   id          integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   project_id  integer NOT NULL REFERENCES mapboard.project (id),
+  canvas_id   integer REFERENCES mapboard.canvas (id),
   name        text NOT NULL,
   description text,
   slug        text NOT NULL,
@@ -47,10 +66,6 @@ CREATE TABLE IF NOT EXISTS mapboard.context (
   offset_y    numeric DEFAULT 0,
   UNIQUE (project_id, slug)
 );
-
-ALTER TABLE mapboard.context
-  ADD COLUMN IF NOT EXISTS is_public boolean DEFAULT true;
-
 
 ALTER TABLE mapboard.project
   ADD COLUMN IF NOT EXISTS main_context integer REFERENCES mapboard.context (id);
@@ -108,3 +123,4 @@ CREATE TABLE IF NOT EXISTS mapboard.context_base_layer (
   base_layer_id integer REFERENCES mapboard.base_layer (id) ON DELETE CASCADE,
   PRIMARY KEY (context_id, base_layer_id)
 );
+
