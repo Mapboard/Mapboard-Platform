@@ -8,6 +8,8 @@ export const vikeHandler: Get<[], UniversalHandler> =
     const pageContextInit = {
       ...context,
       ...runtime,
+      // Added to allow runtime definition of environment variables
+      environment: synthesizeConfigFromEnvironment(),
       urlOriginal: request.url,
       headersOriginal: request.headers,
     };
@@ -22,3 +24,19 @@ export const vikeHandler: Get<[], UniversalHandler> =
       headers: response.headers,
     });
   };
+
+function synthesizeConfigFromEnvironment() {
+  /** Creates a mapping of environment variables that start with VITE_,
+   * and returns them as an object. This allows us to pass environment
+   * variables to the client at runtime.
+   *
+   * TODO: Ideally this would be defined in a library.
+   * */
+  const env: Record<string, string> = {};
+  for (const [key, value] of Object.entries(process.env)) {
+    if (key.startsWith("VITE_")) {
+      env[key] = value;
+    }
+  }
+  return env;
+}

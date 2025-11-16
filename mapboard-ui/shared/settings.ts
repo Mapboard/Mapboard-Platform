@@ -16,6 +16,11 @@ function getEnvVar(
   if (defaultValue !== undefined) {
     return defaultValue;
   }
+  // Runtime environment (in browser, if defined)
+  if (typeof window !== "undefined" && (window as any).env?.[name]) {
+    return (window as any).env[name];
+  }
+
   throw new Error(`Environment variable ${name} is not defined`);
 }
 

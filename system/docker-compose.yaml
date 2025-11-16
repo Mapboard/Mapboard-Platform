@@ -59,6 +59,16 @@ services:
     environment:
       - MAPBOARD_DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@database:5432/${POSTGRES_DB}
       - LOG_LEVEL=info
+  frontend:
+    build: ../mapboard-ui
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_MAPBOARD_API_DOMAIN=https://mapboard.local
+      - VITE_MAPBOX_TOKEN=${MAPBOX_TOKEN}
+      # Don't fail on self-signed certificates (which OrbStack provides)
+      - NODE_TLS_REJECT_UNAUTHORIZED=0
   # topology_manager:
   #   build: ../topology-manager
   #   command: ["echo", "Hello, world!"]
