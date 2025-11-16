@@ -39,6 +39,9 @@ async def pg_dump_cluster(
     We use pg_dumpall to dump global objects, and pg_dump for
     each database (to allow space-efficient custom format dumps).
 
+    This may be replaced by pg_dumpall --format=c etc. after PostgreSQL 18,
+    but for now it is compatible and efficient.
+
     TODO: move this to macrostrat.database
     """
 

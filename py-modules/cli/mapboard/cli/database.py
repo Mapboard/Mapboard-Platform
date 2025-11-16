@@ -18,7 +18,7 @@ from typer import Argument, Context, Option, Typer
 
 from mapboard.topology_manager import TopologyManager, create_context
 from .fixtures import apply_core_fixtures, apply_fixtures, create_core_fixtures
-from .backup_cluster import pg_dump_cluster
+from mapboard.cli.migrate_utils import pg_dump_cluster
 from mapboard.core.settings import connection_string, core_db
 from mapboard.core.database import project_params, setup_database
 import asyncio
