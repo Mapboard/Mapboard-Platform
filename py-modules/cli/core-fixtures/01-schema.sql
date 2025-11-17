@@ -20,7 +20,8 @@ CREATE TABLE IF NOT EXISTS mapboard.project (
   description text,
   created_at  timestamp DEFAULT current_timestamp,
   owner_id    integer REFERENCES users (id),
-  srid        integer NOT NULL REFERENCES spatial_ref_sys (srid) DEFAULT 4326
+  srid        integer NOT NULL REFERENCES spatial_ref_sys (srid) DEFAULT 4326,
+  derived_from integer REFERENCES mapboard.project (id)
 );
 
 CREATE TYPE mapboard.context_type AS enum ('map', 'cross-section');

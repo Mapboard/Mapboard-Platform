@@ -5,6 +5,7 @@ Utilities to migrate the Mapboard database to a single multi-tenant setup
 
 from .backup_cluster import pg_dump_cluster
 
+
 def copy_schema_data(db, source, target, exclude_tables=None, truncate=False):
     """Copy one schema to another within the same database."""
 
@@ -12,14 +13,18 @@ def copy_schema_data(db, source, target, exclude_tables=None, truncate=False):
         exclude_tables = []
 
     # Get list of tables in source schema
-    tables = db.run_query(
-        """
+    tables = (
+        db.run_query(
+            """
         SELECT tablename
         FROM pg_tables
         WHERE schemaname = :source_schema
         """,
-        dict(source_schema=source),
-    ).scalars().all()
+            dict(source_schema=source),
+        )
+        .scalars()
+        .all()
+    )
 
     for table in tables:
         if table in exclude_tables:
