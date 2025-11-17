@@ -200,3 +200,12 @@ def dump_cluster(
         postgres_container=postgres_container,
     )
     asyncio.run(task)
+
+
+@db_app.command()
+def migrate_projects():
+    """Migrate all legacy projects to the multi-schema setup"""
+    from mapboard.cli.migrate_utils import migrate_projects as _migrate_projects
+
+    db = core_db
+    _migrate_projects(db)
