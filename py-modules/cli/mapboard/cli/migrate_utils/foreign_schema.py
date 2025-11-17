@@ -95,5 +95,5 @@ def map_foreign_schema(db, foreign_server, target_schema, foreign_schema="public
     # Cannot run import foreign schema with parameters, so we use Identifiers
     db.run_sql("CREATE SCHEMA IF NOT EXISTS {target_schema}", args, raise_on_error=True)
 
-    sql =  "IMPORT FOREIGN SCHEMA {foreign_schema} FROM SERVER {foreign_server} INTO {target_schema}"
+    sql = "IMPORT FOREIGN SCHEMA {foreign_schema} FROM SERVER {foreign_server} INTO {target_schema}"
     db.run_sql(sql, args, raise_on_error=True)
