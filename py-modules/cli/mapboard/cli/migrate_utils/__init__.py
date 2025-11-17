@@ -3,8 +3,6 @@ Utilities to migrate the Mapboard database to a single multi-tenant setup
 (with multiple data schemas).
 """
 
-from sqlalchemy import create_engine
-
 from .backup_cluster import pg_dump_cluster
 from macrostrat.database import Database
 from psycopg2.sql import Identifier
@@ -35,31 +33,52 @@ def copy_schema_data(db, source, target, *, exclude_tables=None, truncate=False)
         .all()
     )
 
+    # In case this is a foreign schema, augment the list with foreign tables
+    foreign_tables = (
+        db.run_query(
+            """
+        SELECT foreign_table_name
+        FROM information_schema.foreign_tables
+        WHERE foreign_table_schema = :source_schema
+        """,
+            dict(source_schema=source),
+        )
+        .scalars()
+        .all()
+    )
+
+    tables += foreign_tables
+
     for table in tables:
         if table in exclude_tables:
             continue
+        is_foreign_table = table in foreign_tables
+
+        suffix = ""
+        if is_foreign_table:
+            suffix = "(foreign table)"
+
+        print("Copying data for table", table, suffix)
 
         source_table = Identifier(source, table)
         target_table = Identifier(target, table)
 
         if truncate:
-            sql = f"TRUNCATE TABLE {target} CASCADE;"
             db.run_sql(
-                sql,
+                "TRUNCATE TABLE {target} CASCADE",
                 dict(
                     target=target_table,
                 ),
+                raise_on_error=True,
             )
 
-        sql = f"""
-        INSERT INTO {target} SELECT * FROM {source};
-        """
         db.run_sql(
-            sql,
+            "INSERT INTO {target} SELECT * FROM {source}",
             dict(
                 source=source_table,
                 target=target_table,
             ),
+            raise_on_error=True,
         )
 
 
@@ -145,9 +164,15 @@ def migrate_project(db: Database, project):
     ).scalar_one()
     db.session.commit()
 
+    # Get project record
+    new_project = db.run_query(
+        "SELECT id, slug, uuid FROM mapboard.project WHERE id = :project_id",
+        dict(project_id=new_project_id),
+    ).one()
+
     # Get contexts to migrate
     for context in _get_canvases(db, new_project_id):
-        migrate_canvas(db, project, context)
+        migrate_canvas(db, new_project, context)
 
 
 def migrate_canvas(db: Database, project, context):
@@ -251,7 +276,12 @@ def migrate_canvas(db: Database, project, context):
 def target_schema_name(project, context, type="data") -> str:
     """Generate a target schema name for a project canvas."""
     uid = str(project.uuid)[0:8]
-    v0 = f"z_{uid}_{project.slug}_{context.type}_{type}"
+    slug_base = project.slug
+    # We already have unique IDs, so remove any -copy suffixes
+    if slug_base.endswith("-copy"):
+        slug_base = slug_base[: -len("-copy")]
+
+    v0 = f"z_{uid}_{slug_base}_{context.type}_{type}"
     return simplify_slug(v0)
 
 

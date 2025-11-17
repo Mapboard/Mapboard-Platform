@@ -1,4 +1,4 @@
-from psycopg2.sql import Identifier
+from psycopg2.sql import Identifier, SQL
 from contextlib import contextmanager
 
 
@@ -86,17 +86,14 @@ def foreign_server_connection(db, foreign_db):
 
 def map_foreign_schema(db, foreign_server, target_schema, foreign_schema="public"):
     """Map the foreign schema to the target schema in the current database."""
-
-    sql = """
-    CREATE SCHEMA IF NOT EXISTS {target_schema};
-    IMPORT FOREIGN SCHEMA {foreign_schema} FROM SERVER {foreign_server} INTO {target_schema};
-    """
-
-    db.run_sql(
-        sql,
-        dict(
-            target_schema=Identifier(target_schema),
-            foreign_schema=Identifier(foreign_schema),
-            foreign_server=Identifier(foreign_server),
-        ),
+    args = dict(
+        target_schema=Identifier(target_schema),
+        foreign_schema=Identifier(foreign_schema),
+        foreign_server=Identifier(foreign_server),
     )
+
+    # Cannot run import foreign schema with parameters, so we use Identifiers
+    db.run_sql("CREATE SCHEMA IF NOT EXISTS {target_schema}", args, raise_on_error=True)
+
+    sql =  "IMPORT FOREIGN SCHEMA {foreign_schema} FROM SERVER {foreign_server} INTO {target_schema}"
+    db.run_sql(sql, args, raise_on_error=True)
