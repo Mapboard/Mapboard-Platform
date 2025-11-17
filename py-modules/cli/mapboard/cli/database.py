@@ -216,3 +216,12 @@ def migrate_projects(delete: bool = False):
         _delete_migrated_projects(db)
     else:
         _migrate_projects(db)
+
+
+@db_app.command()
+def cleanup():
+    """Clean up unused database objects"""
+
+    from .migrate_utils import drop_unreferenced_topologies
+
+    drop_unreferenced_topologies(core_db)

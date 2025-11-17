@@ -45,7 +45,7 @@ def create_foreign_server(db, foreign_db, foreign_server_name):
             foreign_server=Identifier(foreign_server_name),
             host=host,
             database=eng.url.database,
-            port=port,
+            port=str(port),
             user=eng.url.username,
             password=eng.url.password,
         ),

@@ -108,6 +108,15 @@ def delete_migrated_projects(db: Database):
                     f"DROP SCHEMA IF EXISTS {schema_name} CASCADE;",
                     raise_on_error=True,
                 )
+
+            topo_name = target_schema_name(project, context, type="topo")
+
+            # Drop the topology that may be associated with the project
+            db.run_sql(
+                "SELECT topology.DropTopology(name) FROM topology.topology WHERE name = :topo_name",
+                dict(topo_name=topo_name),
+            )
+
         # Finally, delete the project metadata
         db.run_sql(
             "SELECT mapboard.delete_project_metadata(:project_id);",
@@ -251,3 +260,24 @@ def simplify_slug(slug: str, spacer="_") -> str:
     # Lowercase, replace non-alphanumeric with underscores
     simplified = re.sub(r"[^a-z0-9]+", spacer, slug.lower())
     return simplified.strip("_")
+
+
+def drop_unreferenced_topologies(db: Database):
+    """Drop topologies that are not referenced by any context."""
+
+    sql = """
+    WITH unreferenced_topologies AS (
+        SELECT id, name
+        FROM topology.topology
+        WHERE name NOT IN (
+            SELECT topo_schema
+            FROM mapboard.canvas
+            WHERE database = 'mapboard'
+        )
+    )
+    SELECT topology.DropTopology(name)
+    FROM unreferenced_topologies;
+    """
+    res = db.run_query(sql).scalars().all()
+    for val in res:
+        print(val)
