@@ -29,8 +29,8 @@ BEGIN
 
   SELECT pg_get_serial_sequence(table_name, column_name) INTO seq_name;
 
-  -- Remove the current sequence or identity property
-  -- check if is identit or default
+--   -- Remove the current sequence or identity property
+--   -- check if is identit or default
   col := column_name;
   SELECT EXISTS (
     SELECT 1
@@ -42,23 +42,29 @@ BEGIN
   ) INTO is_identity;
 
   IF NOT is_identity THEN
-    -- Add an identity sequence
+    -- It's a default column
     EXECUTE format('ALTER TABLE %I.%I ALTER COLUMN %I DROP DEFAULT', schema_sep, table_sep, column_name);
-    EXECUTE format('DROP SEQUENCE %I CASCADE', seq_name);
-    EXECUTE format('ALTER TABLE %I.%I ALTER COLUMN %I ADD GENERATED ALWAYS AS IDENTITY', schema_sep, table_sep, column_name);
-    -- Get the new sequence name
-    SELECT pg_get_serial_sequence(table_name, column_name) INTO seq_name;
+    EXECUTE format('DROP SEQUENCE IF EXISTS %I CASCADE', seq_name);
+    -- Recreate the sequence
+    EXECUTE format(
+        'ALTER TABLE %I.%I ALTER COLUMN %I ADD GENERATED ALWAYS AS IDENTITY',
+        schema_sep, table_sep, column_name
+      );
   END IF;
 
-  -- set the sequence to the max value in the column
+
   EXECUTE format(
-    'SELECT setval(%L, COALESCE((SELECT MAX(%I) FROM %I.%I), 0) + 1, false)',
-    seq_name, column_name, schema_sep, table_sep
+    'SELECT COALESCE(MAX(%I), 0) FROM %I.%I',
+    column_name, schema_sep, table_sep
+  ) INTO res;
+  -- increment by 1 to avoid conflicts
+  res := res + 1;
+
+  -- restart the sequence at max(id) or 0
+  EXECUTE format(
+    'ALTER TABLE %I.%I ALTER COLUMN %I RESTART WITH %s',
+    schema_sep, table_sep, column_name, res
   );
-
-  -- Get the next value of the sequence to ensure it's working
-  EXECUTE format('SELECT nextval(%L)', seq_name) INTO res;
-
   RETURN res;
 END;
 $$
@@ -69,3 +75,4 @@ LANGUAGE plpgsql;
 SELECT mapboard.reset_identity_sequence('mapboard.project', 'id');
 SELECT mapboard.reset_identity_sequence('mapboard.canvas', 'id');
 SELECT mapboard.reset_identity_sequence('mapboard.context', 'id');
+

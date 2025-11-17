@@ -9,7 +9,7 @@ def create_foreign_server(db, foreign_db, foreign_server_name):
     CREATE EXTENSION IF NOT EXISTS postgres_fdw;
 
     DROP SERVER IF EXISTS {foreign_server} CASCADE;
-    CREATE SERVER IF NOT EXISTS sgp_server
+    CREATE SERVER IF NOT EXISTS {foreign_server}
       FOREIGN DATA WRAPPER postgres_fdw
       OPTIONS (host :host, dbname :database, port :port);
 
@@ -27,6 +27,13 @@ def create_foreign_server(db, foreign_db, foreign_server_name):
     local_port = db.engine.url.port or 5432
     if host == db.engine.url.host and port == local_port:
         host = "localhost"
+        # The internal PG port may differ from the external one, if being run in a docker context
+        # Get the port that the current database is running on, locally
+        _internal_port = db.run_query(
+            "SELECT setting FROM pg_settings WHERE name = 'port'"
+        ).scalar()
+        port = int(_internal_port)
+
         if eng.url.database == db.engine.url.database:
             raise ValueError(
                 "Foreign database must be different from the current database."
@@ -38,10 +45,11 @@ def create_foreign_server(db, foreign_db, foreign_server_name):
             foreign_server=Identifier(foreign_server_name),
             host=host,
             database=eng.url.database,
-            port=str(eng.url.port or 5432),
+            port=port,
             user=eng.url.username,
             password=eng.url.password,
         ),
+        raise_on_error=True,
     )
 
     return foreign_server_name

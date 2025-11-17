@@ -88,6 +88,45 @@ def migrate_projects(db: Database):
         migrate_project(db, project)
 
 
+def delete_migrated_projects(db: Database):
+    """Delete all projects that were created as part of the migration process."""
+
+    # Get a list of projects to delete
+    projects = db.run_query(
+        "SELECT id, slug, uuid FROM mapboard.project WHERE derived_from IS NOT NULL;"
+    ).all()
+
+    for project in projects:
+        print(f"Deleting project {project.id}...")
+        # Get a list of contexts associated with the project
+        canvases = _get_canvases(db, project.id)
+        for context in canvases:
+            types = ["data", "topo", "temp_data"]
+            for t in types:
+                schema_name = target_schema_name(project, context, type=t)
+                db.run_sql(
+                    f"DROP SCHEMA IF EXISTS {schema_name} CASCADE;",
+                    raise_on_error=True,
+                )
+        # Finally, delete the project metadata
+        db.run_sql(
+            "SELECT mapboard.delete_project_metadata(:project_id);",
+            dict(project_id=project.id),
+        )
+
+
+def _get_canvases(db, project_id):
+    """Get canvases associated with a project."""
+    return db.run_query(
+        """
+        SELECT id, type::text type, data_schema, topo_schema, database, tolerance, srid, uuid
+        FROM mapboard.canvas
+        WHERE project_id = :project_id;
+        """,
+        dict(project_id=project_id),
+    ).all()
+
+
 def migrate_project(db: Database, project):
     """Migrate a single project to the new schema design."""
 
@@ -98,16 +137,7 @@ def migrate_project(db: Database, project):
     db.session.commit()
 
     # Get contexts to migrate
-    canvases = db.run_query(
-        """
-        SELECT id, type::text type, data_schema, topo_schema, database, tolerance, srid, uuid
-        FROM mapboard.canvas
-        WHERE project_id = :project_id;
-        """,
-        dict(project_id=new_project_id),
-    ).all()
-
-    for context in canvases:
+    for context in _get_canvases(db, new_project_id):
         migrate_canvas(db, project, context)
 
 
@@ -168,6 +198,11 @@ def migrate_canvas(db: Database, project, context):
                 target=data_schema,
                 truncate=True,
             )
+            # Drop temporary schema
+            db.run_sql(
+                f"DROP SCHEMA IF EXISTS {temp_schema} CASCADE;",
+                raise_on_error=True,
+            )
     else:
         copy_schema_data(
             db,
@@ -207,7 +242,7 @@ def migrate_canvas(db: Database, project, context):
 def target_schema_name(project, context, type="data") -> str:
     """Generate a target schema name for a project canvas."""
     uid = str(project.uuid)[0:8]
-    v0 = f"prj{uid}_{project.slug}_{context.type}_{type}"
+    v0 = f"z_{uid}_{project.slug}_{context.type}_{type}"
     return simplify_slug(v0)
 
 

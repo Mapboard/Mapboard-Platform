@@ -17,6 +17,8 @@ DECLARE
   canvas_id_map   JSONB;
   context_id_map  JSONB;
 BEGIN
+
+
   -- Copy the project metadata
   INSERT INTO mapboard.project (slug, title, description, owner_id, srid, derived_from, main_context)
   SELECT

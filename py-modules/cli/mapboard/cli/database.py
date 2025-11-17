@@ -203,9 +203,16 @@ def dump_cluster(
 
 
 @db_app.command()
-def migrate_projects():
+def migrate_projects(delete: bool = False):
     """Migrate all legacy projects to the multi-schema setup"""
     from mapboard.cli.migrate_utils import migrate_projects as _migrate_projects
+    from mapboard.cli.migrate_utils import (
+        delete_migrated_projects as _delete_migrated_projects,
+    )
 
     db = core_db
-    _migrate_projects(db)
+
+    if delete:
+        _delete_migrated_projects(db)
+    else:
+        _migrate_projects(db)
