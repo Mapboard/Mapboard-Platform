@@ -5,12 +5,15 @@ Utilities to migrate the Mapboard database to a single multi-tenant setup
 
 from .backup_cluster import pg_dump_cluster
 from macrostrat.database import Database
-import uuid
+from psycopg2.sql import Identifier
+
+from .foreign_schema import foreign_server_connection, map_foreign_schema
 
 import re
+from mapboard.core.settings import connection_string
 
 
-def copy_schema_data(db, source, target, exclude_tables=None, truncate=False):
+def copy_schema_data(db, source, target, *, exclude_tables=None, truncate=False):
     """Copy one schema to another within the same database."""
 
     if exclude_tables is None:
@@ -34,10 +37,28 @@ def copy_schema_data(db, source, target, exclude_tables=None, truncate=False):
         if table in exclude_tables:
             continue
 
+        source_table = Identifier(source, table)
+        target_table = Identifier(target, table)
+
+        if truncate:
+            sql = f"TRUNCATE TABLE {target} CASCADE;"
+            db.run_sql(
+                sql,
+                dict(
+                    target=target_table,
+                ),
+            )
+
         sql = f"""
-        INSERT INTO {target}.{table} (SELECT * FROM {source}.{table});
+        INSERT INTO {target} SELECT * FROM {source};
         """
-        db.run_sql(sql)
+        db.run_sql(
+            sql,
+            dict(
+                source=source_table,
+                target=target_table,
+            ),
+        )
 
 
 def migrate_projects(db: Database):
@@ -69,37 +90,27 @@ def migrate_project(db: Database, project):
     """Migrate a single project to the new schema design."""
 
     new_project_id = db.run_query(
-        """
-    INSERT INTO mapboard.project (slug, title, description, derived_from)
-    SELECT slug || '-updated', title, description, id
-    FROM mapboard.project
-    WHERE id = :project_id
-    ON CONFLICT (slug) DO NOTHING
-    RETURNING id;
-    """,
+        "SELECT mapboard.copy_project_metadata(:project_id)",
         dict(project_id=project.id),
     ).scalar_one()
 
     # Get contexts to migrate
     canvases = db.run_query(
         """
-        SELECT id, type::text type, data_schema, topo_schema, tolerance, srid
+        SELECT id, type::text type, data_schema, topo_schema, database, tolerance, srid, uuid
         FROM mapboard.canvas
         WHERE project_id = :project_id;
         """,
-        dict(project_id=project.id),
+        dict(project_id=new_project_id),
     ).all()
 
     for context in canvases:
-        migrate_context(db, project, context)
+        migrate_canvas(db, project, context)
 
 
-def migrate_context(db: Database, project, context):
+def migrate_canvas(db: Database, project, context):
     """Migrate a single context to the new schema design."""
     print(f"  Context {context.id} ({context.type})...")
-
-    # Create a new random UUID
-    context.uuid = uuid.uuid4()
 
     data_schema = target_schema_name(project, context, type="data")
     print(f"  Target schema (data): {data_schema}")
@@ -107,44 +118,90 @@ def migrate_context(db: Database, project, context):
     topo_schema = target_schema_name(project, context, type="topo")
     print(f"  Target schema (topo): {topo_schema}")
 
+    if (
+        context.data_schema == data_schema
+        and context.topo_schema == topo_schema
+        and not context.legacy
+    ):
+        print("  Context already migrated, skipping.")
+        return
+
     params = {
         "data_schema": data_schema,
         "topo_schema": topo_schema,
         "tolerance": context.tolerance,
         "srid": context.srid,
-        "uuid": str(context.uuid),
     }
 
-    # Insert the record into the canvas table
-    new_context_id = db.run_query(
+    ctx_params = {
+        "project_id": project.id,
+        "context_id": context.id,
+        **params,
+    }
+
+    # Create new schemas
+    from mapboard.topology_manager.database import Database as TopoDatabase
+    from mapboard.cli.fixtures import apply_fixtures
+
+    topo_db = TopoDatabase(db.engine.url)
+    topo_db.set_params(env={}, **params)
+
+    apply_fixtures(topo_db)
+
+    # Copy data from old schema
+    old_db_url = connection_string(context.database)
+    old_data_schema = context.data_schema
+
+    if context.database != "mapboard":
+        temp_schema = target_schema_name(project, context, type="temp_data")
+        with foreign_server_connection(db, old_db_url) as foreign_server:
+            map_foreign_schema(
+                db, foreign_server, temp_schema, foreign_schema=old_data_schema
+            )
+            copy_schema_data(
+                db,
+                source=temp_schema,
+                target=data_schema,
+                truncate=True,
+            )
+    else:
+        copy_schema_data(
+            db,
+            source=old_data_schema,
+            target=data_schema,
+            truncate=True,
+        )
+
+    # Reset topo geometry in preparation for redoing topology
+    db.run_sql(
         """
-    INSERT INTO mapboard.canvas (
-        project_id,
-        type,
-        database,
-        data_schema,
-        topo_schema,
-        tolerance,
-        srid,
-        uuid
+        UPDATE {table}
+        SET
+            topo = null,
+            geometry_hash = null
+            topology_error = null
+        """,
+        dict(table=Identifier(data_schema, "linework")),
+        raise_on_error=True,
     )
-    VALUES (
-           :project_id,
-           :type,
-           'mapboard',
-           :data_schema,
-           :topo_schema,
-           :tolerance,
-           :srid,
-           :uuid
-    )
-    RETURNING id;
-    """,
-        dict(project_id=project.id, type=context.type, **params),
-    ).scalar_one()
+
+    # Finish migration by updating the database record
+    sql = """
+    UPDATE mapboard.canvas SET
+        database = 'mapboard',
+        data_schema = :data_schema,
+        topo_schema = :topo_schema,
+        tolerance = :tolerance,
+        legacy = FALSE,
+        srid = :srid
+    WHERE id = :context_id
+      AND project_id = :project_id
+    """
+    db.run_sql(sql, ctx_params)
 
 
-def target_schema_name(project, context, type="data"):
+def target_schema_name(project, context, type="data") -> str:
+    """Generate a target schema name for a project canvas."""
     uid = str(context.uuid)[0:8]
     v0 = f"{uid}_{project.slug}_{context.type}_{type}"
     return simplify_slug(v0)
