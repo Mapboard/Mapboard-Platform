@@ -3,6 +3,8 @@ Utilities to migrate the Mapboard database to a single multi-tenant setup
 (with multiple data schemas).
 """
 
+from sqlalchemy import create_engine
+
 from .backup_cluster import pg_dump_cluster
 from macrostrat.database import Database
 from psycopg2.sql import Identifier
@@ -71,7 +73,7 @@ def migrate_projects(db: Database):
     # derived from them.
 
     sql = """
-    SELECT p.id, p.slug
+    SELECT p.id, p.slug, p.uuid
     FROM mapboard.project p
     LEFT JOIN mapboard.project p2 ON p2.derived_from = p.id
     WHERE p2.id IS NULL AND p.derived_from IS NULL;
@@ -93,6 +95,7 @@ def migrate_project(db: Database, project):
         "SELECT mapboard.copy_project_metadata(:project_id)",
         dict(project_id=project.id),
     ).scalar_one()
+    db.session.commit()
 
     # Get contexts to migrate
     canvases = db.run_query(
@@ -151,10 +154,11 @@ def migrate_canvas(db: Database, project, context):
     # Copy data from old schema
     old_db_url = connection_string(context.database)
     old_data_schema = context.data_schema
+    old_db = Database(old_db_url)
 
     if context.database != "mapboard":
         temp_schema = target_schema_name(project, context, type="temp_data")
-        with foreign_server_connection(db, old_db_url) as foreign_server:
+        with foreign_server_connection(db, old_db) as foreign_server:
             map_foreign_schema(
                 db, foreign_server, temp_schema, foreign_schema=old_data_schema
             )
@@ -178,7 +182,7 @@ def migrate_canvas(db: Database, project, context):
         UPDATE {table}
         SET
             topo = null,
-            geometry_hash = null
+            geometry_hash = null,
             topology_error = null
         """,
         dict(table=Identifier(data_schema, "linework")),
@@ -202,8 +206,8 @@ def migrate_canvas(db: Database, project, context):
 
 def target_schema_name(project, context, type="data") -> str:
     """Generate a target schema name for a project canvas."""
-    uid = str(context.uuid)[0:8]
-    v0 = f"{uid}_{project.slug}_{context.type}_{type}"
+    uid = str(project.uuid)[0:8]
+    v0 = f"prj{uid}_{project.slug}_{context.type}_{type}"
     return simplify_slug(v0)
 
 

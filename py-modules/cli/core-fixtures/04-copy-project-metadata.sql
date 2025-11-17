@@ -27,8 +27,8 @@ BEGIN
     srid,
     source_project,
     main_context
-  FROM mapboard.project
-  WHERE id = source_project
+  FROM mapboard.project p
+  WHERE p.id = source_project
   RETURNING id INTO new_project_id;
 
   /** These mappings allow us to associate old IDs with new IDs, so that we can

@@ -20,11 +20,14 @@ def create_foreign_server(db, foreign_db, foreign_server_name):
 
     """
 
-    host = foreign_db.url.host
-    port = foreign_db.url.port or 5432
-    if host == db.url.host and port == (db.url.port or 5432):
+    eng = foreign_db.engine
+
+    host = eng.url.host
+    port = eng.url.port or 5432
+    local_port = db.engine.url.port or 5432
+    if host == db.engine.url.host and port == local_port:
         host = "localhost"
-        if foreign_db.url.database == db.url.database:
+        if eng.url.database == db.engine.url.database:
             raise ValueError(
                 "Foreign database must be different from the current database."
             )
@@ -34,10 +37,10 @@ def create_foreign_server(db, foreign_db, foreign_server_name):
         dict(
             foreign_server=Identifier(foreign_server_name),
             host=host,
-            database=foreign_db.url.database,
-            port=str(foreign_db.url.port or 5432),
-            user=foreign_db.url.username,
-            password=foreign_db.url.password,
+            database=eng.url.database,
+            port=str(eng.url.port or 5432),
+            user=eng.url.username,
+            password=eng.url.password,
         ),
     )
 
@@ -64,8 +67,8 @@ def drop_foreign_server(db, foreign_server):
 def foreign_server_connection(db, foreign_db):
     """Context manager to create and drop a temporary foreign server connection."""
     # Get a temporary foreign server name
-    uid = str(abs(hash(foreign_db.url)))[0:8]
-    foreign_server = f"temp_foreign_server_{uid}_{foreign_db.url.database}"
+    uid = str(abs(hash(foreign_db.engine.url)))[0:8]
+    foreign_server = f"temp_foreign_server_{uid}_{foreign_db.engine.url.database}"
     try:
         create_foreign_server(db, foreign_db, foreign_server)
         yield foreign_server

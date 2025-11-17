@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 CREATE TABLE IF NOT EXISTS mapboard.project (
-  id          serial PRIMARY KEY,
+  id          integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   slug        text NOT NULL UNIQUE,
   uuid        uuid NOT NULL DEFAULT gen_random_uuid(),
   title       text NOT NULL,
@@ -29,7 +29,7 @@ CREATE TYPE mapboard.context_type AS enum ('map', 'cross-section');
 -- A mapping canvas is a view within a project that shares a single topology and
 -- set of contexts.
 CREATE TABLE IF NOT EXISTS mapboard.canvas (
-  id          serial PRIMARY KEY,
+  id          integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   project_id  integer NOT NULL REFERENCES mapboard.project (id),
   type        mapboard.context_type NOT NULL DEFAULT 'map',
   uuid        uuid NOT NULL DEFAULT gen_random_uuid() UNIQUE,
