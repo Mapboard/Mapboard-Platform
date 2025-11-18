@@ -7,7 +7,11 @@ from .backup_cluster import pg_dump_cluster
 from macrostrat.database import Database
 from psycopg2.sql import Identifier
 
-from .foreign_schema import foreign_server_connection, map_foreign_schema
+from .foreign_schema import (
+    foreign_server_connection,
+    map_foreign_schema,
+    create_foreign_server,
+)
 
 import re
 from mapboard.core.settings import connection_string
@@ -220,30 +224,21 @@ def migrate_canvas(db: Database, project, context):
     old_data_schema = context.data_schema
     old_db = Database(old_db_url)
 
+    src_schema = old_data_schema
     if context.database != "mapboard":
         temp_schema = target_schema_name(project, context, type="temp_data")
-        with foreign_server_connection(db, old_db) as foreign_server:
-            map_foreign_schema(
-                db, foreign_server, temp_schema, foreign_schema=old_data_schema
-            )
-            copy_schema_data(
-                db,
-                source=temp_schema,
-                target=data_schema,
-                truncate=True,
-            )
-            # Drop temporary schema
-            db.run_sql(
-                f"DROP SCHEMA IF EXISTS {temp_schema} CASCADE;",
-                raise_on_error=True,
-            )
-    else:
-        copy_schema_data(
-            db,
-            source=old_data_schema,
-            target=data_schema,
-            truncate=True,
+        foreign_server = create_foreign_server(db, old_db)
+        map_foreign_schema(
+            db, foreign_server, temp_schema, foreign_schema=old_data_schema
         )
+        src_schema = temp_schema
+
+    copy_schema_data(
+        db,
+        source=src_schema,
+        target=data_schema,
+        truncate=True,
+    )
 
     # Reset topo geometry in preparation for redoing topology
     db.run_sql(
@@ -309,5 +304,6 @@ def drop_unreferenced_topologies(db: Database):
     FROM unreferenced_topologies;
     """
     res = db.run_query(sql).scalars().all()
+    db.session.commit()
     for val in res:
         print(val)
