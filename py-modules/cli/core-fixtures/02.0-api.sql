@@ -26,13 +26,13 @@ SELECT
   c.slug,
   c.description,
   c.uuid,
-  c.type,
+  cx.type,
   c.created_at,
-  c.srid,
-  c.tolerance,
-  c.database,
-  c.data_schema,
-  c.topo_schema,
+  cx.srid,
+  cx.tolerance,
+  cx.database,
+  cx.data_schema,
+  cx.topo_schema,
   ST_Xmax(c.bounds) - ST_Xmin(c.bounds) AS length,
   st_transform(c.bounds, 4326) AS bounds,
   c.parent,
@@ -58,6 +58,8 @@ SELECT
   ) layers
 FROM
   mapboard.context c
+  JOIN mapboard.canvas cx
+    ON c.canvas_id = cx.id
   JOIN mapboard.project p
     ON c.project_id = p.id;
 

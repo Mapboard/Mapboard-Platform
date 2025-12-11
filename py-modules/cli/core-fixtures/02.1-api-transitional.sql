@@ -40,12 +40,15 @@ WITH s1 AS (
   SELECT
     p.id AS project_id,
     p.slug project_slug,
-    c.data_schema,
+    cx.data_schema,
     c.id AS context_id,
     c.slug AS context_slug
   FROM mapboard.project p
   JOIN mapboard.context c
     ON p.id = c.project_id
+  JOIN mapboard.canvas cx
+    ON c.canvas_id = cx.id
+
 )
 SELECT
   s1.*,
@@ -87,8 +90,8 @@ FROM naukluft_map_data.stations;
 
 DROP VIEW IF EXISTS mapboard_api.cross_sections CASCADE;
 CREATE OR REPLACE VIEW mapboard_api.cross_sections AS
-SELECT id,
-       project_id,
+SELECT c.id,
+       c.project_id,
        replace(name, 'Section ', '') AS name,
        parent AS parent_id,
        is_public,
@@ -96,8 +99,10 @@ SELECT id,
        offset_y,
        ST_Length(parent_geom) length,
        ST_LineMerge(ST_Transform(parent_geom, 4326)) geometry -- we store multilinestrings for some reason
-FROM mapboard.context
-WHERE type = 'cross-section'
+FROM mapboard.context c
+JOIN mapboard.canvas cx
+  ON c.canvas_id = cx.id
+WHERE cx.type = 'cross-section'
   AND parent_geom IS NOT null;
 
 
@@ -105,17 +110,19 @@ DROP VIEW IF EXISTS mapboard_api.cross_sections CASCADE;
 CREATE OR REPLACE VIEW mapboard_api.cross_sections AS
 WITH
   cross_sections AS (
-    SELECT id,
+    SELECT c.id,
            slug,
-           project_id,
+           c.project_id,
            replace(name, 'Section ', '') AS name,
            parent AS parent_id,
            is_public,
            offset_x,
            offset_y,
            parent_geom -- we store multilinestrings for some reason
-    FROM mapboard.context
-    WHERE type = 'cross-section'
+    FROM mapboard.context c
+    JOIN mapboard.canvas cx
+      ON c.canvas_id = cx.id
+    WHERE cx.type = 'cross-section'
      AND parent_geom IS NOT null
   ),
   candidate_matches AS (SELECT c1.id,
@@ -129,11 +136,13 @@ WITH
                                   c1.offset_x,
                                   c1.offset_y,
                                   ST_LineMerge(c1.parent_geom) AS cross_section_geom,
-                                  ST_Transform(c2.bounds, c2.srid)      AS map_bounds
+                                  ST_Transform(c2.bounds, cx2.srid)      AS map_bounds
                            FROM cross_sections c1
                                   JOIN mapboard.context c2
                                        ON c1.project_id = c2.project_id
-                           WHERE c2.type = 'map'),
+                                  JOIN mapboard.canvas cx2
+                                       ON c2.canvas_id = cx2.id
+                           WHERE cx2.type = 'map'),
      v1 AS (
        SELECT *,
               NOT ST_Contains(map_bounds, cross_section_geom) AS is_clipped,
