@@ -9,7 +9,7 @@ const h = hyper.styled(style);
 
 export const mapTitle = "Geologic map of the southern Naukluft Mountains";
 export const paperTitle =
-  "Structure and stratigraphy of the Zebra Series and the tectonic evolution of the Naukluft Mountains, Namibia";
+  "Structure and stratigraphy of the Zebra Series and the tectonic evolution of the Naukluft Mountains";
 
 export function LegendTitleBlock({ className, children, title }) {
   return h("div.title-block.legend-title-block", [
