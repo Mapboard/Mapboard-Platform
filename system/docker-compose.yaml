@@ -63,7 +63,7 @@ services:
     build: ../mapboard-ui
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "3002:3000"
     environment:
       - VITE_MAPBOARD_API_DOMAIN=https://mapboard.local
       - VITE_MAPBOX_TOKEN=${MAPBOX_TOKEN}
