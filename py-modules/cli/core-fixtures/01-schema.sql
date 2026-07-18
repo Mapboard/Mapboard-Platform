@@ -3,8 +3,8 @@
 CREATE EXTENSION IF NOT EXISTS postgis;
 CREATE SCHEMA IF NOT EXISTS mapboard;
 
-DROP VIEW IF EXISTS mapboard_api.context;
-DROP VIEW IF EXISTS mapboard_api.project;
+DROP VIEW IF EXISTS mapboard_api.context CASCADE;
+DROP VIEW IF EXISTS mapboard_api.project CASCADE;
 
 CREATE TABLE IF NOT EXISTS users (
   id         serial PRIMARY KEY,

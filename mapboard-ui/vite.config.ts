@@ -30,6 +30,7 @@ export default defineConfig({
       "localhost",
       // For local development
       "mapboard.local",
+      "dev.mapboard.local",
       "daven-quinn.local",
     ],
     watch: {
