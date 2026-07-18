@@ -21,9 +21,6 @@ dependencies = [
     "pydantic>=2.9.2,<3",
 ]
 
-[tool.uv.sources]
-"mapboard.topology-manager" = { path = "../topology-manager", editable = true }
-
 [tool.uv.build-backend]
 module-name = ["mapboard"]
 module-root = ""

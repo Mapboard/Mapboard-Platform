@@ -17,10 +17,6 @@ dependencies = [
     "mapboard.topology-manager",
 ]
 
-[tool.uv.sources]
-"mapboard.core" = { path = "../core", editable = true }
-"mapboard.topology-manager" = { path = "../topology-manager", editable = true }
-
 [tool.uv.build-backend]
 module-name = ["mapboard"]
 module-root = ""

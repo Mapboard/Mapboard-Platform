@@ -30,12 +30,15 @@ package = false
 default-groups = "all"
 
 [tool.uv.sources]
-"mapboard.cli" = { path = "./py-modules/cli", editable = true }
-"mapboard.topology-manager" = { path = "./py-modules/topology-manager", editable = true }
-"mapboard.tasks" = { path = "./py-modules/tasks", editable = true }
-"mapboard.core" = { path = "./py-modules/core", editable = true }
-"mapboard.cross-sections" = { path = "./py-modules/cross-sections", editable = true }
-"mapboard.api" = { path = "./py-modules/api", editable = true }
+"mapboard.cli" = { workspace = true }
+"mapboard.topology-manager" = { workspace = true }
+"mapboard.tasks" = { workspace = true }
+"mapboard.core" = { workspace = true }
+"mapboard.cross-sections" = { workspace = true }
+"mapboard.api" = { workspace = true }
+
+[tool.uv.workspace]
+members = ["py-modules/*"]
 
 [build-system]
 requires = ["uv_build>=0.11.29,<0.12.0"]

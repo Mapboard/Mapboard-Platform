@@ -18,9 +18,6 @@ dependencies = [
     "mapboard.core",
 ]
 
-[tool.uv.sources]
-"mapboard.core" = { path = "../core", editable = true }
-
 [tool.uv.build-backend]
 module-name = ["mapboard"]
 module-root = ""

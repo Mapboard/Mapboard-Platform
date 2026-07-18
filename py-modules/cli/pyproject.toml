@@ -35,16 +35,10 @@ dependencies = [
 mapboard = "mapboard.cli:app"
 
 [dependency-groups]
-dev = ["black>=23.3.0,<24"]
+dev = ["black>=24.3.0,<25"]
 
 [tool.uv]
 default-groups = "all"
-
-[tool.uv.sources]
-"mapboard.topology-manager" = { path = "../topology-manager", editable = true }
-"mapboard.cross-sections" = { path = "../cross-sections", editable = true }
-"mapboard.core" = { path = "../core", editable = true }
-"mapboard.tasks" = { path = "../tasks", editable = true }
 
 [tool.uv.build-backend]
 module-name = ["mapboard"]
