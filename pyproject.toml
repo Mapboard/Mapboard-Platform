@@ -18,8 +18,7 @@ dependencies = [
     "mapboard.tasks",
     "mapboard.core",
     "mapboard.cross-sections",
-    "mapboard.api",
-    "setuptools>=75.8.2,<76",
+    "mapboard.api"
 ]
 
 [dependency-groups]

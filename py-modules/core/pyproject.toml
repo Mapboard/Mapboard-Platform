@@ -16,7 +16,7 @@ dependencies = [
     "celery>=5.4.0,<6",
     "redis>=5.2.0,<6",
     "python-dotenv>=1.0.1,<2",
-    "macrostrat.database>=3.3.0,<4",
+    "macrostrat.database>=4.0.0,<5",
     "mapboard.topology-manager",
     "pydantic>=2.9.2,<3",
 ]

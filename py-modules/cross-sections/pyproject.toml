@@ -13,8 +13,8 @@ classifiers = [
     "Programming Language :: Python :: 3.14",
 ]
 dependencies = [
-    "typer>=0.9,<0.10",
-    "macrostrat.database>=3.4.0,<4",
+    "typer>=0.25,<0.27",
+    "macrostrat.database>=4.0.0,<5",
     "mapboard.core",
 ]
 
