@@ -6,7 +6,6 @@ from typing import Optional
 from rich.console import Console
 from datetime import datetime
 
-from macrostrat.app_frame.compose import console
 from macrostrat.database import run_sql
 from macrostrat.database.transfer import pg_dump_to_file
 from macrostrat.dinosaur import create_migration
@@ -20,6 +19,7 @@ from .backup_cluster import pg_dump_cluster
 from mapboard.core.settings import connection_string, core_db
 from mapboard.core.database import project_params, setup_database
 import asyncio
+from .application import console
 
 db_app = Typer(name="db", no_args_is_help=True)
 

@@ -718,6 +718,7 @@ name = "mapboard-platform"
 version = "1.0.0"
 source = { virtual = "." }
 dependencies = [
+    { name = "black" },
     { name = "mapboard-api" },
     { name = "mapboard-cli" },
     { name = "mapboard-core" },
@@ -733,6 +734,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "black", specifier = ">=24.10.0" },
     { name = "mapboard-api", editable = "py-modules/api" },
     { name = "mapboard-cli", editable = "py-modules/cli" },
     { name = "mapboard-core", editable = "py-modules/core" },

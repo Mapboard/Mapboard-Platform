@@ -1,4 +1,5 @@
-from mapboard.topology_manager.database import Database
+from macrostrat.database import Database
+from mapboard.topology_manager import TopologyContext, TopologyManager
 
 from .settings import connection_string, core_db
 
@@ -26,3 +27,9 @@ def setup_database(project: str) -> Database:
     db = Database(db_url)
     db.set_params(env={}, **params)
     return db
+
+
+def get_project_topology_manager(project: str) -> TopologyManager:
+    db = setup_database(project)
+    ctx = TopologyContext(database=db)
+    return TopologyManager(ctx)
