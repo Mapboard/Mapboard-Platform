@@ -19,7 +19,8 @@ from .database import db_app, get_srid, project_params
 from .fixtures import apply_fixtures
 from .projects import app as projects_app
 from .units import move_unit
-
+from mapboard.core.database import get_topology_manager
+from mapboard.topology_manager.config import _side_effects
 
 # setup_stderr_logs("macrostrat.utils", level=logging.DEBUG)
 core_app = MapboardApplication()
@@ -50,34 +51,18 @@ from .criticalmaas import app as cdr_app
 app.add_typer(cdr_app, help="CriticalMAAS CDR commands", rich_help_panel="Subsystems")
 
 
-# Allow extra args to be passed to yarn
-@app.command(
-    name="topo",
-    short_help="Topology management",
-    context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
-)
-def _topology(ctx: typer.Context, project: str):
-    """Watch a project's topology for changes"""
-    params = project_params(project)
-    database = params.pop("database")
+from mapboard.topology_manager.cli import app as topo_app
 
-    db_url = connection_string(database, container_internal=False)
 
-    environ.update(
-        {
-            "MAPBOARD_DATABASE_URL": db_url,
-            "MAPBOARD_DATA_SCHEMA": params["data_schema"],
-            "MAPBOARD_TOPO_SCHEMA": params["topo_schema"],
-            "MAPBOARD_SRID": str(params["srid"]),
-            "MAPBOARD_TOPO_TOLERANCE": str(params["tolerance"]),
-        }
-    )
+@topo_app.callback()
+def topo_callback(project: str = typer.Argument(None, help="Project slug")):
+    # Set up the environment for the topology manager
+    mgr = get_topology_manager(project)
+    # set up the topology manager context to be used by subcommands
+    _side_effects(mgr.ctx)
 
-    from mapboard.topology_manager.cli import app
 
-    sys.argv = [f"mapboard topo {project}", *ctx.args]
-
-    app()
+app.add_typer(topo_app, name="topo", help="Topology management")
 
 
 app.command(name="move-unit")(move_unit)
@@ -108,7 +93,7 @@ def test(args=[]):
         db = Database(engine)
         ctx = TopologyContext(db, srid=32612)
         mgr = TopologyManager(ctx)
-        apply_fixtures(db)
+        apply_fixtures(mgr)
         pytest.main([str(testdir), *args])
 
 

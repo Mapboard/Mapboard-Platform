@@ -4,11 +4,10 @@ from requests import get
 from rich.console import Console
 from macrostrat.utils import get_logger
 from ..projects import create_project
-from ..database import setup_database, core_db
 from psycopg2.sql import Identifier
 from pathlib import Path
 from json import dumps
-from mapboard.core.database import get_project_topology_manager
+from mapboard.core.database import get_topology_manager, setup_database, core_db
 
 # import logging
 # import http.client
@@ -211,7 +210,7 @@ def list_projects():
 @app.command(name="setup-topology")
 def update_topology(project_id: str):
     db = setup_database(project_id)
-    mgr = get_project_topology_manager(project_id)
+    mgr = get_topology_manager(project_id)
     assert db.engine.url.database == "criticalmaas"
     db.run_fixtures(Path(__file__).parent / "update-topology.sql")
     # Report statistics

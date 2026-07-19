@@ -13,7 +13,7 @@ from typer import Typer
 from psycopg2.sql import Identifier
 from .application import core_app
 from mapboard.core.settings import POSTGRES_IMAGE, connection_string, core_db
-from mapboard.core.database import get_project_topology_manager
+from mapboard.core.database import get_topology_manager
 
 from .database import setup_database
 from .fixtures import apply_fixtures
@@ -74,7 +74,7 @@ def create_project(
 @app.command(name="reset-topology")
 def reset_topology(project: str):
     """Drop the tppology for a Mapboard project"""
-    mgr = get_project_topology_manager(project)
+    mgr = get_topology_manager(project)
     # Show what will be dropped
     db = mgr.database
     db.run_sql("SELECT topology.DropTopology(:topo_name)")
