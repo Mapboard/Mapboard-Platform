@@ -7,7 +7,7 @@ DROP TABLE IF EXISTS {data_schema}.stations CASCADE;
 
 CREATE TABLE {data_schema}.stations (
   id SERIAL PRIMARY KEY,
-  geometry geometry(Geometry, {srid}) not null,
+  geometry geometry(Geometry, {srid_literal}) not null,
   type text NOT NULL, -- this could be controlled later
   uuid uuid DEFAULT gen_random_uuid() UNIQUE,
   name text,

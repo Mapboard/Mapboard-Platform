@@ -1,11 +1,10 @@
 from pathlib import Path
 
-from macrostrat.app_frame.compose import console
-from macrostrat.database import Database as BaseDatabase
+from .application import console
+from macrostrat.database import Database
 from macrostrat.database.utils import create_database, database_exists
-from mapboard.topology_manager.commands import _create_tables
-from mapboard.topology_manager.database import Database
-from psycopg2.sql import Literal
+from mapboard.topology_manager import TopologyManager
+from psycopg.sql import Literal
 
 from mapboard.core.settings import core_db
 
@@ -20,7 +19,7 @@ def create_core_fixtures():
     core_db.run_sql("SELECT pg_notify('pgrst', 'reload schema')")
 
 
-def apply_core_fixtures(db: BaseDatabase):
+def apply_core_fixtures(db: Database):
     fixtures = Path(__file__).parent.parent.parent / "core-fixtures"
     files = list(fixtures.rglob("*.sql"))
     files.sort()
@@ -29,15 +28,14 @@ def apply_core_fixtures(db: BaseDatabase):
 
 
 def apply_fixtures(
-    database: Database,
+    mgr: TopologyManager,
 ):
-    _create_tables(database)
-    database.instance_params["tms_srid"] = Literal(3857)
-    database.instance_params["srid"] = Literal(database.instance_params["srid"])
+    mgr.create_tables()
+    mgr.database.instance_params["tms_srid"] = Literal(3857)
 
     fixtures = Path(__file__).parent / "fixtures"
     files = list(fixtures.rglob("*.sql"))
     files.sort()
     for fixture in files:
         console.print(fixture)
-        database.run_sql(fixture)
+        mgr.database.run_sql(fixture)

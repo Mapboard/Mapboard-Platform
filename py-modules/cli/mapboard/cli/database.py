@@ -6,20 +6,23 @@ from typing import Optional
 from rich.console import Console
 from datetime import datetime
 
-from macrostrat.app_frame.compose import console
 from macrostrat.database import run_sql
 from macrostrat.database.transfer import pg_dump_to_file
 from macrostrat.dinosaur import create_migration
 from macrostrat.utils.shell import run
+
+from mapboard.core.database import get_topology_manager
 from mapboard.topology_manager.database import Database
 from sqlalchemy import text
 from typer import Argument, Context, Option, Typer
 
+from mapboard.topology_manager import TopologyManager, create_context
 from .fixtures import apply_core_fixtures, apply_fixtures, create_core_fixtures
 from .backup_cluster import pg_dump_cluster
 from mapboard.core.settings import connection_string, core_db
 from mapboard.core.database import project_params, setup_database
 import asyncio
+from .application import console
 
 db_app = Typer(name="db", no_args_is_help=True)
 
@@ -30,12 +33,13 @@ def create_fixtures(
 ):
     """Create database fixtures, either for the core database or a specific project"""
     if project is None:
-        return create_core_fixtures()
+        create_core_fixtures()
+        return
 
     # TODO: this needs to be removed since all projects will be in the same schema...
     console.print(f"Creating fixtures for project [cyan bold]{project}[/]...")
-    db = setup_database(project)
-    apply_fixtures(db)
+    mgr = get_topology_manager(project)
+    apply_fixtures(mgr)
 
 
 def get_srid(db: Database, schema="mapboard") -> Optional[int]:
@@ -99,13 +103,13 @@ def migrate(
     else:
         params = project_params(project)
         database = params.pop("database")
-        DATABASE_URL = connection_string(database)
-        db = Database(DATABASE_URL)
+        mgr = get_topology_manager(project)
+        db = mgr.database
 
         def _apply_fixtures(_db):
-            _db1 = Database(_db.engine.url)
-            _db1.set_params(env={}, **params)
-            apply_fixtures(_db1)
+            ctx = create_context(database=_db, **params)
+            mgr1 = TopologyManager(ctx)
+            apply_fixtures(mgr1)
 
     console.print(f"Migrating database [cyan bold]{database}[/]...")
 
@@ -141,9 +145,8 @@ def disconnect(project: Optional[str] = None):
     if project is None:
         db = core_db
     else:
-        params = project_params(project)
-        database = params.pop("database")
-        db = Database(connection_string(database))
+        mgr = get_topology_manager(project)
+        db = mgr.database
     db.run_sql(
         """
         SELECT *, pg_terminate_backend(pid)
@@ -162,9 +165,8 @@ def dump(project: str, dumpfile: Optional[Path] = None):
         project = "mapboard"
         db = core_db
     else:
-        params = project_params(project)
-        database = params.pop("database")
-        db = Database(connection_string(database))
+        mgr = get_topology_manager(project)
+        db = mgr.database
 
     if dumpfile is None:
         date_string = datetime.now().strftime("%Y-%m-%d")

@@ -1,7 +1,6 @@
 import asyncio
 from pathlib import Path
 
-from macrostrat.app_frame.compose import console
 from macrostrat.database.transfer import pg_dump, pg_dump_to_file, pg_restore
 from macrostrat.database.transfer.stream_utils import (
     print_stdout,
@@ -9,17 +8,19 @@ from macrostrat.database.transfer.stream_utils import (
 )
 from macrostrat.database.utils import create_database, database_exists
 from mapboard.topology_manager.database import Database
-from mapboard.topology_manager.commands.create_tables import _create_tables
 from sqlalchemy import Engine
 from typer import Typer
 from psycopg2.sql import Identifier
+from .application import core_app
 from mapboard.core.settings import POSTGRES_IMAGE, connection_string, core_db
+from mapboard.core.database import get_topology_manager
 
 from .database import setup_database
 from .fixtures import apply_fixtures
 from .mobile_export import export_database
 
 app = Typer(name="projects", no_args_is_help=True)
+console = core_app.console
 
 
 @app.command(name="list")
@@ -73,10 +74,9 @@ def create_project(
 @app.command(name="reset-topology")
 def reset_topology(project: str):
     """Drop the tppology for a Mapboard project"""
-    db = setup_database(project)
-    params = db.instance_params
+    mgr = get_topology_manager(project)
     # Show what will be dropped
-
+    db = mgr.database
     db.run_sql("SELECT topology.DropTopology(:topo_name)")
 
     db.run_sql("DROP SCHEMA IF EXISTS {topo_schema} CASCADE")
@@ -89,7 +89,7 @@ def reset_topology(project: str):
         )
 
     # Re-create the topology
-    _create_tables(db)
+    mgr.create_tables()
 
 
 @app.command()

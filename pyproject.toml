@@ -1,25 +1,45 @@
-[tool.poetry]
+[project]
 name = "mapboard-platform"
 version = "1.0.0"
 description = "A platform for creating geologic maps"
-authors = ["Daven Quinn <code@davenquinn.com>"]
+authors = [{ name = "Daven Quinn", email = "code@davenquinn.com" }]
+requires-python = ">=3.11,<4"
 readme = "README.md"
-package-mode = false
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+]
+dependencies = [
+    "mapboard.cli",
+    "mapboard.topology-manager",
+    "mapboard.tasks",
+    "mapboard.core",
+    "mapboard.cross-sections",
+    "mapboard.api",
+    "black>=24.10.0",
+]
 
-[tool.poetry.dependencies]
-python = "^3.11"
-"mapboard.cli" = { path = "./py-modules/cli", develop = true }
-"mapboard.topology-manager" = { path = "./py-modules/topology-manager", develop = true }
-"mapboard.tasks" = { path = "./py-modules/tasks", develop = true }
-"mapboard.core" = { path = "./py-modules/core", develop = true }
-"mapboard.cross-sections" = { path = "./py-modules/cross-sections", develop = true }
-"mapboard.api" = { path = "./py-modules/api", develop = true }
-setuptools = "^75.8.2"
+[dependency-groups]
+dev = ["pytest>=8.3.5,<9"]
 
+[tool.uv]
+package = false
+default-groups = "all"
 
-[tool.poetry.group.dev.dependencies]
-pytest = "^8.3.5"
+[tool.uv.sources]
+"mapboard.cli" = { workspace = true }
+"mapboard.topology-manager" = { workspace = true }
+"mapboard.tasks" = { workspace = true }
+"mapboard.core" = { workspace = true }
+"mapboard.cross-sections" = { workspace = true }
+"mapboard.api" = { workspace = true }
+
+[tool.uv.workspace]
+members = ["py-modules/*"]
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["uv_build>=0.11.29,<0.12.0"]
+build-backend = "uv_build"

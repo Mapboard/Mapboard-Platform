@@ -7,9 +7,12 @@ py_root=$(dirname $here)
 export MAPBOARD_ROOT=$py_root
 
 # Load the virtual environment
-venv=$(cd "$here" && poetry env info -p)
+# Standard location for UV virtual environments
+venv=$py_root/.venv
 
-export PATH=$venv/bin:$PATH
+# Activate the virtual environment
+export VIRTUAL_ENV=$venv
+export PATH="$VIRTUAL_ENV/bin:$PATH"
 
 # Run the script
 $venv/bin/mapboard "$@"

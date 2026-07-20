@@ -1,22 +1,31 @@
-[tool.poetry]
+[project]
 name = "mapboard.core"
 version = "1.0.0"
 description = "Runner for Mapboard tasks"
-authors = ["Your Name <you@example.com>"]
+authors = [{ name = "Your Name", email = "you@example.com" }]
+requires-python = ">=3.11,<4"
 readme = "README.md"
-private = true
-packages = [{ include = "mapboard" }]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+]
+dependencies = [
+    "celery>=5.4.0,<6",
+    "redis>=5.2.0,<6",
+    "python-dotenv>=1.0.1,<2",
+    "macrostrat.database>=4.0.0,<5",
+    "mapboard.topology-manager",
+    "pydantic>=2.9.2,<3",
+]
 
-[tool.poetry.dependencies]
-python = "^3.11"
-celery = "^5.4.0"
-redis = "^5.2.0"
-python-dotenv = "^1.0.1"
-"macrostrat.database" = "^3.3.0"
-"mapboard.topology-manager" = { path = "../topology-manager", develop = true }
-pydantic = "^2.9.2"
-
+[tool.uv.build-backend]
+module-name = ["mapboard"]
+module-root = ""
+namespace = true
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["uv_build>=0.11.29,<0.12.0"]
+build-backend = "uv_build"

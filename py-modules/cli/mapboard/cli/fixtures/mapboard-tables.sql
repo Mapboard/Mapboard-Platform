@@ -30,7 +30,7 @@ CREATE OR REPLACE FUNCTION {data_schema}.linework_srid()
 RETURNS integer AS
 $$
 SELECT srid FROM geometry_columns
-WHERE f_table_schema = :data_schema_name 
+WHERE f_table_schema = {data_schema_name_literal}
   AND f_table_name = 'linework'
   AND f_geometry_column = 'geometry'
 $$ LANGUAGE SQL IMMUTABLE;
@@ -39,7 +39,7 @@ CREATE OR REPLACE FUNCTION {data_schema}.polygon_srid()
 RETURNS integer AS
 $$
 SELECT srid FROM geometry_columns
-WHERE f_table_schema = :data_schema_name
+WHERE f_table_schema = {data_schema_name_literal}
   AND f_table_name = 'polygon'
   AND f_geometry_column = 'geometry'
 $$ LANGUAGE SQL IMMUTABLE;

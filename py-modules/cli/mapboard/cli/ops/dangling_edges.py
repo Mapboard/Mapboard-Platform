@@ -3,10 +3,9 @@ Remove dangling edges from one or more layers.
 """
 
 from pathlib import Path
-from typer import Argument, Context, Option, Typer
+from typer import Argument, Option, Typer
 from rich import print
 from rich.prompt import Confirm
-from sqlalchemy import text
 
 from mapboard.core.database import setup_database
 

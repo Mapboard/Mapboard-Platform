@@ -2,11 +2,12 @@
 Worker that continuously checks for new topology tasks and
 sends them to the broker for processing.
 """
+
 import asyncio
 from contextvars import ContextVar
 from json import loads
 
-from mapboard.topology_manager.commands.update import _update
+from mapboard.topology_manager import create_context, TopologyManager
 from mapboard.topology_manager.database import Database
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 from datetime import datetime
@@ -26,8 +27,12 @@ def project_params(data_schema: str):
         "SELECT database, data_schema, topo_schema, srid, tolerance FROM projects WHERE data_schema = :data_schema",
         dict(data_schema=data_schema),
     ).one()
-    return dict(
-        database=res.database,
+
+    url = connection_string(res.database)
+    database = Database(url)
+
+    return create_context(
+        database,
         data_schema=res.data_schema,
         topo_schema=res.topo_schema,
         srid=res.srid,
@@ -35,23 +40,20 @@ def project_params(data_schema: str):
     )
 
 
-def get_client(database: str, data_schema: str) -> Database:
+def get_context(database: str, data_schema: str) -> Database:
     _clients = clients.get()
     client = _clients.get(data_schema, None)
     if client is not None:
         return client
 
     # Setup client
-    params = project_params(data_schema)
-    assert params["database"] == database
-    DATABASE_URL = connection_string(database)
-    db = Database(DATABASE_URL)
-    db.set_params(env={}, **params)
+    ctx = project_params(data_schema)
+    mgr = TopologyManager(ctx)
 
-    _clients[data_schema] = db
+    _clients[data_schema] = mgr
     clients.set(_clients)
 
-    return db
+    return mgr
 
 
 def watch_topology(database: str):
@@ -127,9 +129,8 @@ async def _update_topology(database):
 
     print(f"Updating topology for {next_schema}")
     # Do the update
-    db = get_client(database, next_schema)
+    mgr = get_context(database, next_schema)
     print(f"Updating topology for {next_schema}", db)
-    _update(db)
     update_in_progress.set(False)
 
 
