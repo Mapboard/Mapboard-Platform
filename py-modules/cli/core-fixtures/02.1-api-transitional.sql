@@ -111,7 +111,7 @@ CREATE OR REPLACE VIEW mapboard_api.cross_sections AS
 WITH
   cross_sections AS (
     SELECT c.id,
-           slug,
+           c.slug,
            c.project_id,
            replace(name, 'Section ', '') AS name,
            parent AS parent_id,
@@ -201,10 +201,16 @@ WITH
                 FROM cross_sections)
 SELECT
     s.*,
-    p.slug project_slug,
-    c.slug clip_context_slug,
-    c1.slug parent_context_slug
+    xs.uuid                AS uuid,
+    p.slug                 AS project_slug,
+    p.uuid                 AS project_uuid,
+    c.slug                 AS clip_context_slug,
+    c.uuid                 AS clip_context_uuid,
+    c1.slug                AS parent_context_slug,
+    c1.uuid                AS parent_context_uuid
 FROM sections s
+JOIN mapboard.context xs
+  ON s.id = xs.id
 JOIN mapboard.project p
   ON s.project_id = p.id
 JOIN mapboard.context c1
@@ -217,14 +223,18 @@ DROP VIEW IF EXISTS mapboard_api.cross_section_endpoints;
 CREATE OR REPLACE VIEW mapboard_api.cross_section_endpoints AS
 SELECT
   cs.id,
+  cs.uuid,
   cs.slug,
   cs.project_id,
   cs.project_slug,
+  cs.project_uuid,
   cs.name,
   cs.clip_context_id,
   cs.clip_context_slug,
+  cs.clip_context_uuid,
   cs.parent_context_id,
   cs.parent_context_slug,
+  cs.parent_context_uuid,
   cs.is_public,
   'start' AS end_type,
   ST_StartPoint(geometry) geometry
@@ -232,14 +242,18 @@ FROM mapboard_api.cross_sections cs
 UNION ALL
 SELECT
   cs.id,
+  cs.uuid,
   cs.slug,
   cs.project_id,
   cs.project_slug,
+  cs.project_uuid,
   cs.name,
   cs.clip_context_id,
   cs.clip_context_slug,
+  cs.clip_context_uuid,
   cs.parent_context_id,
   cs.parent_context_slug,
+  cs.parent_context_uuid,
   cs.is_public,
   'end',
   ST_EndPoint(geometry)
@@ -249,28 +263,37 @@ DROP VIEW IF EXISTS mapboard_api.piercing_points;
 CREATE OR REPLACE VIEW mapboard_api.piercing_points AS
 WITH cross_sections AS (
   SELECT id,
+         uuid,
          slug,
          project_id,
          project_slug,
+         project_uuid,
          name,
          parent_context_id,
          parent_context_slug,
+         parent_context_uuid,
          clip_context_id,
          clip_context_slug,
+         clip_context_uuid,
          is_public,
          ST_Transform(geometry, original_srid) geometry -- we store multilinestrings for some reason
   FROM mapboard_api.cross_sections cs
 )
 SELECT
   s1.id,
+  s1.uuid,
   s1.slug,
   s1.project_id,
   s1.project_slug,
+  s1.project_uuid,
   s1.clip_context_id,
   s1.clip_context_slug,
+  s1.clip_context_uuid,
   s1.parent_context_id,
   s1.parent_context_slug,
+  s1.parent_context_uuid,
   s2.id other_id,
+  s2.uuid other_uuid,
   s1.name,
   s2.name other_name,
   (s1.is_public AND s2.is_public) is_public,

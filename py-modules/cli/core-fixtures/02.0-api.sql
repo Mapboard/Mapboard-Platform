@@ -27,6 +27,8 @@ SELECT
   c.description,
   c.uuid,
   canvas_id,
+  ca.slug                      AS canvas_slug,
+  ca.uuid                      AS canvas_uuid,
   ca.type,
   c.created_at,
   c.is_public,
