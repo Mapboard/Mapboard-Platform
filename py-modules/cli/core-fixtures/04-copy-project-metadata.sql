@@ -95,6 +95,7 @@ CREATE OR REPLACE FUNCTION mapboard.delete_project_metadata(
 ) RETURNS void AS $$
 BEGIN
   UPDATE mapboard.project SET main_context = NULL WHERE id = target_project;
+  DELETE FROM mapboard.project_schema WHERE project_id = target_project;
   DELETE FROM mapboard.context WHERE project_id = target_project;
   DELETE FROM mapboard.canvas WHERE project_id = target_project;
   DELETE FROM mapboard.project WHERE id = target_project;

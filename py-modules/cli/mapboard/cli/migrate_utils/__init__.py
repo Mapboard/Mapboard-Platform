@@ -3,87 +3,360 @@ Utilities to migrate the Mapboard database to a single multi-tenant setup
 (with multiple data schemas).
 """
 
+import asyncio
+
 from .backup_cluster import pg_dump_cluster
 from macrostrat.database import Database
-from psycopg2.sql import Identifier
+from macrostrat.database.transfer.move_tables import move_tables
+from psycopg2.sql import Identifier, SQL
 
 from .foreign_schema import (
     foreign_server_connection,
     map_foreign_schema,
     create_foreign_server,
+    drop_foreign_server,
 )
 
 import re
-from mapboard.core.settings import connection_string
+from mapboard.core.settings import connection_string, POSTGRES_IMAGE
 
 
-def copy_schema_data(db, source, target, *, exclude_tables=None, truncate=False):
-    """Copy one schema to another within the same database."""
+def _schema_tables(db, schema) -> list[str]:
+    """All base + foreign table names in a schema (foreign tables back FDW imports)."""
+    base = (
+        db.run_query(
+            "SELECT tablename FROM pg_tables WHERE schemaname = :schema",
+            dict(schema=schema),
+        )
+        .scalars()
+        .all()
+    )
+    foreign = (
+        db.run_query(
+            """
+            SELECT foreign_table_name
+            FROM information_schema.foreign_tables
+            WHERE foreign_table_schema = :schema
+            """,
+            dict(schema=schema),
+        )
+        .scalars()
+        .all()
+    )
+    return list(base) + list(foreign)
 
+
+def _table_columns(db, schema, table) -> list[str]:
+    """Column names for a table, in definition order (works for foreign tables too)."""
+    return (
+        db.run_query(
+            """
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_schema = :schema AND table_name = :table
+            ORDER BY ordinal_position
+            """,
+            dict(schema=schema, table=table),
+        )
+        .scalars()
+        .all()
+    )
+
+
+# --- Project-scoped (auxiliary) schema discovery, naming & migration ---------
+
+# Schemas that are never project data: PostgreSQL/PostGIS system schemas, extension
+# and tooling schemas, the core Mapboard schemas (leftovers in the legacy per-project
+# databases), and regenerable/derived data. PostGIS topologies (``*_topology``) are
+# rebuilt separately; large rasters are excluded by decision.
+SYSTEM_SCHEMAS = {
+    "public",
+    "information_schema",
+    "topology",
+    "mapboard",
+    "mapboard_api",
+    "tiger",
+    "tiger_data",
+    "tile_utils",
+    "tiles",
+    "ossp-uuid",
+    "qgis_projects",
+    "raster",
+    "contour",
+}
+
+# Non-project objects in a legacy database's `public` schema: the PostGIS catalog,
+# and imported OpenStreetMap basemap (regenerable, excluded by decision).
+PUBLIC_SYSTEM_TABLES = {
+    "spatial_ref_sys",
+    "geometry_columns",
+    "geography_columns",
+    "raster_columns",
+    "raster_overviews",
+    "layer",
+    "topology",
+}
+
+
+def _is_system_schema(name: str) -> bool:
+    """True if a schema holds system/tooling/derived data rather than project data."""
+    if name in SYSTEM_SCHEMAS:
+        return True
+    if name.endswith("_topology"):  # PostGIS topologies — rebuilt separately
+        return True
+    if name.endswith("_bak"):  # legacy backups — skipped by decision
+        return True
+    if name.startswith(("mb_", "z_")):  # already-migrated multi-tenant schemas
+        return True
+    return False
+
+
+def auxiliary_schemas(db: Database, *, canvas_schemas=()) -> list[str]:
+    """Non-system, non-canvas schemas that hold project data in a legacy database.
+
+    Only schemas containing at least one ordinary table are returned (empty leftover
+    schemas are ignored).
+    """
+    exclude = set(canvas_schemas)
+    rows = (
+        db.run_query(
+            r"""
+            SELECT n.nspname
+            FROM pg_namespace n
+            WHERE n.nspname NOT LIKE 'pg\_%'
+              AND EXISTS (
+                SELECT 1 FROM pg_class c
+                WHERE c.relnamespace = n.oid AND c.relkind IN ('r', 'p')
+              )
+            """
+        )
+        .scalars()
+        .all()
+    )
+    return sorted(s for s in rows if not _is_system_schema(s) and s not in exclude)
+
+
+def public_project_tables(db: Database) -> list[str]:
+    """Project-data tables in a legacy database's `public` schema.
+
+    Excludes the PostGIS catalog, imported OSM basemap (``planet_osm_*``), legacy
+    backups (``*_bak``), and internal helper tables (``__*``).
+    """
+    rows = (
+        db.run_query("SELECT tablename FROM pg_tables WHERE schemaname = 'public'")
+        .scalars()
+        .all()
+    )
+    keep = []
+    for t in rows:
+        if t in PUBLIC_SYSTEM_TABLES:
+            continue
+        if t.startswith("planet_osm"):
+            continue
+        if t.endswith("_bak"):
+            continue
+        if t.startswith("__"):
+            continue
+        keep.append(t)
+    return sorted(keep)
+
+
+def project_schema_name(project, source_name: str) -> str:
+    """Namespaced name for a project-scoped (auxiliary or base) schema.
+
+    Layout: ``mb_<slug>_<source>_<project-uuid8>`` — grouped alongside the project's
+    canvas schemas under the ``mb_<slug>_`` prefix. Auxiliary schemas are project-
+    (not canvas-) scoped, so identity is the *project* UUID.
+    """
+    uid = str(project.uuid)[0:8]
+
+    slug_base = project.slug
+    if slug_base.endswith("-copy"):
+        slug_base = slug_base[: -len("-copy")]
+    slug_hint = simplify_slug(slug_base)[:20].strip("_")
+
+    src = simplify_slug(source_name)[:24].strip("_")
+
+    name = f"mb_{slug_hint}_{src}_{uid}"
+    if len(name) > 63:
+        keep = len(slug_hint) - (len(name) - 63)
+        slug_hint = slug_hint[: max(0, keep)].strip("_")
+        name = f"mb_{slug_hint}_{src}_{uid}"
+    return name
+
+
+def _register_project_schema(
+    db, project_id, schema_name, source_name, kind, *, canvas_id=None
+):
+    """Record a project-owned schema in mapboard.project_schema (idempotent)."""
+    db.run_sql(
+        """
+        INSERT INTO mapboard.project_schema
+            (project_id, canvas_id, schema_name, source_name, kind)
+        VALUES (:project_id, :canvas_id, :schema_name, :source_name, :kind)
+        ON CONFLICT (schema_name) DO UPDATE SET
+            project_id  = excluded.project_id,
+            canvas_id   = excluded.canvas_id,
+            source_name = excluded.source_name,
+            kind        = excluded.kind
+        """,
+        dict(
+            project_id=project_id,
+            canvas_id=canvas_id,
+            schema_name=schema_name,
+            source_name=source_name,
+            kind=kind,
+        ),
+    )
+
+
+def migrate_auxiliary_schemas(
+    db: Database, project, source_database: str, *, canvas_schemas=()
+):
+    """Clone a project's non-canvas schemas + public project tables from its legacy
+    database into the merged database, namespaced under the project.
+
+    Structure, data, and (intra-project) cross-schema foreign keys are preserved by a
+    single scoped ``pg_dump | pg_restore``. pg_restore lands objects under their
+    original names, so we immediately rename each schema into its ``mb_<slug>_…`` name
+    (foreign keys are OID-based and follow the rename) and collect the project's
+    ``public`` data into a single base schema. Everything is recorded in
+    mapboard.project_schema.
+    """
+    source_db = Database(connection_string(source_database))
+
+    aux = auxiliary_schemas(source_db, canvas_schemas=canvas_schemas)
+    pub_tables = public_project_tables(source_db)
+
+    if not aux and not pub_tables:
+        print(f"  No auxiliary data to migrate from {source_database}.")
+        return
+
+    print(f"  Auxiliary schemas from {source_database}: {', '.join(aux) or '(none)'}")
+    print(f"  Public project tables: {', '.join(pub_tables) or '(none)'}")
+
+    # Move structure + data in one dump so cross-schema FKs restore intact.
+    task = move_tables(
+        source_db.engine,
+        db.engine,
+        schemas=list(aux),
+        tables=[f"public.{t}" for t in pub_tables],
+        restore_args=["--no-owner"],
+        postgres_container=POSTGRES_IMAGE,
+    )
+    asyncio.run(task)
+
+    # Rename each auxiliary schema into its namespaced name and register it.
+    for source_name in aux:
+        target = project_schema_name(project, source_name)
+        db.run_sql(
+            "ALTER SCHEMA {old} RENAME TO {new}",
+            dict(old=Identifier(source_name), new=Identifier(target)),
+            raise_on_error=True,
+        )
+        db.run_sql(
+            "COMMENT ON SCHEMA {schema} IS :label",
+            dict(schema=Identifier(target), label=f"{project.slug} — {source_name}"),
+        )
+        _register_project_schema(db, project.id, target, source_name, "auxiliary")
+        print(f"    {source_name} -> {target}")
+
+    # Collect the project's public data into a single base schema.
+    if pub_tables:
+        base = project_schema_name(project, "base")
+        db.run_sql(
+            "CREATE SCHEMA IF NOT EXISTS {schema}",
+            dict(schema=Identifier(base)),
+            raise_on_error=True,
+        )
+        for t in pub_tables:
+            db.run_sql(
+                "ALTER TABLE public.{table} SET SCHEMA {schema}",
+                dict(table=Identifier(t), schema=Identifier(base)),
+                raise_on_error=True,
+            )
+        db.run_sql(
+            "COMMENT ON SCHEMA {schema} IS :label",
+            dict(schema=Identifier(base), label=f"{project.slug} — base (from public)"),
+        )
+        _register_project_schema(db, project.id, base, "public", "base")
+        print(f"    public project tables -> {base}")
+
+    db.session.commit()
+
+
+def copy_schema_data(db, source, target, *, exclude_tables=None, truncate=True):
+    """Copy every table from one schema to another within the same database.
+
+    Only tables present in *both* schemas are copied, matched by explicit column
+    name (never ``SELECT *``): the source and target ``linework``/``polygon`` tables
+    carry the same columns in *different* order, so a positional copy silently maps
+    e.g. ``created`` (timestamp) onto ``map_layer`` (integer) and aborts the load.
+    Matching by name also tolerates schema drift (columns only on one side are ignored;
+    target-only columns keep their defaults).
+
+    Triggers and referential-integrity checks are disabled on the target tables for
+    the duration of the load, so table order is irrelevant and topology triggers do
+    not fire on the bulk insert (topology is rebuilt separately afterwards).
+    """
     if exclude_tables is None:
         exclude_tables = []
 
-    # Get list of tables in source schema
-    tables = (
-        db.run_query(
-            """
-        SELECT tablename
-        FROM pg_tables
-        WHERE schemaname = :source_schema
-        """,
-            dict(source_schema=source),
-        )
-        .scalars()
-        .all()
-    )
+    source_tables = set(_schema_tables(db, source))
+    target_tables = set(_schema_tables(db, target))
+    tables = sorted((source_tables & target_tables) - set(exclude_tables))
 
-    # In case this is a foreign schema, augment the list with foreign tables
-    foreign_tables = (
-        db.run_query(
-            """
-        SELECT foreign_table_name
-        FROM information_schema.foreign_tables
-        WHERE foreign_table_schema = :source_schema
-        """,
-            dict(source_schema=source),
-        )
-        .scalars()
-        .all()
-    )
+    missing = sorted(source_tables - target_tables - set(exclude_tables))
+    if missing:
+        print(f"  ! source tables with no target, skipped: {', '.join(missing)}")
 
-    tables += foreign_tables
-
+    # Disable triggers + RI on the target so insertion order and FK ordering do not matter.
     for table in tables:
-        if table in exclude_tables:
-            continue
-        is_foreign_table = table in foreign_tables
-
-        suffix = ""
-        if is_foreign_table:
-            suffix = "(foreign table)"
-
-        print("Copying data for table", table, suffix)
-
-        source_table = Identifier(source, table)
-        target_table = Identifier(target, table)
-
+        db.run_sql(
+            "ALTER TABLE {table} DISABLE TRIGGER ALL",
+            dict(table=Identifier(target, table)),
+            raise_on_error=True,
+        )
+    try:
         if truncate:
+            for table in tables:
+                db.run_sql(
+                    "TRUNCATE TABLE {table} CASCADE",
+                    dict(table=Identifier(target, table)),
+                    raise_on_error=True,
+                )
+
+        for table in tables:
+            source_cols = _table_columns(db, source, table)
+            target_cols = set(_table_columns(db, target, table))
+            # Preserve target definition order; copy only columns present on both sides.
+            common = [c for c in source_cols if c in target_cols]
+            if not common:
+                print(f"  ! {table}: no shared columns, skipped")
+                continue
+
+            col_list = SQL(", ").join(Identifier(c) for c in common)
             db.run_sql(
-                "TRUNCATE TABLE {target} CASCADE",
+                "INSERT INTO {target} ({cols}) SELECT {cols} FROM {source}",
                 dict(
-                    target=target_table,
+                    target=Identifier(target, table),
+                    source=Identifier(source, table),
+                    cols=col_list,
                 ),
                 raise_on_error=True,
             )
-
-        db.run_sql(
-            "INSERT INTO {target} SELECT * FROM {source}",
-            dict(
-                source=source_table,
-                target=target_table,
-            ),
-            raise_on_error=True,
-        )
+            n = db.run_query(
+                "SELECT count(*) FROM {table}",
+                dict(table=Identifier(target, table)),
+            ).scalar()
+            print(f"  copied {table}: {n} rows ({len(common)} columns)")
+    finally:
+        for table in tables:
+            db.run_sql(
+                "ALTER TABLE {table} ENABLE TRIGGER ALL",
+                dict(table=Identifier(target, table)),
+                raise_on_error=True,
+            )
 
 
 def migrate_projects(db: Database):
@@ -111,6 +384,38 @@ def migrate_projects(db: Database):
         migrate_project(db, project)
 
 
+def plan_projects(db: Database):
+    """Print what a migration would move, reading only (changes nothing).
+
+    Reports, per legacy project, the canvases (data + topology) and the auxiliary
+    schemas + public project tables that would be carried into the merged database.
+    """
+    projects = db.run_query(
+        "SELECT id, slug, uuid FROM mapboard.project WHERE derived_from IS NULL ORDER BY id"
+    ).all()
+
+    print(f"{len(projects)} legacy project(s) would be migrated.\n")
+    for project in projects:
+        print(f"Project {project.id} [{project.slug}]:")
+        canvases = _get_canvases(db, project.id)
+        source_data_schemas = [c.data_schema for c in canvases if c.database != "mapboard"]
+        source_databases = sorted({c.database for c in canvases if c.database != "mapboard"})
+
+        for c in canvases:
+            print(
+                f"  canvas ({c.type}): {c.database}.{c.data_schema}"
+                f"  [+ topology {c.topo_schema}]"
+            )
+
+        for source_database in source_databases:
+            src = Database(connection_string(source_database))
+            aux = auxiliary_schemas(src, canvas_schemas=source_data_schemas)
+            pub = public_project_tables(src)
+            print(f"  auxiliary schemas from {source_database}: {', '.join(aux) or '(none)'}")
+            print(f"  public project tables from {source_database}: {', '.join(pub) or '(none)'}")
+        print()
+
+
 def delete_migrated_projects(db: Database):
     """Delete all projects that were created as part of the migration process."""
 
@@ -120,38 +425,47 @@ def delete_migrated_projects(db: Database):
     ).all()
 
     for project in projects:
-        print(f"Deleting project {project.id}...")
+        print(f"Deleting project {project.id} ({project.slug})...")
         # Get a list of contexts associated with the project
         canvases = _get_canvases(db, project.id)
         for context in canvases:
-            types = ["data", "topo", "temp_data"]
-            for t in types:
-                schema_name = target_schema_name(project, context, type=t)
+            # Drop the topology first (it references the topo schema by name).
+            if context.topo_schema is not None:
                 db.run_sql(
-                    f"DROP SCHEMA IF EXISTS {schema_name} CASCADE;",
-                    raise_on_error=True,
+                    "SELECT topology.DropTopology(name) FROM topology.topology WHERE name = :topo_name",
+                    dict(topo_name=context.topo_schema),
                 )
 
-            topo_name = target_schema_name(project, context, type="topo")
-
-            # Drop the topology that may be associated with the project
-            db.run_sql(
-                "SELECT topology.DropTopology(name) FROM topology.topology WHERE name = :topo_name",
-                dict(topo_name=topo_name),
-            )
+            # Drop the actual schemas recorded on the canvas, plus any leftover
+            # import-staging schema. Using the stored names (rather than recomputing)
+            # means this stays correct even across schema-naming changes.
+            schema_names = [
+                context.data_schema,
+                context.topo_schema,
+                target_schema_name(project, context, type="import"),
+            ]
+            for schema_name in schema_names:
+                if not schema_name:
+                    continue
+                db.run_sql(
+                    "DROP SCHEMA IF EXISTS {schema} CASCADE",
+                    dict(schema=Identifier(schema_name)),
+                    raise_on_error=True,
+                )
 
         # Finally, delete the project metadata
         db.run_sql(
             "SELECT mapboard.delete_project_metadata(:project_id);",
             dict(project_id=project.id),
         )
+        db.session.commit()
 
 
 def _get_canvases(db, project_id):
     """Get canvases associated with a project."""
     return db.run_query(
         """
-        SELECT id, type::text type, data_schema, topo_schema, database, tolerance, srid, uuid
+        SELECT id, type::text type, data_schema, topo_schema, database, tolerance, srid, uuid, legacy
         FROM mapboard.canvas
         WHERE project_id = :project_id;
         """,
@@ -174,9 +488,25 @@ def migrate_project(db: Database, project):
         dict(project_id=new_project_id),
     ).one()
 
-    # Get contexts to migrate
-    for context in _get_canvases(db, new_project_id):
+    # Capture the legacy source(s) before migrate_canvas rewrites the canvas rows.
+    canvases = _get_canvases(db, new_project_id)
+    source_data_schemas = [c.data_schema for c in canvases if c.database != "mapboard"]
+    source_databases = sorted(
+        {c.database for c in canvases if c.database != "mapboard"}
+    )
+
+    # Migrate topology-managed canvases (data + topology schemas).
+    for context in canvases:
         migrate_canvas(db, new_project, context)
+
+    # Migrate the project's other (arbitrary) schemas + public project data.
+    for source_database in source_databases:
+        migrate_auxiliary_schemas(
+            db,
+            new_project,
+            source_database,
+            canvas_schemas=source_data_schemas,
+        )
 
 
 def migrate_canvas(db: Database, project, context):
@@ -219,26 +549,57 @@ def migrate_canvas(db: Database, project, context):
 
     apply_fixtures(topo_db)
 
-    # Copy data from old schema
-    old_db_url = connection_string(context.database)
-    old_data_schema = context.data_schema
-    old_db = Database(old_db_url)
-
-    src_schema = old_data_schema
-    if context.database != "mapboard":
-        temp_schema = target_schema_name(project, context, type="temp_data")
-        foreign_server = create_foreign_server(db, old_db)
-        map_foreign_schema(
-            db, foreign_server, temp_schema, foreign_schema=old_data_schema
+    # Record the human-readable identity on the schemas themselves (the schema
+    # *name* is keyed on the stable canvas UUID, so the slug can drift), and register
+    # both in the project-schema inventory.
+    for schema, role, kind in [
+        (data_schema, "data", "canvas_data"),
+        (topo_schema, "topology", "canvas_topo"),
+    ]:
+        db.run_sql(
+            "COMMENT ON SCHEMA {schema} IS :label",
+            dict(
+                schema=Identifier(schema),
+                label=f"{project.slug} — {context.type} ({role})",
+            ),
         )
-        src_schema = temp_schema
+        source_name = context.data_schema if role == "data" else context.topo_schema
+        _register_project_schema(
+            db, project.id, schema, source_name, kind, canvas_id=context.id
+        )
 
-    copy_schema_data(
-        db,
-        source=src_schema,
-        target=data_schema,
-        truncate=True,
-    )
+    # Copy data from the old schema. When it lives in a different database we stage
+    # it through a transient FDW "import" schema, then tear that (and the foreign
+    # server) down afterwards so no cruft is left behind.
+    old_db = Database(connection_string(context.database))
+    old_data_schema = context.data_schema
+
+    foreign_server = None
+    import_schema = None
+    src_schema = old_data_schema
+    try:
+        if context.database != "mapboard":
+            import_schema = target_schema_name(project, context, type="import")
+            foreign_server = create_foreign_server(db, old_db)
+            map_foreign_schema(
+                db, foreign_server, import_schema, foreign_schema=old_data_schema
+            )
+            src_schema = import_schema
+
+        copy_schema_data(
+            db,
+            source=src_schema,
+            target=data_schema,
+            truncate=True,
+        )
+    finally:
+        if import_schema is not None:
+            db.run_sql(
+                "DROP SCHEMA IF EXISTS {schema} CASCADE",
+                dict(schema=Identifier(import_schema)),
+            )
+        if foreign_server is not None:
+            drop_foreign_server(db, foreign_server)
 
     # Reset topo geometry in preparation for redoing topology
     db.run_sql(
@@ -269,15 +630,36 @@ def migrate_canvas(db: Database, project, context):
 
 
 def target_schema_name(project, context, type="data") -> str:
-    """Generate a target schema name for a project canvas."""
-    uid = str(project.uuid)[0:8]
+    """Schema name for a canvas's data / topology / import-staging schema.
+
+    Layout: ``mb_<slug>_<canvas-type>_<kind>_<canvas-uuid8>`` — e.g.
+    ``mb_naukluft_map_data_4d7fdc12`` and ``mb_naukluft_map_topo_4d7fdc12``.
+
+    The canvas-identifying part (slug + canvas type) comes *before* ``<kind>``, so a
+    map's data and topo schemas sort next to each other and a project's schemas
+    cluster together in listings. Identity is the canvas UUID (stable across
+    renames); the slug is a human hint only (also stored as a COMMENT ON SCHEMA).
+    ``type`` is one of ``data``, ``topo``, or ``import`` (transient FDW staging).
+    """
+    uid = str(context.uuid)[0:8]
+
     slug_base = project.slug
-    # We already have unique IDs, so remove any -copy suffixes
+    # UUID already guarantees uniqueness, so drop any "-copy" suffix from the hint.
     if slug_base.endswith("-copy"):
         slug_base = slug_base[: -len("-copy")]
+    slug_hint = simplify_slug(slug_base)[:20].strip("_")
 
-    v0 = f"z_{uid}_{slug_base}_{context.type}_{type}"
-    return simplify_slug(v0)
+    canvas_type = simplify_slug(str(context.type))
+
+    name = f"mb_{slug_hint}_{canvas_type}_{type}_{uid}"
+
+    # Never exceed Postgres's 63-char identifier limit (it truncates silently,
+    # which would collide schema names). Trim the cosmetic slug hint if needed.
+    if len(name) > 63:
+        keep = len(slug_hint) - (len(name) - 63)
+        slug_hint = slug_hint[: max(0, keep)].strip("_")
+        name = f"mb_{slug_hint}_{canvas_type}_{type}_{uid}"
+    return name
 
 
 def simplify_slug(slug: str, spacer="_") -> str:

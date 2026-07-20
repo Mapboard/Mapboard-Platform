@@ -134,6 +134,16 @@ mapboard.project ──1:N──▶ mapboard.canvas ──1:N──▶ mapboard.
   every canvas has `database = 'mapboard'` and its own pair of schemas within that database.
 - **`context`** — a named, bounded view within a canvas (e.g. a map area or a cross-section),
   with bounds, base-layer associations, and public/parent relationships.
+- **`project_schema`** (`core-fixtures/01.5-project-schema.sql`) — the inventory of *every*
+  non-system schema a project owns in the merged database, with a `kind`
+  (`canvas_data` / `canvas_topo` / `auxiliary` / `base` / `api`) and an optional `canvas_id`.
+  This is what makes **arbitrary project-scoped schemas** a first-class capability rather than
+  a naming convention (see §6).
+
+A project therefore owns more than its canvases. A real project like *naukluft* also carries
+**auxiliary** domain schemas (geochemistry, stratigraphic sections, field data) and project data
+that lived in the source database's `public` schema (collected into a single **base** schema).
+Every owned schema is namespaced and grouped under an `mb_<slug>_…` prefix (§5).
 
 The **`mapboard_api`** schema (`core-fixtures/02.0-api.sql`) exposes read views
 (`mapboard_api.project`, `mapboard_api.context`, …) that PostgREST and the frontend consume.
@@ -161,22 +171,82 @@ Implemented in `cli/migrate_utils/__init__.py`. For each legacy project not yet 
    which copies the project + its canvases + contexts, preserving relationships and stamping
    `derived_from`.
 2. **For each canvas**, compute target schema names with `target_schema_name`
-   (`z_<uuid8>_<slug>_<contexttype>_<data|topo>`), create the new `data_schema`/`topo_schema`
-   in the `mapboard` database, and apply fixtures (`apply_fixtures`).
-3. **Copy the data.** If the source is already in the `mapboard` database, copy schema→schema
-   directly (`copy_schema_data`). If it's a *different* database (the legacy case), stand up a
-   `postgres_fdw` foreign server and `IMPORT FOREIGN SCHEMA` into a temp schema
-   (`foreign_schema.py`), then copy from there.
-4. **Reset topology columns** (`topo`, `geometry_hash`, `topology_error`) on the copied
-   linework so topology can be rebuilt cleanly.
-5. **Update the `mapboard.canvas` record** to point at `database = 'mapboard'` and the new
+   (`mb_<slug>_<canvastype>_<data|topo>_<canvas-uuid8>` — grouped per-map, keyed on the stable
+   canvas UUID), create the new `data_schema`/`topo_schema`, apply fixtures (`apply_fixtures`),
+   and register both in `project_schema`.
+3. **Copy the canvas data** by explicit matching column name (`copy_schema_data` — never
+   `SELECT *`, since source/target columns are the same set in a different order). A cross-database
+   source is staged through a **transient** `postgres_fdw` `import` schema that is dropped
+   afterwards (no leftover cruft).
+4. **Migrate auxiliary schemas** (`migrate_auxiliary_schemas`): a single scoped
+   `pg_dump | pg_restore` (`move_tables`) carries the project's non-canvas schemas + its `public`
+   project tables — preserving structure, data, and intra-project cross-schema foreign keys —
+   which are then renamed into `mb_<slug>_<source>_<project-uuid8>` (a `…_base_…` schema for the
+   `public` data) and registered. System/derived schemas (`*_topology`, rasters, OSM, `*_bak`)
+   are excluded.
+5. **Reset topology columns** (`topo`, `geometry_hash`, `topology_error`) on the copied linework
+   so topology can be rebuilt separately (topology rebuild is deferred).
+6. **Update the `mapboard.canvas` record** to point at `database = 'mapboard'` and the new
    schemas, clearing the `legacy` flag.
 
-Companion commands: `--delete` (`delete_migrated_projects`) tears down migrated schemas and
-metadata; `mapboard db cleanup` drops topologies no longer referenced by any canvas
-(`drop_unreferenced_topologies`).
+Companion commands: `--dry-run` (`plan_projects`) reports what would move, changing nothing;
+`--delete` (`delete_migrated_projects`) tears down derived projects and their schemas; `mapboard
+db cleanup` drops topologies no longer referenced by any canvas (`drop_unreferenced_topologies`).
 
-## 6. Frontend (`mapboard-ui`)
+## 6. Project-scoped schemas & API surfaces
+
+> **Status: design sketch (not yet implemented).** The `project_schema` registry and `mb_*`
+> naming exist; per-project API schemas do not. This section records the intended shape so the
+> pieces added now (`kind = 'api'` is reserved in the registry) stay forward-compatible. To be
+> explored further.
+
+Because a project owns a registered set of namespaced schemas (§4), a project can also expose a
+**public API surface** — the same pattern the platform already uses internally, where
+`mapboard_api` is a schema of views over `mapboard.*` consumed by PostgREST. Applied per project,
+a `naukluft_api` schema would hold views/functions over that project's `mb_naukluft_*` data, base,
+and auxiliary schemas. The API schema is the **stable contract**: its views shield clients from the
+uuid-keyed internal schema names (which can change), exactly as `mapboard_api` shields them from
+`mapboard.*`.
+
+How it wires into the current design:
+
+- **Registry.** An API schema is one more `project_schema` row, `kind = 'api'`. Unlike internal
+  schemas (uuid-keyed for rename-safety), an API schema takes a **clean, public name** — the slug,
+  `"<slug>_api"` — because that name is its public identity (it appears in the URL / PostgREST
+  profile). Renaming the project renames the API surface, which is acceptable.
+- **PostgREST exposure.** Serve multiple schemas from the single PostgREST instance via schema
+  **profiles**: set `PGRST_DB_SCHEMAS=mapboard_api,naukluft_api,…` (the first is the default) in
+  `system/docker-compose.yaml`; the anon role needs `USAGE`/`SELECT` on each (the `03-roles.sql`
+  pattern). `NOTIFY pgrst, 'reload schema'` (already used by `db refresh-postgrest`) applies changes
+  live. A dedicated PostgREST container per project is the heavier alternative, warranted only when a
+  project needs its own auth/roles.
+- **Custom API prefix (Caddy).** One dynamic rule maps `/api/projects/<slug>/…` to the right schema by
+  capturing the slug and injecting the profile header — no per-project config:
+
+  ```
+  @proj path_regexp proj ^/api/projects/([^/]+)/
+  handle @proj {
+    uri strip_prefix /api/projects/{re.proj.1}
+    reverse_proxy postgrest:3000 {
+      header_up Accept-Profile  {re.proj.1}_api
+      header_up Content-Profile {re.proj.1}_api
+    }
+  }
+  ```
+
+- **Registry → config.** The only value that must track the registry is `PGRST_DB_SCHEMAS`
+  (PostgREST has no wildcard). A generator over `project_schema WHERE kind = 'api'` can emit it and
+  reload — e.g. a future `mapboard db refresh-api` — keeping the registry the single source of truth.
+- **Access control.** Public exposure makes grants explicit: per-project `GRANT`s (or per-project
+  roles for the dedicated-instance route), with the `mapboard.context.is_public` flag / row-level
+  security governing what anonymous callers can read, and writes requiring an authenticated role.
+
+Net effect on the migration work is additive and small: a reserved `kind`, a clean-name branch in
+`project_schema_name`, a `create_project_api(project)` step, a `refresh-api` command, and the one
+Caddy rule. Nothing about the data migration changes — the API layer sits atop the `mb_*` schemas it
+produces.
+
+## 7. Frontend (`mapboard-ui`)
 
 - **Stack:** Vike (`vike` + `vike-react`) on Vite 6 / React 18, TypeScript, served by a custom
   Express entry (`server/express-entry.ts`). Yarn 4 with PnP. Mapping via MapLibre GL / Mapbox
@@ -198,7 +268,7 @@ metadata; `mapboard db cleanup` drops topologies no longer referenced by any can
   through each context's `database` / `data_schema` / `topo_schema` fields — consistent with
   the target backend model.
 
-## 7. Cloud-readiness roadmap
+## 8. Cloud-readiness roadmap
 
 From [`Architectural transition.md`](./Architectural%20transition.md):
 
