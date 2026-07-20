@@ -25,8 +25,6 @@ from mapboard.topology_manager.config import _side_effects
 # setup_stderr_logs("macrostrat.utils", level=logging.DEBUG)
 core_app = MapboardApplication()
 app = core_app.control_command()
-core_app.setup_logs(verbose=True)
-setup_stderr_logs("mapboard.topology_manager", level=logging.INFO)
 
 app.add_typer(projects_app, help="Manage Mapboard projects")
 app.add_typer(db_app, help="Database management")
