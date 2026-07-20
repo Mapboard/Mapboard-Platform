@@ -24,6 +24,17 @@ CREATE TABLE IF NOT EXISTS mapboard.project (
   derived_from integer REFERENCES mapboard.project (id)
 );
 
+-- Reserve the 'mapboard' name: no project slug may start with 'mapboard' (it's the core
+-- schema / would collide with the mb_ schema prefix). Added NOT VALID so any pre-existing
+-- scaffold project (e.g. slug 'mapboard') is grandfathered while new/updated rows are enforced.
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'project_slug_reserved') THEN
+    ALTER TABLE mapboard.project
+      ADD CONSTRAINT project_slug_reserved CHECK (slug NOT LIKE 'mapboard%') NOT VALID;
+  END IF;
+END $$;
+
 CREATE TYPE mapboard.context_type AS enum ('map', 'cross-section');
 
 -- A mapping canvas is a view within a project that shares a single topology and

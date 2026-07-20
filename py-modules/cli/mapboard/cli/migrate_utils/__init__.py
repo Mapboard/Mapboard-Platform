@@ -67,8 +67,10 @@ def _table_columns(db, schema, table) -> list[str]:
 
 # Schemas that are never project data: PostgreSQL/PostGIS system schemas, extension
 # and tooling schemas, the core Mapboard schemas (leftovers in the legacy per-project
-# databases), and regenerable/derived data. PostGIS topologies (``*_topology``) are
-# rebuilt separately; large rasters are excluded by decision.
+# databases), canvas data-layout schemas (the registered canvas ones are excluded via
+# canvas_schemas; listing them here also catches *leftover copies*), scratch, and
+# regenerable/derived data. PostGIS topologies (``*_topology``) are rebuilt separately;
+# large rasters are excluded by decision.
 SYSTEM_SCHEMAS = {
     "public",
     "information_schema",
@@ -83,10 +85,16 @@ SYSTEM_SCHEMAS = {
     "qgis_projects",
     "raster",
     "contour",
+    # Canvas data-layout schema names — never auxiliary (a stray copy is a leftover).
+    "map_digitizer",
+    "cross_section",
+    # Scratch.
+    "test",
 }
 
 # Non-project objects in a legacy database's `public` schema: the PostGIS catalog,
-# and imported OpenStreetMap basemap (regenerable, excluded by decision).
+# imported OpenStreetMap basemap (regenerable, excluded by decision), and the QGIS
+# project-storage table (tooling).
 PUBLIC_SYSTEM_TABLES = {
     "spatial_ref_sys",
     "geometry_columns",
@@ -95,6 +103,7 @@ PUBLIC_SYSTEM_TABLES = {
     "raster_overviews",
     "layer",
     "topology",
+    "qgis_projects",
 }
 
 
@@ -105,6 +114,8 @@ def _is_system_schema(name: str) -> bool:
     if name.endswith("_topology"):  # PostGIS topologies — rebuilt separately
         return True
     if name.endswith("_bak"):  # legacy backups — skipped by decision
+        return True
+    if name.endswith("_export"):  # derived/export schemas — regenerable
         return True
     if name.startswith(("mb_", "z_")):  # already-migrated multi-tenant schemas
         return True
@@ -386,11 +397,14 @@ def migrate_projects(db: Database):
     # Get a list of project to migrate. These are legacy projects that don't have a modern project
     # derived from them.
 
+    # Skip reserved-name projects (slug starting with 'mapboard' — e.g. the
+    # self-referential test scaffold); 'mapboard' is reserved for the core schema.
     sql = """
     SELECT p.id, p.slug, p.uuid
     FROM mapboard.project p
     LEFT JOIN mapboard.project p2 ON p2.derived_from = p.id
-    WHERE p2.id IS NULL AND p.derived_from IS NULL;
+    WHERE p2.id IS NULL AND p.derived_from IS NULL
+      AND p.slug NOT LIKE 'mapboard%';
     """
 
     projects = db.run_query(sql).all()
@@ -409,7 +423,8 @@ def plan_projects(db: Database):
     schemas + public project tables that would be carried into the merged database.
     """
     projects = db.run_query(
-        "SELECT id, slug, uuid FROM mapboard.project WHERE derived_from IS NULL ORDER BY id"
+        "SELECT id, slug, uuid FROM mapboard.project "
+        "WHERE derived_from IS NULL AND slug NOT LIKE 'mapboard%' ORDER BY id"
     ).all()
 
     print(f"{len(projects)} legacy project(s) would be migrated.\n")
