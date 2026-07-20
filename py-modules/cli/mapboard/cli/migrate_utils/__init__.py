@@ -181,7 +181,9 @@ _SLUG_HINT_MAX = 16
 _SCHEMA_NAME_MAX = 63
 
 
-def project_schema_name(project, discriminator: str, *, suffix: str | None = None) -> str:
+def project_schema_name(
+    project, discriminator: str, *, suffix: str | None = None
+) -> str:
     """Namespaced name for any schema a project owns, on one unified scheme:
 
         mb_<slug>_<project-uuid8>_<discriminator>[_<suffix>]
@@ -403,8 +405,7 @@ def migrate_projects(db: Database):
     SELECT p.id, p.slug, p.uuid
     FROM mapboard.project p
     LEFT JOIN mapboard.project p2 ON p2.derived_from = p.id
-    WHERE p2.id IS NULL AND p.derived_from IS NULL
-      AND p.slug NOT LIKE 'mapboard%';
+    WHERE p2.id IS NULL AND p.derived_from IS NULL;
     """
 
     projects = db.run_query(sql).all()
@@ -424,15 +425,19 @@ def plan_projects(db: Database):
     """
     projects = db.run_query(
         "SELECT id, slug, uuid FROM mapboard.project "
-        "WHERE derived_from IS NULL AND slug NOT LIKE 'mapboard%' ORDER BY id"
+        "WHERE derived_from IS NULL ORDER BY id"
     ).all()
 
     print(f"{len(projects)} legacy project(s) would be migrated.\n")
     for project in projects:
         print(f"Project {project.id} [{project.slug}]:")
         canvases = _get_canvases(db, project.id)
-        source_data_schemas = [c.data_schema for c in canvases if c.database != "mapboard"]
-        source_databases = sorted({c.database for c in canvases if c.database != "mapboard"})
+        source_data_schemas = [
+            c.data_schema for c in canvases if c.database != "mapboard"
+        ]
+        source_databases = sorted(
+            {c.database for c in canvases if c.database != "mapboard"}
+        )
 
         for c in canvases:
             print(
@@ -444,8 +449,12 @@ def plan_projects(db: Database):
             src = Database(connection_string(source_database))
             aux = auxiliary_schemas(src, canvas_schemas=source_data_schemas)
             pub = public_project_tables(src)
-            print(f"  auxiliary schemas from {source_database}: {', '.join(aux) or '(none)'}")
-            print(f"  public project tables from {source_database}: {', '.join(pub) or '(none)'}")
+            print(
+                f"  auxiliary schemas from {source_database}: {', '.join(aux) or '(none)'}"
+            )
+            print(
+                f"  public project tables from {source_database}: {', '.join(pub) or '(none)'}"
+            )
         print()
 
 
@@ -483,13 +492,17 @@ def delete_migrated_projects(db: Database):
                 )
 
         # Drop the project's auxiliary / base schemas recorded in the inventory.
-        aux_schemas = db.run_query(
-            """
+        aux_schemas = (
+            db.run_query(
+                """
             SELECT schema_name FROM mapboard.project_schema
             WHERE project_id = :project_id AND kind IN ('auxiliary', 'base')
             """,
-            dict(project_id=project.id),
-        ).scalars().all()
+                dict(project_id=project.id),
+            )
+            .scalars()
+            .all()
+        )
         for schema_name in aux_schemas:
             db.run_sql(
                 "DROP SCHEMA IF EXISTS {schema} CASCADE",
