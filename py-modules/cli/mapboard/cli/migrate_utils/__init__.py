@@ -161,27 +161,45 @@ def public_project_tables(db: Database) -> list[str]:
     return sorted(keep)
 
 
-def project_schema_name(project, source_name: str) -> str:
-    """Namespaced name for a project-scoped (auxiliary or base) schema.
+# Schema-name length budget. Postgres identifiers cap at 63 bytes; we stay well under.
+# The slug hint is cosmetic (identity is the project UUID) so it may be truncated; the
+# discriminator (canvas slug / source schema name) must not be, so an over-budget name
+# raises rather than silently colliding. Canvas slugs are additionally bounded by a CHECK
+# constraint (<= 24) in core-fixtures/01-schema.sql.
+_SLUG_HINT_MAX = 16
+_SCHEMA_NAME_MAX = 63
 
-    Layout: ``mb_<slug>_<source>_<project-uuid8>`` — grouped alongside the project's
-    canvas schemas under the ``mb_<slug>_`` prefix. Auxiliary schemas are project-
-    (not canvas-) scoped, so identity is the *project* UUID.
+
+def project_schema_name(project, discriminator: str, *, suffix: str | None = None) -> str:
+    """Namespaced name for any schema a project owns, on one unified scheme:
+
+        mb_<slug>_<project-uuid8>_<discriminator>[_<suffix>]
+
+    Every schema a project owns shares the prefix ``mb_<slug>_<uuid8>_`` — uniform and
+    unique per project, so it can be globbed over. ``discriminator`` is the canvas slug
+    (canvas schemas), the source schema name (auxiliary), or ``"base"``; ``suffix`` is
+    ``data`` / ``topo`` / ``import`` for canvas schemas and omitted otherwise.
+
+    Identity is the project UUID; the slug is a cosmetic hint (also recorded as a
+    COMMENT ON SCHEMA) and may be truncated. The discriminator is never truncated — an
+    over-length name raises, so names never silently collide.
     """
     uid = str(project.uuid)[0:8]
 
     slug_base = project.slug
     if slug_base.endswith("-copy"):
         slug_base = slug_base[: -len("-copy")]
-    slug_hint = simplify_slug(slug_base)[:20].strip("_")
+    slug_hint = simplify_slug(slug_base)[:_SLUG_HINT_MAX].strip("_")
 
-    src = simplify_slug(source_name)[:24].strip("_")
+    disc = simplify_slug(discriminator).strip("_")
+    tail = disc if suffix is None else f"{disc}_{simplify_slug(suffix)}"
 
-    name = f"mb_{slug_hint}_{src}_{uid}"
-    if len(name) > 63:
-        keep = len(slug_hint) - (len(name) - 63)
-        slug_hint = slug_hint[: max(0, keep)].strip("_")
-        name = f"mb_{slug_hint}_{src}_{uid}"
+    name = f"mb_{slug_hint}_{uid}_{tail}"
+    if len(name) > _SCHEMA_NAME_MAX:
+        raise ValueError(
+            f"Schema name exceeds {_SCHEMA_NAME_MAX} chars ({len(name)}): {name!r}. "
+            f"Shorten the discriminator ({discriminator!r})."
+        )
     return name
 
 
@@ -436,15 +454,11 @@ def delete_migrated_projects(db: Database):
                     dict(topo_name=context.topo_schema),
                 )
 
-            # Drop the actual schemas recorded on the canvas, plus any leftover
-            # import-staging schema. Using the stored names (rather than recomputing)
-            # means this stays correct even across schema-naming changes.
-            schema_names = [
-                context.data_schema,
-                context.topo_schema,
-                target_schema_name(project, context, type="import"),
-            ]
-            for schema_name in schema_names:
+            # Drop the schemas recorded on the canvas. Using the stored names (rather
+            # than recomputing) keeps this correct across schema-naming changes. The
+            # transient import-staging schema is dropped during migration, so it needs
+            # no handling here.
+            for schema_name in (context.data_schema, context.topo_schema):
                 if not schema_name:
                     continue
                 db.run_sql(
@@ -452,6 +466,21 @@ def delete_migrated_projects(db: Database):
                     dict(schema=Identifier(schema_name)),
                     raise_on_error=True,
                 )
+
+        # Drop the project's auxiliary / base schemas recorded in the inventory.
+        aux_schemas = db.run_query(
+            """
+            SELECT schema_name FROM mapboard.project_schema
+            WHERE project_id = :project_id AND kind IN ('auxiliary', 'base')
+            """,
+            dict(project_id=project.id),
+        ).scalars().all()
+        for schema_name in aux_schemas:
+            db.run_sql(
+                "DROP SCHEMA IF EXISTS {schema} CASCADE",
+                dict(schema=Identifier(schema_name)),
+                raise_on_error=True,
+            )
 
         # Finally, delete the project metadata
         db.run_sql(
@@ -465,7 +494,7 @@ def _get_canvases(db, project_id):
     """Get canvases associated with a project."""
     return db.run_query(
         """
-        SELECT id, type::text type, data_schema, topo_schema, database, tolerance, srid, uuid, legacy
+        SELECT id, type::text type, slug, data_schema, topo_schema, database, tolerance, srid, uuid, legacy
         FROM mapboard.canvas
         WHERE project_id = :project_id;
         """,
@@ -510,13 +539,23 @@ def migrate_project(db: Database, project):
 
 
 def migrate_canvas(db: Database, project, context):
-    """Migrate a single context to the new schema design."""
-    print(f"  Context {context.id} ({context.type})...")
+    """Migrate a single canvas to the new schema design."""
+    print(f"  Canvas {context.id} ({context.type})...")
 
-    data_schema = target_schema_name(project, context, type="data")
+    # Every canvas needs a slug that is unique within the project — it becomes the
+    # canvas segment of the schema names. Default it from the canvas type; a project
+    # with multiple canvases of one type would need distinct slugs set explicitly.
+    canvas_slug = context.slug or simplify_slug(str(context.type))
+    db.run_sql(
+        "UPDATE mapboard.canvas SET slug = :slug WHERE id = :id",
+        dict(slug=canvas_slug, id=context.id),
+        raise_on_error=True,
+    )
+
+    data_schema = project_schema_name(project, canvas_slug, suffix="data")
     print(f"  Target schema (data): {data_schema}")
 
-    topo_schema = target_schema_name(project, context, type="topo")
+    topo_schema = project_schema_name(project, canvas_slug, suffix="topo")
     print(f"  Target schema (topo): {topo_schema}")
 
     if (
@@ -579,7 +618,7 @@ def migrate_canvas(db: Database, project, context):
     src_schema = old_data_schema
     try:
         if context.database != "mapboard":
-            import_schema = target_schema_name(project, context, type="import")
+            import_schema = project_schema_name(project, canvas_slug, suffix="import")
             foreign_server = create_foreign_server(db, old_db)
             map_foreign_schema(
                 db, foreign_server, import_schema, foreign_schema=old_data_schema
@@ -627,39 +666,6 @@ def migrate_canvas(db: Database, project, context):
       AND project_id = :project_id
     """
     db.run_sql(sql, ctx_params)
-
-
-def target_schema_name(project, context, type="data") -> str:
-    """Schema name for a canvas's data / topology / import-staging schema.
-
-    Layout: ``mb_<slug>_<canvas-type>_<kind>_<canvas-uuid8>`` — e.g.
-    ``mb_naukluft_map_data_4d7fdc12`` and ``mb_naukluft_map_topo_4d7fdc12``.
-
-    The canvas-identifying part (slug + canvas type) comes *before* ``<kind>``, so a
-    map's data and topo schemas sort next to each other and a project's schemas
-    cluster together in listings. Identity is the canvas UUID (stable across
-    renames); the slug is a human hint only (also stored as a COMMENT ON SCHEMA).
-    ``type`` is one of ``data``, ``topo``, or ``import`` (transient FDW staging).
-    """
-    uid = str(context.uuid)[0:8]
-
-    slug_base = project.slug
-    # UUID already guarantees uniqueness, so drop any "-copy" suffix from the hint.
-    if slug_base.endswith("-copy"):
-        slug_base = slug_base[: -len("-copy")]
-    slug_hint = simplify_slug(slug_base)[:20].strip("_")
-
-    canvas_type = simplify_slug(str(context.type))
-
-    name = f"mb_{slug_hint}_{canvas_type}_{type}_{uid}"
-
-    # Never exceed Postgres's 63-char identifier limit (it truncates silently,
-    # which would collide schema names). Trim the cosmetic slug hint if needed.
-    if len(name) > 63:
-        keep = len(slug_hint) - (len(name) - 63)
-        slug_hint = slug_hint[: max(0, keep)].strip("_")
-        name = f"mb_{slug_hint}_{canvas_type}_{type}_{uid}"
-    return name
 
 
 def simplify_slug(slug: str, spacer="_") -> str:

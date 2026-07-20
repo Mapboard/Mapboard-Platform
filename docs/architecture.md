@@ -5,7 +5,7 @@ transition from a **database-per-project** model to a **schema-based multi-tenan
 For the high-level cloud-readiness roadmap see [`Architectural transition.md`](./Architectural%20transition.md);
 for day-to-day working conventions see [`../CLAUDE.md`](../CLAUDE.md).
 
-## 1. Overview
+## Overview
 
 Mapboard Platform is a server-side system for creating and editing geologic maps. It is the
 web/server counterpart to the Mapboard GIS iPad app. Its job is to store map linework and
@@ -26,7 +26,7 @@ It orchestrates several components:
 
 The system currently runs **only locally**, via Docker Compose.
 
-## 2. Runtime topology (Docker Compose)
+## Runtime topology (Docker Compose)
 
 Defined in [`system/docker-compose.yaml`](../system/docker-compose.yaml), fronted by
 [`system/Caddyfile`](../system/Caddyfile).
@@ -55,7 +55,7 @@ Defined in [`system/docker-compose.yaml`](../system/docker-compose.yaml), fronte
 Commented-out `broker` (Redis) and worker services anticipate the task-worker architecture
 described in the roadmap (step 2).
 
-## 3. Backend Python workspace
+## Backend Python workspace
 
 `pyproject.toml` defines a **uv workspace**; each member under `py-modules/*` is an installable
 package sharing one virtualenv (`.venv`). The `mapboard` CLI is the operational entry point
@@ -76,7 +76,7 @@ Supporting assets in this package:
 - `core-fixtures/*.sql` — the **core (`mapboard`/`mapboard_api`) schema**, roles, and the
   `copy_project_metadata` migration function. Applied by `mapboard db init`.
 - `fixtures/*.sql` — per-project/canvas data-table fixtures applied by `apply_fixtures`.
-- `migrate_utils/` — the legacy→multi-tenant migration (see §5).
+- `migrate_utils/` — the legacy→multi-tenant migration (see [The migration mechanism](#the-migration-mechanism-mapboard-db-migrate-projects)).
 - `migrations/` (repo root) and `procedures/` — ad-hoc SQL run via `mapboard db run`.
 - `mobile_export/` — export a project to the mobile app's format.
 
@@ -85,7 +85,7 @@ Cross-cutting glue:
 - `settings.py` — `connection_string(...)`, the module-level `core_db` (→ `mapboard` DB),
   `.env` loading, image/SRID config.
 - `database.py` — `project_params`, `setup_database`, `get_topology_manager`.
-  **These still read the legacy flat `projects` table** (see §4).
+  **These still read the legacy flat `projects` table** (see [Data model](#data-model--legacy-vs-target)).
 - `workers/topology.py` — an async loop that listens for linework changes and drives topology
   updates through `TopologyManager`; also reads the legacy `projects` table.
 - `task_runner/` — hook for the Celery-based task system.
@@ -104,7 +104,7 @@ workers (roadmap step 2). Not yet wired into the default stack.
 ### `mapboard.cross-sections`, `mapboard.api`
 Cross-section subsystem (fixtures + procedures) and a currently-empty API stub.
 
-## 4. Data model — legacy vs. target
+## Data model — legacy vs. target
 
 This is the crux of the current work.
 
@@ -129,21 +129,39 @@ mapboard.project ──1:N──▶ mapboard.canvas ──1:N──▶ mapboard.
 
 - **`project`** — top-level unit (`slug`, `uuid`, `title`, `srid`, `owner`, optional
   `derived_from` for migration lineage, `main_context`).
-- **`canvas`** — a mapping surface that shares a single topology. Carries `database`,
-  `data_schema`, `topo_schema`, `srid`, `tolerance`, and a `legacy` flag. In the target model
-  every canvas has `database = 'mapboard'` and its own pair of schemas within that database.
+- **`canvas`** — a mapping surface that shares a single topology. Carries a `slug`
+  (unique within the project — `UNIQUE(project_id, slug)`), `database`, `data_schema`,
+  `topo_schema`, `srid`, `tolerance`, and a `legacy` flag. In the target model every canvas has
+  `database = 'mapboard'` and its own pair of schemas within that database.
 - **`context`** — a named, bounded view within a canvas (e.g. a map area or a cross-section),
   with bounds, base-layer associations, and public/parent relationships.
 - **`project_schema`** (`core-fixtures/01.5-project-schema.sql`) — the inventory of *every*
   non-system schema a project owns in the merged database, with a `kind`
   (`canvas_data` / `canvas_topo` / `auxiliary` / `base` / `api`) and an optional `canvas_id`.
   This is what makes **arbitrary project-scoped schemas** a first-class capability rather than
-  a naming convention (see §6).
+  a naming convention (see [Project-scoped schemas & API surfaces](#project-scoped-schemas--api-surfaces)).
 
 A project therefore owns more than its canvases. A real project like *naukluft* also carries
-**auxiliary** domain schemas (geochemistry, stratigraphic sections, field data) and project data
-that lived in the source database's `public` schema (collected into a single **base** schema).
-Every owned schema is namespaced and grouped under an `mb_<slug>_…` prefix (§5).
+**auxiliary** domain schemas (geochemistry, stratigraphic sections, field data). Each such source
+schema is preserved **one-to-one** — it becomes its own target schema with all of its tables,
+views, and constraints intact; nothing is merged. The only exception is the source database's
+`public` schema: the project tables that lived loose there (with no schema of their own) are
+collected into a single **base** schema.
+
+**Schema naming.** Every schema a project owns is named on one unified scheme
+(`migrate_utils.project_schema_name`):
+
+```
+mb_<slug>_<project-uuid8>_<discriminator>[_<data|topo>]
+```
+
+so all of a project's schemas share the uniform, project-unique prefix `mb_<slug>_<uuid8>_`
+(easy to enumerate/`glob`). The `<discriminator>` is the canvas `slug` for canvas schemas, the
+source schema name for auxiliary schemas, or `base`. **Identity is the project UUID** — the slug
+is a cosmetic hint (also stored as a `COMMENT ON SCHEMA`) and may be truncated; the discriminator
+is not, and names are hard-capped under Postgres's 63-char identifier limit (an over-length name
+raises rather than silently colliding). Uniqueness is enforced upstream too: `project.slug` is
+globally `UNIQUE` and each `canvas.slug` is unique within its project.
 
 The **`mapboard_api`** schema (`core-fixtures/02.0-api.sql`) exposes read views
 (`mapboard_api.project`, `mapboard_api.context`, …) that PostgREST and the frontend consume.
@@ -162,7 +180,7 @@ The migration is **partially implemented on the `multi-tenant` branch**:
 Reconciling these legacy paths onto `mapboard.project/canvas/context` is the main remaining
 work of the migration.
 
-## 5. The migration mechanism (`mapboard db migrate-projects`)
+## The migration mechanism (`mapboard db migrate-projects`)
 
 Implemented in `cli/migrate_utils/__init__.py`. For each legacy project not yet derived:
 
@@ -170,20 +188,29 @@ Implemented in `cli/migrate_utils/__init__.py`. For each legacy project not yet 
    `mapboard.copy_project_metadata(source_project)` (`core-fixtures/04-copy-project-metadata.sql`),
    which copies the project + its canvases + contexts, preserving relationships and stamping
    `derived_from`.
-2. **For each canvas**, compute target schema names with `target_schema_name`
-   (`mb_<slug>_<canvastype>_<data|topo>_<canvas-uuid8>` — grouped per-map, keyed on the stable
-   canvas UUID), create the new `data_schema`/`topo_schema`, apply fixtures (`apply_fixtures`),
-   and register both in `project_schema`.
+2. **For each canvas**, assign a per-project-unique canvas `slug` (defaulted from the canvas
+   type) and compute schema names with `project_schema_name` on the unified scheme
+   `mb_<slug>_<project-uuid8>_<discriminator>[_<data|topo>]` (see below), create the new
+   `data_schema`/`topo_schema`, apply fixtures (`apply_fixtures`), and register both in
+   `project_schema`.
 3. **Copy the canvas data** by explicit matching column name (`copy_schema_data` — never
    `SELECT *`, since source/target columns are the same set in a different order). A cross-database
    source is staged through a **transient** `postgres_fdw` `import` schema that is dropped
    afterwards (no leftover cruft).
 4. **Migrate auxiliary schemas** (`migrate_auxiliary_schemas`): a single scoped
    `pg_dump | pg_restore` (`move_tables`) carries the project's non-canvas schemas + its `public`
-   project tables — preserving structure, data, and intra-project cross-schema foreign keys —
-   which are then renamed into `mb_<slug>_<source>_<project-uuid8>` (a `…_base_…` schema for the
-   `public` data) and registered. System/derived schemas (`*_topology`, rasters, OSM, `*_bak`)
-   are excluded.
+   project tables in one pass, preserving structure, data, and cross-schema foreign keys. Then:
+   - **each source schema is renamed one-to-one** into `mb_<slug>_<uuid8>_<source>` — e.g.
+     naukluft's `mapping` (19 tables + matviews) → `mb_naukluft_<uuid8>_mapping`, `carbon_isotopes`
+     → `mb_naukluft_<uuid8>_carbon_isotopes`, whole and intact (only the schema *name* changes);
+   - the loose `public` project tables are gathered into one `mb_<slug>_<uuid8>_base`.
+
+   Foreign keys follow the renames (they bind to table identity, not schema name), so references
+   between the migrated schemas — and into `base` — stay valid. Every schema is registered in
+   `project_schema`. System/derived schemas (`*_topology`, rasters, OSM basemap, `*_bak`) are
+   excluded. *Caveat:* a view/matview inside a migrated schema that reads from an **excluded**
+   schema will fail to restore (its tables still arrive); watch the restore log and handle such
+   cases individually.
 5. **Reset topology columns** (`topo`, `geometry_hash`, `topology_error`) on the copied linework
    so topology can be rebuilt separately (topology rebuild is deferred).
 6. **Update the `mapboard.canvas` record** to point at `database = 'mapboard'` and the new
@@ -193,14 +220,14 @@ Companion commands: `--dry-run` (`plan_projects`) reports what would move, chang
 `--delete` (`delete_migrated_projects`) tears down derived projects and their schemas; `mapboard
 db cleanup` drops topologies no longer referenced by any canvas (`drop_unreferenced_topologies`).
 
-## 6. Project-scoped schemas & API surfaces
+## Project-scoped schemas & API surfaces
 
 > **Status: design sketch (not yet implemented).** The `project_schema` registry and `mb_*`
 > naming exist; per-project API schemas do not. This section records the intended shape so the
 > pieces added now (`kind = 'api'` is reserved in the registry) stay forward-compatible. To be
 > explored further.
 
-Because a project owns a registered set of namespaced schemas (§4), a project can also expose a
+Because a project owns a registered set of namespaced schemas ([Data model](#data-model--legacy-vs-target)), a project can also expose a
 **public API surface** — the same pattern the platform already uses internally, where
 `mapboard_api` is a schema of views over `mapboard.*` consumed by PostgREST. Applied per project,
 a `naukluft_api` schema would hold views/functions over that project's `mb_naukluft_*` data, base,
@@ -246,7 +273,7 @@ Net effect on the migration work is additive and small: a reserved `kind`, a cle
 Caddy rule. Nothing about the data migration changes — the API layer sits atop the `mb_*` schemas it
 produces.
 
-## 7. Frontend (`mapboard-ui`)
+## Frontend (`mapboard-ui`)
 
 - **Stack:** Vike (`vike` + `vike-react`) on Vite 6 / React 18, TypeScript, served by a custom
   Express entry (`server/express-entry.ts`). Yarn 4 with PnP. Mapping via MapLibre GL / Mapbox
@@ -268,12 +295,12 @@ produces.
   through each context's `database` / `data_schema` / `topo_schema` fields — consistent with
   the target backend model.
 
-## 8. Cloud-readiness roadmap
+## Cloud-readiness roadmap
 
 From [`Architectural transition.md`](./Architectural%20transition.md):
 
 1. **Multi-tenant migration** — replace database-per-project with schema-based tenancy
-   (the current focus; §4–§5).
+   (the current focus — see [Data model](#data-model--legacy-vs-target) and [The migration mechanism](#the-migration-mechanism-mapboard-db-migrate-projects)).
 2. **Topology efficiency & task workers** — move topology updates onto a broker/worker
    architecture (the `tasks` module + commented-out Redis/worker services).
 3. **Kubernetes** — prepare the system to run in K8s.
@@ -282,5 +309,5 @@ From [`Architectural transition.md`](./Architectural%20transition.md):
 - Password-less Postgres connections and `NODE_TLS_REJECT_UNAUTHORIZED=0` in the frontend are
   local-only conveniences and must be removed/replaced with real auth + certs.
 - A Mapbox token is present in local frontend config; ensure secrets are externalized.
-- Legacy code paths must be fully migrated off the flat `projects` table (§4) before the
+- Legacy code paths must be fully migrated off the flat `projects` table (see [Data model](#data-model--legacy-vs-target)) before the
   database-per-project assumptions are removed.

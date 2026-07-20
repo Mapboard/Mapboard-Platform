@@ -32,6 +32,10 @@ CREATE TABLE IF NOT EXISTS mapboard.canvas (
   id          integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   project_id  integer NOT NULL REFERENCES mapboard.project (id),
   type        mapboard.context_type NOT NULL DEFAULT 'map',
+  -- Short identifier, unique within the project. Used as the canvas segment of the
+  -- project's schema names (mb_<slug>_<uuid8>_<canvas-slug>_{data,topo}); kept short
+  -- so those names stay within Postgres's 63-char identifier limit.
+  slug        text,
   uuid        uuid NOT NULL DEFAULT gen_random_uuid() UNIQUE,
   created_at  timestamp DEFAULT current_timestamp,
   database    text NOT NULL,
@@ -42,6 +46,21 @@ CREATE TABLE IF NOT EXISTS mapboard.canvas (
   legacy      boolean DEFAULT false,
   UNIQUE (project_id, type, database, data_schema, topo_schema)
 );
+
+-- Canvas slug: add on existing databases, and enforce per-project uniqueness + a
+-- length bound (idempotently). NULL slugs are allowed for un-migrated legacy canvases
+-- (Postgres treats NULLs as distinct in a UNIQUE index).
+ALTER TABLE mapboard.canvas ADD COLUMN IF NOT EXISTS slug text;
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'canvas_project_slug_unique') THEN
+    ALTER TABLE mapboard.canvas ADD CONSTRAINT canvas_project_slug_unique UNIQUE (project_id, slug);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'canvas_slug_length') THEN
+    ALTER TABLE mapboard.canvas ADD CONSTRAINT canvas_slug_length
+      CHECK (slug IS NULL OR char_length(slug) BETWEEN 1 AND 24);
+  END IF;
+END $$;
 
 
 CREATE TABLE IF NOT EXISTS mapboard.context (
