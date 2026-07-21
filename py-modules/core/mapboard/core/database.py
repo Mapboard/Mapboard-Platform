@@ -22,11 +22,9 @@ def project_params(project: str):
 
 
 def setup_database(project: str) -> Database:
-    params = project_params(project)
-    db_url = connection_string(params["database"])
-    db = Database(db_url)
-    db.set_params(env={}, **params)
-    return db
+    """Legacy/compatibility function for project paramters"""
+    mgr = get_topology_manager(project)
+    return mgr.database
 
 
 def get_topology_manager(project: str) -> TopologyManager:

@@ -1,4 +1,4 @@
-from psycopg2.sql import Identifier, SQL
+from psycopg2.sql import Identifier, SQL, Literal
 from contextlib import contextmanager
 
 
@@ -9,18 +9,20 @@ def create_foreign_server(db, foreign_db, *, name=None):
     if foreign_server_name is None:
         foreign_server_name = get_foreign_server_name(foreign_db, prefix="fs")
 
+    # FDW OPTIONS (and DDL generally) cannot take bind parameters — the values must be
+    # inlined as literals, so we use psycopg quoting via {..} placeholders, not :binds.
     sql = """
     CREATE EXTENSION IF NOT EXISTS postgres_fdw;
 
     DROP SERVER IF EXISTS {foreign_server} CASCADE;
     CREATE SERVER IF NOT EXISTS {foreign_server}
       FOREIGN DATA WRAPPER postgres_fdw
-      OPTIONS (host :host, dbname :database, port :port);
+      OPTIONS (host {host}, dbname {database}, port {port});
 
-    /** Create a user mapping for the SGP database */
+    /** Create a user mapping for the foreign database */
     CREATE USER MAPPING IF NOT EXISTS FOR CURRENT_USER
       SERVER {foreign_server}
-      OPTIONS (user :user, password :password);
+      OPTIONS (user {user}, password {password});
 
     """
 
@@ -47,11 +49,11 @@ def create_foreign_server(db, foreign_db, *, name=None):
         sql,
         dict(
             foreign_server=Identifier(foreign_server_name),
-            host=host,
-            database=eng.url.database,
-            port=str(port),
-            user=eng.url.username,
-            password=eng.url.password,
+            host=Literal(host),
+            database=Literal(eng.url.database),
+            port=Literal(str(port)),
+            user=Literal(eng.url.username),
+            password=Literal(eng.url.password),
         ),
         raise_on_error=True,
     )

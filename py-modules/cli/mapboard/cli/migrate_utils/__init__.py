@@ -4,11 +4,15 @@ Utilities to migrate the Mapboard database to a single multi-tenant setup
 """
 
 import asyncio
+import os
+from datetime import datetime
+from pathlib import Path
 
 from .backup_cluster import pg_dump_cluster
 from macrostrat.database import Database
+from macrostrat.database.transfer import pg_dump_to_file
 from macrostrat.database.transfer.move_tables import move_tables
-from psycopg2.sql import Identifier, SQL
+from psycopg.sql import Identifier, SQL, Literal
 
 from .foreign_schema import (
     foreign_server_connection,
@@ -19,6 +23,36 @@ from .foreign_schema import (
 
 import re
 from mapboard.core.settings import connection_string, POSTGRES_IMAGE
+from mapboard.topology_manager import create_context, TopologyManager
+from mapboard.cli.fixtures import apply_fixtures
+
+
+def snapshot_registry(db: Database, *, reason: str = "migration") -> Path:
+    """Dump the `mapboard` schema (the project/canvas/context registry) to a
+    timestamped file before a destructive migration step — an always-on rollback point.
+
+    The registry is small but irreplaceable: its UUIDs/contexts *name* every ``mb_*``
+    data schema, so losing it orphans all migrated data. The dump captures only the
+    `mapboard` schema (fast, a few MB); the ``mb_*`` data schemas are re-derivable from
+    the legacy sources. Location is ``$MAPBOARD_SNAPSHOT_DIR`` or ``~/.mapboard/snapshots``.
+    """
+    snapshot_dir = Path(
+        os.environ.get("MAPBOARD_SNAPSHOT_DIR", Path.home() / ".mapboard" / "snapshots")
+    )
+    snapshot_dir.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    path = snapshot_dir / f"mapboard-registry-{reason}-{stamp}.pg-dump"
+
+    print(f"Snapshotting mapboard registry (rollback point) -> {path}")
+    asyncio.run(
+        pg_dump_to_file(
+            db.engine,
+            path,
+            args=["--schema", "mapboard"],
+            postgres_container=POSTGRES_IMAGE,
+        )
+    )
+    return path
 
 
 def _schema_tables(db, schema) -> list[str]:
@@ -61,6 +95,58 @@ def _table_columns(db, schema, table) -> list[str]:
         .scalars()
         .all()
     )
+
+
+def _row_count(db, schema, table) -> int:
+    """Row count for a single table (works across FDW foreign tables too)."""
+    return db.run_query(
+        "SELECT count(*) FROM {table}", dict(table=Identifier(schema, table))
+    ).scalar()
+
+
+def verify_row_counts(
+    src_db, src_schema, tgt_db, tgt_schema, *, tables=None
+) -> list[tuple]:
+    """Compare per-table row counts between a source and target schema.
+
+    Row-count parity is the primary check that a table migration actually moved its
+    data (structure is bootstrapped optimistically, so equal counts are the signal that
+    the copy succeeded). Returns a list of ``(table, source_count, target_count)`` for
+    every table that does not match or is missing from the target; empty means all good.
+    Each table is reported as it is checked.
+    """
+    src_tables = set(_schema_tables(src_db, src_schema))
+    if tables is not None:
+        src_tables &= set(tables)
+    tgt_tables = set(_schema_tables(tgt_db, tgt_schema))
+
+    problems = []
+    for table in sorted(src_tables):
+        src_n = _row_count(src_db, src_schema, table)
+        if table not in tgt_tables:
+            print(f"    verify {tgt_schema}.{table}: source={src_n} target=MISSING  !! MISSING")
+            problems.append((table, src_n, None))
+            continue
+        tgt_n = _row_count(tgt_db, tgt_schema, table)
+        ok = src_n == tgt_n
+        print(
+            f"    verify {tgt_schema}.{table}: source={src_n} target={tgt_n}"
+            + ("" if ok else "  !! MISMATCH")
+        )
+        if not ok:
+            problems.append((table, src_n, tgt_n))
+    return problems
+
+
+def _raise_on_mismatch(problems, context: str):
+    """Fail loudly if verify_row_counts found any mismatch/missing table."""
+    if not problems:
+        return
+    detail = "; ".join(
+        f"{t}: source={s}, target={'MISSING' if g is None else g}"
+        for t, s, g in problems
+    )
+    raise RuntimeError(f"Row-count verification failed for {context}: {detail}")
 
 
 # --- Project-scoped (auxiliary) schema discovery, naming & migration ---------
@@ -277,7 +363,10 @@ def migrate_auxiliary_schemas(
     )
     asyncio.run(task)
 
-    # Rename each auxiliary schema into its namespaced name and register it.
+    problems = []
+
+    # Rename each auxiliary schema into its namespaced name, register it, and verify
+    # its row counts against the (untouched) source schema.
     for source_name in aux:
         target = project_schema_name(project, source_name)
         db.run_sql(
@@ -286,13 +375,17 @@ def migrate_auxiliary_schemas(
             raise_on_error=True,
         )
         db.run_sql(
-            "COMMENT ON SCHEMA {schema} IS :label",
-            dict(schema=Identifier(target), label=f"{project.slug} — {source_name}"),
+            "COMMENT ON SCHEMA {schema} IS {label}",
+            dict(
+                schema=Identifier(target),
+                label=Literal(f"{project.slug} — {source_name}"),
+            ),
         )
         _register_project_schema(db, project.id, target, source_name, "auxiliary")
         print(f"    {source_name} -> {target}")
+        problems += verify_row_counts(source_db, source_name, db, target)
 
-    # Collect the project's public data into a single base schema.
+    # Collect the project's public data into a single base schema, verifying each table.
     if pub_tables:
         base = project_schema_name(project, "base")
         db.run_sql(
@@ -307,11 +400,19 @@ def migrate_auxiliary_schemas(
                 raise_on_error=True,
             )
         db.run_sql(
-            "COMMENT ON SCHEMA {schema} IS :label",
-            dict(schema=Identifier(base), label=f"{project.slug} — base (from public)"),
+            "COMMENT ON SCHEMA {schema} IS {label}",
+            dict(
+                schema=Identifier(base),
+                label=Literal(f"{project.slug} — base (from public)"),
+            ),
         )
         _register_project_schema(db, project.id, base, "public", "base")
         print(f"    public project tables -> {base}")
+        problems += verify_row_counts(
+            source_db, "public", db, base, tables=pub_tables
+        )
+
+    _raise_on_mismatch(problems, f"auxiliary schemas from {source_database}")
 
     db.session.commit()
 
@@ -376,11 +477,7 @@ def copy_schema_data(db, source, target, *, exclude_tables=None, truncate=True):
                 ),
                 raise_on_error=True,
             )
-            n = db.run_query(
-                "SELECT count(*) FROM {table}",
-                dict(table=Identifier(target, table)),
-            ).scalar()
-            print(f"  copied {table}: {n} rows ({len(common)} columns)")
+            print(f"  copied {table} ({len(common)} columns)")
     finally:
         for table in tables:
             db.run_sql(
@@ -389,12 +486,17 @@ def copy_schema_data(db, source, target, *, exclude_tables=None, truncate=True):
                 raise_on_error=True,
             )
 
+    # Verify row-count parity for every copied table; fail loudly on any mismatch.
+    problems = verify_row_counts(db, source, db, target, tables=tables)
+    _raise_on_mismatch(problems, f"{source} -> {target}")
+
 
 def migrate_projects(db: Database):
     """
     Major data migration:
     Migrate all projects from the original multi-database setup to a multi-schema design.
     """
+    snapshot_registry(db, reason="migrate")
 
     # Get a list of project to migrate. These are legacy projects that don't have a modern project
     # derived from them.
@@ -460,6 +562,7 @@ def plan_projects(db: Database):
 
 def delete_migrated_projects(db: Database):
     """Delete all projects that were created as part of the migration process."""
+    snapshot_registry(db, reason="delete")
 
     # Get a list of projects to delete
     projects = db.run_query(
@@ -607,14 +710,9 @@ def migrate_canvas(db: Database, project, context):
         **params,
     }
 
-    # Create new schemas
-    from mapboard.topology_manager.database import Database as TopoDatabase
-    from mapboard.cli.fixtures import apply_fixtures
-
-    topo_db = TopoDatabase(db.engine.url)
-    topo_db.set_params(env={}, **params)
-
-    apply_fixtures(topo_db)
+    ctx = create_context(db, **params)
+    mgr = TopologyManager(ctx)
+    apply_fixtures(mgr)
 
     # Record the human-readable identity on the schemas themselves (the schema
     # *name* is keyed on the stable canvas UUID, so the slug can drift), and register
@@ -624,10 +722,10 @@ def migrate_canvas(db: Database, project, context):
         (topo_schema, "topology", "canvas_topo"),
     ]:
         db.run_sql(
-            "COMMENT ON SCHEMA {schema} IS :label",
+            "COMMENT ON SCHEMA {schema} IS {label}",
             dict(
                 schema=Identifier(schema),
-                label=f"{project.slug} — {context.type} ({role})",
+                label=Literal(f"{project.slug} — {context.type} ({role})"),
             ),
         )
         source_name = context.data_schema if role == "data" else context.topo_schema

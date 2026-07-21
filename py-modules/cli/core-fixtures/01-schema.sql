@@ -24,16 +24,11 @@ CREATE TABLE IF NOT EXISTS mapboard.project (
   derived_from integer REFERENCES mapboard.project (id)
 );
 
--- Reserve the 'mapboard' name: no project slug may start with 'mapboard' (it's the core
--- schema / would collide with the mb_ schema prefix). Added NOT VALID so any pre-existing
--- scaffold project (e.g. slug 'mapboard') is grandfathered while new/updated rows are enforced.
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'project_slug_reserved') THEN
-    ALTER TABLE mapboard.project
-      ADD CONSTRAINT project_slug_reserved CHECK (slug NOT LIKE 'mapboard%') NOT VALID;
-  END IF;
-END $$;
+-- TODO(reserved-name): 'mapboard' should be reserved as a project slug (it's the core
+-- schema and would collide with the mb_ prefix). This was a CHECK (slug NOT LIKE 'mapboard%'),
+-- but a CHECK fires on *every* UPDATE of a matching row and blocked delete_project_metadata's
+-- `SET main_context = NULL` on grandfathered rows. Re-add as a BEFORE INSERT OR UPDATE OF slug
+-- trigger (enforces on create/rename only, not maintenance updates or deletes).
 
 CREATE TYPE mapboard.context_type AS enum ('map', 'cross-section');
 
