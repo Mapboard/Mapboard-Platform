@@ -203,9 +203,16 @@ def dump_cluster(
 
 
 @db_app.command()
-def migrate_projects(delete: bool = False, dry_run: bool = False):
+def migrate_projects(
+    delete: bool = False,
+    dry_run: bool = False,
+    project: Optional[str] = Option(
+        None, help="Limit to a single project by slug (e.g. --project provo)."
+    ),
+):
     """Migrate all legacy projects to the multi-schema setup.
 
+    --project  Limit to one project by slug (migrate/delete/plan just that one).
     --dry-run  Report what would be migrated (reads only, changes nothing).
     --delete   Remove previously-migrated (derived) projects and their schemas.
     """
@@ -218,17 +225,23 @@ def migrate_projects(delete: bool = False, dry_run: bool = False):
     db = core_db
 
     if dry_run:
-        _plan_projects(db)
+        _plan_projects(db, only_slug=project)
     elif delete:
-        _delete_migrated_projects(db)
+        _delete_migrated_projects(db, only_slug=project)
     else:
-        _migrate_projects(db)
+        _migrate_projects(db, only_slug=project)
 
 
 @db_app.command()
 def cleanup():
     """Clean up unused database objects"""
 
-    from .migrate_utils import drop_unreferenced_topologies
+    from .migrate_utils import (
+        drop_unreferenced_topologies,
+        drop_orphaned_project_schemas,
+    )
 
+    # Topologies first (proper DropTopology + catalog cleanup), then any leftover
+    # migration-owned schemas no canvas/registry row references.
     drop_unreferenced_topologies(core_db)
+    drop_orphaned_project_schemas(core_db)

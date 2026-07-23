@@ -55,7 +55,7 @@ def create_foreign_server(db, foreign_db, *, name=None):
             user=Literal(eng.url.username),
             password=Literal(eng.url.password),
         ),
-        raise_on_error=True,
+        raise_errors=True,
     )
 
     return foreign_server_name
@@ -105,7 +105,7 @@ def map_foreign_schema(db, foreign_server, target_schema, foreign_schema="public
     )
 
     # Cannot run import foreign schema with parameters, so we use Identifiers
-    db.run_sql("CREATE SCHEMA IF NOT EXISTS {target_schema}", args, raise_on_error=True)
+    db.run_sql("CREATE SCHEMA IF NOT EXISTS {target_schema}", args, raise_errors=True)
 
     sql = "IMPORT FOREIGN SCHEMA {foreign_schema} FROM SERVER {foreign_server} INTO {target_schema}"
-    db.run_sql(sql, args, raise_on_error=True)
+    db.run_sql(sql, args, raise_errors=True)
