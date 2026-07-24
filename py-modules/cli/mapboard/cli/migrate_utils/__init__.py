@@ -572,6 +572,54 @@ def migrate_projects(db: Database, only_slug: str = None):
         )
 
 
+def promote_migrated_projects(db: Database, only_slug: str = None):
+    """Promote derived (``-copy``) projects to canonical.
+
+    For each copy: clear ``derived_from``, delete the legacy original's metadata (its
+    per-project source database is left untouched), then rename the copy to the
+    original's slug/title. End state: one canonical project per map, no ``-copy``
+    suffixes, no legacy originals in the registry.
+    """
+    snapshot_registry(db, reason="promote")
+
+    where = "c.derived_from IS NOT NULL"
+    params = {}
+    if only_slug is not None:
+        where += " AND o.slug = :only_slug"
+        params["only_slug"] = only_slug
+    copies = db.run_query(
+        f"""
+        SELECT c.id AS copy_id, c.slug AS copy_slug,
+               o.id AS orig_id, o.slug AS orig_slug, o.title AS orig_title
+        FROM mapboard.project c
+        JOIN mapboard.project o ON c.derived_from = o.id
+        WHERE {where}
+        ORDER BY o.id
+        """,
+        params,
+    ).all()
+
+    for r in copies:
+        print(f"Promoting {r.copy_slug!r} -> {r.orig_slug!r} (retiring legacy original id {r.orig_id})")
+        # 1. break the derived_from link so the original can be deleted (FK is NO ACTION)
+        db.run_sql(
+            "UPDATE mapboard.project SET derived_from = NULL WHERE id = :id",
+            dict(id=r.copy_id),
+        )
+        # 2. delete the legacy original's metadata (source database untouched)
+        db.run_sql(
+            "SELECT mapboard.delete_project_metadata(:id)", dict(id=r.orig_id)
+        )
+        # 3. rename the copy to canonical (slug is free now)
+        db.run_sql(
+            "UPDATE mapboard.project SET slug = :slug, title = :title WHERE id = :id",
+            dict(slug=r.orig_slug, title=r.orig_title, id=r.copy_id),
+        )
+        db.session.commit()
+
+    print(f"Promoted {len(copies)} project(s) to canonical.")
+
+
 def plan_projects(db: Database, only_slug: str = None):
     """Print what a migration would move, reading only (changes nothing).
 

@@ -206,20 +206,23 @@ def dump_cluster(
 def migrate_projects(
     delete: bool = False,
     dry_run: bool = False,
+    promote: bool = False,
     project: Optional[str] = Option(
         None, help="Limit to a single project by slug (e.g. --project provo)."
     ),
 ):
     """Migrate all legacy projects to the multi-schema setup.
 
-    --project  Limit to one project by slug (migrate/delete/plan just that one).
+    --project  Limit to one project by slug (migrate/delete/plan/promote just that one).
     --dry-run  Report what would be migrated (reads only, changes nothing).
     --delete   Remove previously-migrated (derived) projects and their schemas.
+    --promote  Promote derived (-copy) projects to canonical (retire legacy originals).
     """
     from mapboard.cli.migrate_utils import migrate_projects as _migrate_projects
     from mapboard.cli.migrate_utils import (
         delete_migrated_projects as _delete_migrated_projects,
         plan_projects as _plan_projects,
+        promote_migrated_projects as _promote_migrated_projects,
     )
 
     db = core_db
@@ -228,6 +231,8 @@ def migrate_projects(
         _plan_projects(db, only_slug=project)
     elif delete:
         _delete_migrated_projects(db, only_slug=project)
+    elif promote:
+        _promote_migrated_projects(db, only_slug=project)
     else:
         _migrate_projects(db, only_slug=project)
 

@@ -26,14 +26,18 @@ console = core_app.console
 @app.command(name="list")
 def list_projects():
     """List Mapboard projects"""
-    projects = list(core_db.run_query("SELECT slug, title, database FROM projects"))
-    _databases = set(project.database for project in projects)
-    all_same_database = len(_databases) == 1
+    projects = core_db.run_query(
+        """
+        SELECT p.slug, p.title,
+               (SELECT count(*) FROM mapboard.canvas c WHERE c.project_id = p.id) AS n_canvases
+        FROM mapboard.project p
+        ORDER BY p.slug
+        """
+    )
     for project in projects:
-        dst = f"[cyan bold]{project.slug}[/] - {project.title}"
-        if not all_same_database:
-            dst += f" [dim]{project.database}[/dim]"
-        console.print(dst)
+        console.print(
+            f"[cyan bold]{project.slug}[/] - {project.title} [dim]({project.n_canvases} canvas(es))[/dim]"
+        )
 
 
 @app.command(name="create")
@@ -41,34 +45,85 @@ def create_project(
     project: str,
     srid: int = 4326,
     tolerance: float = 0.00001,
-    database: str = "mapboard",
 ):
-    """Create a Mapboard project database"""
-    if database.startswith("mapboard") and database != "mapboard":
-        raise ValueError("Project names beginning with 'mapboard' are reserved")
+    """Create a Mapboard project in the multi-tenant model.
 
-    DATABASE_URL = connection_string(database)
-    if not database_exists(DATABASE_URL):
-        create_database(DATABASE_URL)
+    Creates the project + a default 'map' canvas + main context, all in the single
+    `mapboard` database, then builds the canvas's data/topology schemas via the
+    topology-manager fixtures.
+    """
+    from mapboard.topology_manager import create_context, TopologyManager
+    from mapboard.cli.migrate_utils import (
+        project_schema_name,
+        _register_project_schema,
+    )
 
-    params = dict(
+    if project.startswith("mapboard"):
+        raise ValueError("Project slugs beginning with 'mapboard' are reserved")
+
+    proj = core_db.run_query(
+        """
+        INSERT INTO mapboard.project (slug, title, srid)
+        VALUES (:slug, :title, :srid)
+        RETURNING id, slug, uuid
+        """,
+        dict(slug=project, title=project, srid=srid),
+    ).one()
+
+    canvas_slug = "map"
+    data_schema = project_schema_name(proj, canvas_slug, suffix="data")
+    topo_schema = project_schema_name(proj, canvas_slug, suffix="topo")
+
+    canvas = core_db.run_query(
+        """
+        INSERT INTO mapboard.canvas
+            (project_id, type, slug, database, data_schema, topo_schema, srid, tolerance, legacy)
+        VALUES (:pid, 'map', :cslug, 'mapboard', :data_schema, :topo_schema, :srid, :tolerance, false)
+        RETURNING id
+        """,
+        dict(
+            pid=proj.id,
+            cslug=canvas_slug,
+            data_schema=data_schema,
+            topo_schema=topo_schema,
+            srid=srid,
+            tolerance=tolerance,
+        ),
+    ).one()
+
+    ctx_row = core_db.run_query(
+        """
+        INSERT INTO mapboard.context (project_id, canvas_id, name, slug)
+        VALUES (:pid, :cid, :name, 'main')
+        RETURNING id
+        """,
+        dict(pid=proj.id, cid=canvas.id, name=project),
+    ).one()
+
+    core_db.run_sql(
+        "UPDATE mapboard.project SET main_context = :ctx WHERE id = :pid",
+        dict(ctx=ctx_row.id, pid=proj.id),
+    )
+
+    # Build the data + topology schemas.
+    ctx = create_context(
+        core_db,
+        data_schema=data_schema,
+        topo_schema=topo_schema,
         srid=srid,
-        data_schema=project,
-        topo_schema=f"{project}_topology",
         tolerance=tolerance,
     )
+    apply_fixtures(TopologyManager(ctx))
 
-    # Add a record to the core database
-    core_db.run_sql(
-        """
-        INSERT INTO projects (slug, title, database, srid, data_schema, topo_schema, tolerance)
-        VALUES (:slug, :title, :database, :srid, :data_schema, :topo_schema, :tolerance)
-        """,
-        params=dict(slug=project, title=project, database=database, **params),
+    _register_project_schema(
+        core_db, proj.id, data_schema, None, "canvas_data", canvas_id=canvas.id
     )
-
-    db = setup_database(project)
-    apply_fixtures(db)
+    _register_project_schema(
+        core_db, proj.id, topo_schema, None, "canvas_topo", canvas_id=canvas.id
+    )
+    core_db.run_sql("SELECT pg_notify('pgrst', 'reload schema')")
+    core_db.session.commit()
+    console.print(f"Created project [cyan bold]{project}[/] ({data_schema})")
 
 
 @app.command(name="reset-topology")
@@ -94,28 +149,43 @@ def reset_topology(project: str):
 
 @app.command()
 def drop(project: str, apply: bool = False):
-    """Drop a Mapboard project"""
-    db = setup_database(project)
-    params = db.instance_params
-    # Show what will be dropped
-    console.print(f"Project: [cyan bold]{project}[/]")
-    console.print(f"Database: [cyan bold]{db.engine.url.database}[/]")
-    console.print(f"Data schema: [cyan bold]{params['data_schema']}[/]")
-    console.print(f"Topology schema: [cyan bold]{params['topo_schema']}[/]")
-    proj = core_db.run_query(
-        "SELECT * FROM projects WHERE slug = :slug", dict(slug=project)
-    ).one()
-    console.print(proj)
+    """Drop a Mapboard project — all of its schemas and metadata."""
+    from mapboard.cli.migrate_utils import _drop_migration_schema
 
-    if not apply:
+    proj = core_db.run_query(
+        "SELECT id, slug, title FROM mapboard.project WHERE slug = :slug",
+        dict(slug=project),
+    ).one_or_none()
+    if proj is None:
+        console.print(f"[red]No project with slug '{project}'[/]")
         return
 
-    db.run_sql("DROP SCHEMA IF EXISTS {topo_schema} CASCADE")
-    db.run_sql("DROP SCHEMA IF EXISTS {data_schema} CASCADE")
+    schemas = core_db.run_query(
+        "SELECT schema_name, kind FROM mapboard.project_schema WHERE project_id = :pid ORDER BY kind",
+        dict(pid=proj.id),
+    ).all()
 
-    db.run_sql("SELECT topology.DropTopology(:topo_name)")
+    console.print(f"Project: [cyan bold]{proj.slug}[/] - {proj.title}")
+    for s in schemas:
+        console.print(f"  [dim]{s.kind}[/] {s.schema_name}")
 
-    core_db.run_sql("DELETE FROM projects WHERE slug = :slug", dict(slug=project))
+    if not apply:
+        console.print("[dim](dry run — pass --apply to drop)[/]")
+        return
+
+    # Drop topologies (via DropTopology) before their schemas, then all owned schemas,
+    # then the metadata. _drop_migration_schema only drops mb_-prefixed schemas.
+    for s in schemas:
+        if s.kind == "canvas_topo":
+            core_db.run_sql(
+                "SELECT topology.DropTopology(name) FROM topology.topology WHERE name = :n",
+                dict(n=s.schema_name),
+            )
+    for s in schemas:
+        _drop_migration_schema(core_db, s.schema_name)
+    core_db.run_sql("SELECT mapboard.delete_project_metadata(:pid)", dict(pid=proj.id))
+    core_db.session.commit()
+    console.print(f"Dropped [cyan bold]{proj.slug}[/]")
 
 
 app.command(name="export")(export_database)

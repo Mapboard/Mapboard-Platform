@@ -5,11 +5,20 @@ from .settings import connection_string, core_db
 
 
 def project_params(project: str):
-    """
-    Get the database connection parameters for a project
+    """Connection/topology parameters for a project's main canvas.
+
+    Multi-tenant model: ``project -> main_context -> canvas``. All canvases live in the
+    single ``mapboard`` database. Raises if the slug isn't a current project (the flat
+    legacy ``projects`` table is gone — stale slugs no longer resolve).
     """
     res = core_db.run_query(
-        "SELECT database, data_schema, topo_schema, srid, tolerance FROM projects WHERE slug = :slug",
+        """
+        SELECT ca.database, ca.data_schema, ca.topo_schema, ca.srid, ca.tolerance
+        FROM mapboard.project p
+        JOIN mapboard.context ctx ON ctx.id = p.main_context
+        JOIN mapboard.canvas ca ON ca.id = ctx.canvas_id
+        WHERE p.slug = :slug
+        """,
         dict(slug=project),
     ).one()
     return dict(

@@ -23,8 +23,9 @@ clients = ContextVar("clients", default={})
 
 
 def project_params(data_schema: str):
+    # A canvas is keyed by its data schema in the multi-tenant model.
     res = core_db.run_query(
-        "SELECT database, data_schema, topo_schema, srid, tolerance FROM projects WHERE data_schema = :data_schema",
+        "SELECT database, data_schema, topo_schema, srid, tolerance FROM mapboard.canvas WHERE data_schema = :data_schema",
         dict(data_schema=data_schema),
     ).one()
 
