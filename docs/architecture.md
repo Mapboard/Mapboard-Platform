@@ -106,7 +106,12 @@ Cross-section subsystem (fixtures + procedures) and a currently-empty API stub.
 
 ## Data model — legacy vs. target
 
-This is the crux of the current work.
+> **See [database-design.md](database-design.md)** for the authoritative, detailed treatment of
+> the schema-based multi-tenant model (registry, schema naming, PostGIS-topology coupling, the
+> migration machinery, and safety invariants). This section is a summary.
+
+The migration to the multi-tenant model is **complete**: all projects live in the single
+`mapboard` database and the flat `projects` table has been retired.
 
 ### Legacy: database-per-project
 Historically, **each project got its own PostgreSQL database**. A flat `projects` table
