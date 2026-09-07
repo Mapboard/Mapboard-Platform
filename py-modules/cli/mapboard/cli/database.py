@@ -18,7 +18,7 @@ from typer import Argument, Context, Option, Typer
 
 from mapboard.topology_manager import TopologyManager, create_context
 from .fixtures import apply_core_fixtures, apply_fixtures, create_core_fixtures
-from .backup_cluster import pg_dump_cluster
+from mapboard.cli.migrate_utils import pg_dump_cluster
 from mapboard.core.settings import connection_string, core_db
 from mapboard.core.database import project_params, setup_database
 import asyncio
@@ -200,3 +200,53 @@ def dump_cluster(
         postgres_container=postgres_container,
     )
     asyncio.run(task)
+
+
+@db_app.command()
+def migrate_projects(
+    delete: bool = False,
+    dry_run: bool = False,
+    promote: bool = False,
+    project: Optional[str] = Option(
+        None, help="Limit to a single project by slug (e.g. --project provo)."
+    ),
+):
+    """Migrate all legacy projects to the multi-schema setup.
+
+    --project  Limit to one project by slug (migrate/delete/plan/promote just that one).
+    --dry-run  Report what would be migrated (reads only, changes nothing).
+    --delete   Remove previously-migrated (derived) projects and their schemas.
+    --promote  Promote derived (-copy) projects to canonical (retire legacy originals).
+    """
+    from mapboard.cli.migrate_utils import migrate_projects as _migrate_projects
+    from mapboard.cli.migrate_utils import (
+        delete_migrated_projects as _delete_migrated_projects,
+        plan_projects as _plan_projects,
+        promote_migrated_projects as _promote_migrated_projects,
+    )
+
+    db = core_db
+
+    if dry_run:
+        _plan_projects(db, only_slug=project)
+    elif delete:
+        _delete_migrated_projects(db, only_slug=project)
+    elif promote:
+        _promote_migrated_projects(db, only_slug=project)
+    else:
+        _migrate_projects(db, only_slug=project)
+
+
+@db_app.command()
+def cleanup():
+    """Clean up unused database objects"""
+
+    from .migrate_utils import (
+        drop_unreferenced_topologies,
+        drop_orphaned_project_schemas,
+    )
+
+    # Topologies first (proper DropTopology + catalog cleanup), then any leftover
+    # migration-owned schemas no canvas/registry row references.
+    drop_unreferenced_topologies(core_db)
+    drop_orphaned_project_schemas(core_db)
