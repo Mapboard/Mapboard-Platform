@@ -1,31 +1,11 @@
-/** Foreign data wrappers and transitional schemas
-  * These are used to import data from the naukluft database into the mapboard database.
-  * The schemas are transitional and will eventually be merged into the main mapboard database.
- */
-CREATE EXTENSION IF NOT EXISTS postgres_fdw;
 CREATE EXTENSION IF NOT EXISTS postgis_topology;
 
-CREATE SERVER IF NOT EXISTS naukluft
-  FOREIGN DATA WRAPPER postgres_fdw
-  OPTIONS (host 'localhost', dbname 'naukluft');
-
-CREATE USER MAPPING IF NOT EXISTS FOR CURRENT_USER
-  SERVER naukluft
-  OPTIONS (user 'mapboard_admin');
-
-/* Mirror the 'cross_section' schemas to the mapboard database */
-DROP SCHEMA IF EXISTS naukluft_cross_sections CASCADE;
-CREATE SCHEMA IF NOT EXISTS naukluft_cross_sections;
-IMPORT FOREIGN SCHEMA cross_section
-  FROM SERVER naukluft
-  INTO naukluft_cross_sections;
-
-/* Mirror the map data schema to the mapboard database */
-DROP SCHEMA IF EXISTS naukluft_map_data CASCADE;
-CREATE SCHEMA IF NOT EXISTS naukluft_map_data;
-IMPORT FOREIGN SCHEMA map_digitizer
-  FROM SERVER naukluft
-  INTO naukluft_map_data;
+/* The Naukluft data now lives in its own project schemas in this database
+  (`mb_naukluft_2517c1e5_*`), so it is no longer mirrored from the legacy
+  `naukluft` database with postgres_fdw. naukluft-app's
+  `database-config/finish-mapboard-merge.sql` records how the old foreign schemas
+  were removed.
+ */
 
 
 /** TRANSITIONAL APIs
@@ -53,10 +33,10 @@ WITH s1 AS (
 SELECT
   s1.*,
   pt.*
-FROM naukluft_map_data.polygon_type pt
+FROM mb_naukluft_2517c1e5_map_data.polygon_type pt
 JOIN s1 ON
      s1.project_slug = 'naukluft'
-      AND s1.data_schema = 'map_digitizer';
+      AND s1.data_schema = 'mb_naukluft_2517c1e5_map_data';
 
 CREATE OR REPLACE VIEW mapboard_api.stations AS
 SELECT
@@ -86,7 +66,7 @@ SELECT
   fault,
   source,
   data
-FROM naukluft_map_data.stations;
+FROM mb_naukluft_2517c1e5_map_data.stations;
 
 DROP VIEW IF EXISTS mapboard_api.cross_sections CASCADE;
 CREATE OR REPLACE VIEW mapboard_api.cross_sections AS
