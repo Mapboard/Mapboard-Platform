@@ -27,6 +27,10 @@ COPY . .
 
 RUN yarn install --immutable
 
+# Vite inlines VITE_* variables into the client bundle at build time.
+ARG VITE_MAPBOARD_API_DOMAIN
+ARG VITE_MAPBOX_TOKEN
+
 RUN yarn build
 
 EXPOSE 3000

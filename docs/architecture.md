@@ -215,7 +215,9 @@ Implemented in `cli/migrate_utils/__init__.py`. For each legacy project not yet 
    `project_schema`. System/derived schemas (`*_topology`, rasters, OSM basemap, `*_bak`) are
    excluded. *Caveat:* a view/matview inside a migrated schema that reads from an **excluded**
    schema will fail to restore (its tables still arrive); watch the restore log and handle such
-   cases individually.
+   cases individually. A related gap — schema names embedded as text in **function/view bodies**
+   (notably the canvas `map_digitizer`→`map_data` / `map_topology`→`map_topo` renames) aren't
+   always rewritten — is tracked in [`migration-notes.md`](./migration-notes.md).
 5. **Reset topology columns** (`topo`, `geometry_hash`, `topology_error`) on the copied linework
    so topology can be rebuilt separately (topology rebuild is deferred).
 6. **Update the `mapboard.canvas` record** to point at `database = 'mapboard'` and the new
