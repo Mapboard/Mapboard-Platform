@@ -4,8 +4,7 @@
 # neither, `local` is used.
 #
 # A value may name a secret instead of holding one: op:// (1Password), env://,
-# file://, keychain://, or k8s://<namespace>/<secret>/<key> (a cluster Secret,
-# read through `tigr`). It is fetched only when a command connects.
+# file:// or keychain://. It is fetched only when a command connects.
 
 op_account = "uw-madison.1password.com"
 
@@ -16,10 +15,11 @@ env_class = "local"
 [development]
 env_class = "development"
 
-# `database` is a URL, or a table when the password is stored apart from the
-# host it is used through (the operator's secret names the in-cluster host).
+# `database` is a URL, or a table when the stored credential names a host we
+# can't reach (the operator's Secret names the in-cluster one).
 [development.database]
 host = "db.development.svc.macrostrat.org"
 user = "mapboard"
 dbname = "mapboard"
-password = "k8s://macrostrat-dev/development-macrostrat-pguser-mapboard/password"
+# 1Password copy of the operator Secret k8s/macrostrat-dev/development-macrostrat-pguser-mapboard.
+password = "op://Macrostrat admin/3yc43uoeqnqxkzdww3czqhaylq/Secret data/password"

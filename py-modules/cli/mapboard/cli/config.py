@@ -1,13 +1,9 @@
 """Mapboard's environments, from `mapboard.toml` and `MAPBOARD_*` variables."""
 
-from base64 import b64decode
 from collections.abc import Mapping
 from os import environ
-from shutil import which
-from subprocess import run
 
 from macrostrat.app_frame import Environments
-from macrostrat.app_frame.secrets import SecretResolutionError, register_resolver
 from mapboard.core.settings import MAPBOARD_ROOT, set_database_url_provider
 from sqlalchemy.engine import URL
 
@@ -16,32 +12,6 @@ DEFAULTS = {
     "planning_image": environ.get("POSTGRES_IMAGE") or "postgis/postgis:15-3.4",
 }
 
-
-def resolve_kubernetes(body: str) -> str:
-    """`k8s://<namespace>/<secret>/<key>`: one key of a cluster Secret"""
-    try:
-        namespace, name, key = body.strip().split("/", 2)
-    except ValueError:
-        raise SecretResolutionError(
-            f"k8s://{body} should name k8s://<namespace>/<secret>/<key>."
-        )
-    # Tiger's API server is reached through the VPN proxy that `tigr` wraps.
-    kubectl = "tigr" if which("tigr") else "kubectl"
-    jsonpath = "{.data." + key.replace(".", "\\.") + "}"
-    proc = run(
-        [kubectl, "get", "secret", name, "-n", namespace, "-o", f"jsonpath={jsonpath}"],
-        capture_output=True,
-        text=True,
-    )
-    if proc.returncode != 0 or not proc.stdout:
-        raise SecretResolutionError(
-            f"Could not read {key!r} from secret {namespace}/{name} with {kubectl}: "
-            + (proc.stderr.strip() or "no such key")
-        )
-    return b64decode(proc.stdout).decode()
-
-
-register_resolver("k8s", resolve_kubernetes)
 
 # Built at import, before the command line is parsed, so `--env` is seen.
 environments = Environments.for_command_line(
@@ -66,7 +36,7 @@ def _database_url():
         return None
     if not isinstance(database, Mapping):
         return settings.secret("database")
-    # A table, for credentials stored apart from the host they are used through.
+    # A table, when the stored credential names the unreachable in-cluster host.
     url = URL.create(
         "postgresql",
         username=database.get("user"),
