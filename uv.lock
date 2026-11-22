@@ -775,7 +775,7 @@ wheels = [
 
 [[package]]
 name = "macrostrat-app-frame"
-version = "3.2.0"
+version = "3.2.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "macrostrat-utils" },
@@ -785,9 +785,9 @@ dependencies = [
     { name = "toposort" },
     { name = "typer" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/15/49/ea3194ac6c98d15f29732d74f3b85fb5cc92a84824e7ed174bd856e7ea0a/macrostrat_app_frame-3.2.0.tar.gz", hash = "sha256:c6bc30a37b39114830436928a5eb4dc3e663c6aa225ddab3734e063c2a48cafe", size = 46179, upload-time = "2026-11-17T10:32:46.479Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/be/29/24a51a174c270339866a52adb7b5f62725ed09a829b09cdd49b3055a015f/macrostrat_app_frame-3.2.1.tar.gz", hash = "sha256:ba99e798a2aef4e8c7a09edd0b4f5309b47f23f0f339f80fd72246c8c44f6ffb", size = 46183, upload-time = "2026-11-22T12:30:22.969Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/3e/e4/b838b10fa83881a2b255c2ff9f122cf2fbb482c28eb718036891d63993df/macrostrat_app_frame-3.2.0-py3-none-any.whl", hash = "sha256:5340737d62c57ec6e10bc70bb02e8dd77d9711fcee80b1a0d985efa5380260e5", size = 57367, upload-time = "2026-11-17T10:32:45.426Z" },
+    { url = "https://files.pythonhosted.org/packages/07/7e/79f714990ac2974bef8c5b7a329f712c7934da9ff3239d9bfcf6921ec5f4/macrostrat_app_frame-3.2.1-py3-none-any.whl", hash = "sha256:d49edef2fd1e5d6a009133130ca86a5fffe215d8c4fdc99256a4dd98f9a76452", size = 57399, upload-time = "2026-11-22T12:30:22.007Z" },
 ]
 
 [[package]]
@@ -852,7 +852,7 @@ wheels = [
 
 [[package]]
 name = "macrostrat-schema-management"
-version = "2.0.0"
+version = "2.0.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "click" },
@@ -868,9 +868,9 @@ dependencies = [
     { name = "testcontainers" },
     { name = "typer" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/79/28/715a93c0f564b6ceefbedad68081179f84b4da49a799a8d2a61b198cc866/macrostrat_schema_management-2.0.0.tar.gz", hash = "sha256:16797171797c956543d523c85a050dfd9f2dad1fff9804a7d920a8a7d3eedf4f", size = 45209, upload-time = "2026-11-17T10:43:02.168Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/4a/2b/006e19ff2ec5646129e2e2d6a4cd986b205a964b4033595abe5acc7d480b/macrostrat_schema_management-2.0.1.tar.gz", hash = "sha256:ee6f019e24d774804b1d6763e17fddfaba24caf23db6dc02d27d97460790748b", size = 45197, upload-time = "2026-11-22T12:30:24.929Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/31/d5/d4d88b2f6b93cce50c6f7cdc401bee46f135a0bdae5c0fea296af55968ce/macrostrat_schema_management-2.0.0-py3-none-any.whl", hash = "sha256:040e8aecdee2c51f62f0b0a0b79e2e70009f18f25e9d7f051b4eba06fc346b94", size = 59513, upload-time = "2026-11-17T10:43:00.924Z" },
+    { url = "https://files.pythonhosted.org/packages/fe/b3/aa8113c9f9cfac3015e67339c78a9becc731fab4fcd6ec3f7476a56944f6/macrostrat_schema_management-2.0.1-py3-none-any.whl", hash = "sha256:cb291f8e9203d3d151e5561335364cc769e871a2025bb6284784e5190aed9e8e", size = 59511, upload-time = "2026-11-22T12:30:24.013Z" },
 ]
 
 [[package]]
@@ -944,10 +944,10 @@ requires-dist = [
     { name = "click", specifier = ">=8.1.3,<9" },
     { name = "geopandas", specifier = ">=0.14.4,<0.15" },
     { name = "ipython", specifier = ">=8.14.0,<9" },
-    { name = "macrostrat-app-frame", specifier = ">=3.2.0,<4" },
+    { name = "macrostrat-app-frame", specifier = ">=3.2.1,<4" },
     { name = "macrostrat-database", specifier = ">=4.0.0,<5" },
     { name = "macrostrat-dinosaur", specifier = ">=4.2.0,<5" },
-    { name = "macrostrat-schema-management", specifier = ">=2.0.0,<3" },
+    { name = "macrostrat-schema-management", specifier = ">=2.0.1,<3" },
     { name = "macrostrat-utils", specifier = ">=1.2.1,<2" },
     { name = "mapboard-api", editable = "py-modules/api" },
     { name = "mapboard-core", editable = "py-modules/core" },
