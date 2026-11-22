@@ -11,4 +11,4 @@ http-client.private.env.json
 mapboard-ui/.idea
 
 mapboard.toml
-*.plan.sql
+/_plans/

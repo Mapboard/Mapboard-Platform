@@ -54,8 +54,8 @@ active goal is to make it deployable to cloud infrastructure (eventually K8s). S
   schema changes under `SET ROLE` and connecting otherwise with `options=-crole=mapboard`.
 - **Core schema** is declarative (`macrostrat.schema_management`): chunks in
   `py-modules/cli/mapboard/cli/schema.py` over `core-fixtures/`. `mapboard schema plan` diffs it
-  against the database in a scratch container (Docker); `apply` runs the plan; `sync`
-  re-applies views/functions/grants. Project schemas (`mb_*`) are outside it, built per canvas
+  against the database in a scratch container (Docker) and writes `_plans/<env>.plan.sql`
+  (gitignored); `apply` runs the plan; `sync` re-applies views/functions/grants. Project schemas (`mb_*`) are outside it, built per canvas
   by `mapboard db init <project>`. The transitional `mapboard_api` views and `public.photo_note`
   read one project's schemas, so they are kept out of diffs (`UNMANAGED_VIEWS`).
   Plans never create roles or grants: on a new database, `mapboard schema provision --target

@@ -22,6 +22,8 @@ from mapboard.core.settings import APP_OWNER, MAPBOARD_ROOT, admin_database_url
 from .config import environments
 
 FIXTURES = Path(__file__).parent.parent.parent / "core-fixtures"
+# Plans, and the log of what was applied, per environment; gitignored.
+PLANS_DIR = MAPBOARD_ROOT / "_plans"
 # Migration modules; the hand-run SQL of the per-database era is in `legacy/`.
 MIGRATIONS_DIR = MAPBOARD_ROOT / "migrations"
 
@@ -167,7 +169,7 @@ def schema_app() -> SchemaApp:
         database=database,
         chunks=chunks(),
         owner=APP_OWNER,
-        schema_dir=FIXTURES,
+        schema_dir=PLANS_DIR,
         migrations_dir=MIGRATIONS_DIR,
         environment=environments.env or "default",
         env_class=environments.env_class,
