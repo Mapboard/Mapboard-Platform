@@ -1,15 +1,11 @@
 /** Schema for the Mapboard project management database */
 
-CREATE EXTENSION IF NOT EXISTS postgis;
-CREATE EXTENSION IF NOT EXISTS postgis_topology;
--- Tables carried over from per-project databases default to uuid_generate_v4().
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE SCHEMA IF NOT EXISTS mapboard;
 
 DROP VIEW IF EXISTS mapboard_api.context CASCADE;
 DROP VIEW IF EXISTS mapboard_api.project CASCADE;
 
-CREATE TABLE IF NOT EXISTS users (
+CREATE TABLE IF NOT EXISTS public.users (
   id         serial PRIMARY KEY,
   username   text NOT NULL UNIQUE,
   created_at timestamp DEFAULT current_timestamp
@@ -22,8 +18,8 @@ CREATE TABLE IF NOT EXISTS mapboard.project (
   title       text NOT NULL,
   description text,
   created_at  timestamp DEFAULT current_timestamp,
-  owner_id    integer REFERENCES users (id),
-  srid        integer NOT NULL REFERENCES spatial_ref_sys (srid) DEFAULT 4326,
+  owner_id    integer REFERENCES public.users (id),
+  srid        integer NOT NULL REFERENCES public.spatial_ref_sys (srid) DEFAULT 4326,
   derived_from integer REFERENCES mapboard.project (id)
 );
 
@@ -56,7 +52,7 @@ CREATE TABLE IF NOT EXISTS mapboard.canvas (
   database    text NOT NULL,
   data_schema text NOT NULL,
   topo_schema text NOT NULL,
-  srid        integer REFERENCES spatial_ref_sys (srid) DEFAULT 4326,
+  srid        integer REFERENCES public.spatial_ref_sys (srid) DEFAULT 4326,
   tolerance   numeric NOT NULL DEFAULT 0.00001,
   legacy      boolean DEFAULT false,
   UNIQUE (project_id, type, database, data_schema, topo_schema)

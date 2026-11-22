@@ -10,7 +10,6 @@ from pathlib import Path
 from macrostrat.app_frame import AccessScope
 from macrostrat.database import Database
 from macrostrat.database.utils import create_database
-from sqlalchemy.engine import make_url
 from macrostrat.schema_management import (
     EnvironmentClass,
     SchemaApp,
@@ -20,14 +19,13 @@ from macrostrat.schema_management import (
 )
 from mapboard.core.settings import MAPBOARD_ROOT, database_url
 
-from .config import environments
+from .config import environments, setting_url
 
 FIXTURES = Path(__file__).parent.parent.parent / "core-fixtures"
+# Run once by a superuser where the owner isn't one; written for the `mapboard` role.
+CLUSTER_SETUP = MAPBOARD_ROOT / "system" / "cluster-database-setup.sql"
 # Migration modules; the hand-run SQL of the per-database era is in `legacy/`.
 MIGRATIONS_DIR = MAPBOARD_ROOT / "migrations"
-
-# The database default without "$user"; fixtures and plans assume unqualified names are public.
-SEARCH_PATH = "-csearch_path=public,topology"
 
 # Views over one project's schemas, which a scratch database cannot build. The
 # transitional API views are synced; `public.photo_note` is Naukluft's own.
@@ -41,19 +39,22 @@ UNMANAGED_VIEWS = {
 }
 
 
-def chunks() -> list[SchemaDefinition]:
+def chunks(owner: str | None = None) -> list[SchemaDefinition]:
+    """The core schema. Chunks after the cluster-level ones are applied as *owner*."""
     return [
-        # Cluster-wide roles, applied as the connecting role.
+        # Cluster-level objects, applied as the connecting role.
         SchemaDefinition(name="roles", provides=[FIXTURES / "00-roles.sql"]),
+        SchemaDefinition(name="extensions", provides=[FIXTURES / "00-extensions.sql"]),
         SchemaDefinition(
             name="local-roles",
-            depends_on=["roles"],
+            depends_on=["roles", "extensions"],
             provides=[FIXTURES / "local"],
             environments=[EnvironmentClass.Local],
         ),
         SchemaDefinition(
             name="core",
-            depends_on=["roles"],
+            depends_on=["roles", "extensions"],
+            owner=owner,
             provides=[
                 FIXTURES / "01-schema.sql",
                 FIXTURES / "01.1-functions.sql",
@@ -63,39 +64,37 @@ def chunks() -> list[SchemaDefinition]:
         ),
         SchemaDefinition(
             name="access",
+            owner=owner,
             depends_on=["core"],
             provides=[FIXTURES / "01.6-access.sql"],
         ),
         SchemaDefinition(
             name="tasks",
+            owner=owner,
             depends_on=["core"],
             provides=[FIXTURES / "01.7-task-run.sql"],
         ),
         SchemaDefinition(
             name="api",
+            owner=owner,
             depends_on=["access"],
             provides=[FIXTURES / "02.0-api.sql"],
         ),
         # Synced like any chunk, but left out of diffs (see `ignore_unmanaged`).
         SchemaDefinition(
             name="api-transitional",
+            owner=owner,
             depends_on=["api"],
             provides=[FIXTURES / "02.1-api-transitional.sql"],
         ),
         SchemaDefinition(
             name="api-permissions",
+            owner=owner,
             depends_on=["api", "api-transitional"],
             provides=[FIXTURES / "03-permissions.sql"],
         ),
     ]
 
-
-# PostGIS's tables: a non-superuser can't see their PUBLIC grants, so they always differ.
-EXTENSION_TABLES = {
-    ("public", "spatial_ref_sys"),
-    ("public", "geometry_columns"),
-    ("public", "geography_columns"),
-}
 
 # Installed by the cluster's operator, not by Mapboard.
 CLUSTER_EXTENSIONS = {"pg_stat_statements", "pgaudit"}
@@ -105,8 +104,8 @@ def ignore_unmanaged(changes):
     """Keep what Mapboard's schema doesn't own out of a diff, on both sides"""
     for inspector in (changes.i_from, changes.i_target):
         _drop(inspector, ("relations", "views", "selectables", "privileges"), _is_view)
-        _drop(inspector, ("privileges",), _is_extension_table)
-        _drop(inspector, ("extensions",), lambda v: getattr(v, "name", None) in CLUSTER_EXTENSIONS)
+        _drop(inspector, ("extensions",), _is_cluster_extension)
+        _drop(inspector, ("relations", "views", "privileges"), _is_cluster_extension_view)
 
 
 def _drop(inspector, props, predicate):
@@ -124,22 +123,25 @@ def _is_view(obj) -> bool:
     return _name(obj) in UNMANAGED_VIEWS
 
 
-def _is_extension_table(obj) -> bool:
-    return _name(obj) in EXTENSION_TABLES
+def _is_cluster_extension(obj) -> bool:
+    return getattr(obj, "name", None) in CLUSTER_EXTENSIONS
+
+
+def _is_cluster_extension_view(obj) -> bool:
+    schema, name = _name(obj)
+    return schema == "public" and (name or "").startswith("pg_stat_statements")
 
 
 def schema_app() -> SchemaApp:
     settings = environments.settings
-
+    # Where the services' role isn't a superuser, a superuser applies changes as it.
+    owner = settings.get("schema_owner")
     db = None
 
     def database() -> Database:
         nonlocal db
         if db is None:
-            # On dev the role is `mapboard`, so "$user" would put the mapboard schema first.
-            # In the URL, since the plan's inspector reconnects from the URL alone.
-            url = make_url(database_url()).update_query_dict({"options": SEARCH_PATH})
-            db = Database(url)
+            db = Database(setting_url("schema_database") or database_url())
         return db
 
     @contextmanager
@@ -149,6 +151,13 @@ def schema_app() -> SchemaApp:
             url = cluster.engine.url.set(database="mapboard")
             create_database(url)
             plan_db = Database(url)
+            if owner is not None:
+                # As the cluster's operator creates it, then what dev's one-time setup grants.
+                plan_db.run_sql(f'CREATE ROLE "{owner}" NOLOGIN', raise_errors=True)
+                plan_db.run_sql(
+                    f'GRANT ALL ON DATABASE mapboard TO "{owner}"', raise_errors=True
+                )
+                plan_db.run_sql(CLUSTER_SETUP, raise_errors=True)
             try:
                 yield plan_db
             finally:
@@ -162,7 +171,8 @@ def schema_app() -> SchemaApp:
     return SchemaApp(
         name="mapboard",
         database=database,
-        chunks=chunks(),
+        chunks=chunks(owner),
+        owner=owner,
         schema_dir=FIXTURES,
         migrations_dir=MIGRATIONS_DIR,
         environment=environments.env or "default",

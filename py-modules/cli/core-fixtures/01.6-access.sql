@@ -5,10 +5,10 @@
   check is a comparison: `mapboard.project_access(...) >= 'edit'`.
  */
 
-ALTER TABLE users ADD COLUMN IF NOT EXISTS sub text UNIQUE;
-ALTER TABLE users ADD COLUMN IF NOT EXISTS name text;
-ALTER TABLE users ADD COLUMN IF NOT EXISTS email text;
-ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin boolean NOT NULL DEFAULT false;
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS sub text UNIQUE;
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS name text;
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS email text;
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS is_admin boolean NOT NULL DEFAULT false;
 
 ALTER TABLE mapboard.project ADD COLUMN IF NOT EXISTS is_public boolean NOT NULL DEFAULT true;
 
@@ -22,7 +22,7 @@ END $$;
 
 CREATE TABLE IF NOT EXISTS mapboard.project_member (
   project_id integer NOT NULL REFERENCES mapboard.project (id) ON DELETE CASCADE,
-  user_id    integer NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+  user_id    integer NOT NULL REFERENCES public.users (id) ON DELETE CASCADE,
   access     mapboard.access_level NOT NULL DEFAULT 'read',
   created_at timestamp DEFAULT current_timestamp,
   PRIMARY KEY (project_id, user_id)

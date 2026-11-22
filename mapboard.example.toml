@@ -15,6 +15,10 @@ env_class = "local"
 [development]
 env_class = "development"
 
+# Schema commands connect as the cluster's superuser and apply changes as
+# `schema_owner`, so what they create is owned as the services expect.
+schema_owner = "mapboard"
+
 # `database` is a URL, or a table when the stored credential names a host we
 # can't reach (the operator's Secret names the in-cluster one).
 [development.database]
@@ -23,3 +27,10 @@ user = "mapboard"
 dbname = "mapboard"
 # 1Password copy of the operator Secret k8s/macrostrat-dev/development-macrostrat-pguser-mapboard.
 password = "op://Macrostrat admin/3yc43uoeqnqxkzdww3czqhaylq/Secret data/password"
+
+[development.schema_database]
+host = "db.development.svc.macrostrat.org"
+user = "macrostrat-admin"
+dbname = "mapboard"
+# 1Password copy of the operator Secret k8s/macrostrat-dev/development-macrostrat-pguser-macrostrat-admin.
+password = "op://Macrostrat admin/uw7xpvvph5yllk42wf3nbs4gla/Secret data/password"

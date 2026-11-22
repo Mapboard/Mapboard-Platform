@@ -28,14 +28,14 @@ if environments.env is None and "local" in environments.available():
     environments.reload()
 
 
-def _database_url():
-    # Resolved on first connection, so commands that never connect fetch nothing.
+def setting_url(key: str):
+    """The URL a database setting describes, fetching any secret in it now"""
     settings = environments.settings
-    database = settings.get("database")
+    database = settings.get(key)
     if database is None:
         return None
     if not isinstance(database, Mapping):
-        return settings.secret("database")
+        return settings.secret(key)
     # A table, when the stored credential names the unreachable in-cluster host.
     url = URL.create(
         "postgresql",
@@ -48,4 +48,5 @@ def _database_url():
     return url.render_as_string(hide_password=False)
 
 
-set_database_url_provider(_database_url)
+# Resolved on first connection, so commands that never connect fetch nothing.
+set_database_url_provider(lambda: setting_url("database"))

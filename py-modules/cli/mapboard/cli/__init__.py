@@ -42,28 +42,33 @@ app.add_typer(db_app, help="Database management")
 def config():
     """Show the settings the tools are using"""
     settings = environments.settings
-    database = settings.get("database")
-    if database is None:
-        shown = f"[dim]not set; from .env:[/] {_hide_password(database_url())}"
-    elif isinstance(database, Secret):
-        # A reference names the credential without being one.
-        shown = f"{database.ref} [dim](not fetched)[/]"
-    elif isinstance(database, Mapping):
-        password = database.get("password")
-        if isinstance(password, Secret):
-            password = f"{password.ref} [dim](not fetched)[/]"
-        elif password is not None:
-            password = "***"
-        address = f"{database.get('host')}:{database.get('port') or 5432}"
-        shown = f"{database.get('user')}@{address}/{database.get('dbname') or 'mapboard'}"
-        shown += f", password {password}"
-    else:
-        shown = _hide_password(database)
     env_class = environments.env_class.value
-    console.print(f"config file:    {environments.config_file or '[dim]none[/]'}")
-    console.print(f"environment:    {environments.env or '[dim]none[/]'} ({env_class})")
-    console.print(f"database:       {shown}")
-    console.print(f"planning image: {settings.get('planning_image')}")
+    console.print(f"config file:     {environments.config_file or '[dim]none[/]'}")
+    console.print(f"environment:     {environments.env or '[dim]none[/]'} ({env_class})")
+    console.print(f"database:        {_describe(settings.get('database'))}")
+    schema_database = settings.get("schema_database")
+    if schema_database is not None:
+        console.print(f"schema database: {_describe(schema_database)}")
+    console.print(f"schema owner:    {settings.get('schema_owner') or '[dim]connecting role[/]'}")
+    console.print(f"planning image:  {settings.get('planning_image')}")
+
+
+def _describe(database) -> str:
+    if database is None:
+        return f"[dim]not set; from .env:[/] {_hide_password(database_url())}"
+    if isinstance(database, Secret):
+        # A reference names the credential without being one.
+        return f"{database.ref} [dim](not fetched)[/]"
+    if not isinstance(database, Mapping):
+        return _hide_password(database)
+    password = database.get("password")
+    if isinstance(password, Secret):
+        password = f"{password.ref} [dim](not fetched)[/]"
+    elif password is not None:
+        password = "***"
+    address = f"{database.get('host')}:{database.get('port') or 5432}"
+    dbname = database.get("dbname") or "mapboard"
+    return f"{database.get('user')}@{address}/{dbname}, password {password}"
 
 
 def _hide_password(url: str) -> str:

@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS mapboard.task_run (
   task           text NOT NULL,
   canvas_id      integer REFERENCES mapboard.canvas (id) ON DELETE CASCADE,
   params         jsonb NOT NULL DEFAULT '{}',
-  requested_by   integer REFERENCES users (id) ON DELETE SET NULL,
+  requested_by   integer REFERENCES public.users (id) ON DELETE SET NULL,
   celery_task_id text,
   state          text NOT NULL DEFAULT 'queued'
                    CHECK (state IN ('queued', 'running', 'succeeded', 'failed')),
