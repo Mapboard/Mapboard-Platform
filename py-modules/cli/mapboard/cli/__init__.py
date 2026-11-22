@@ -1,5 +1,6 @@
 import logging
 import sys
+from collections.abc import Mapping
 from os import environ
 import click
 import pytest
@@ -47,6 +48,15 @@ def config():
     elif isinstance(database, Secret):
         # A reference names the credential without being one.
         shown = f"{database.ref} [dim](not fetched)[/]"
+    elif isinstance(database, Mapping):
+        password = database.get("password")
+        if isinstance(password, Secret):
+            password = f"{password.ref} [dim](not fetched)[/]"
+        elif password is not None:
+            password = "***"
+        address = f"{database.get('host')}:{database.get('port') or 5432}"
+        shown = f"{database.get('user')}@{address}/{database.get('dbname') or 'mapboard'}"
+        shown += f", password {password}"
     else:
         shown = _hide_password(database)
     env_class = environments.env_class.value

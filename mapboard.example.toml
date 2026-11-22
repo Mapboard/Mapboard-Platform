@@ -2,6 +2,10 @@
 # Any setting can also be given as MAPBOARD_<KEY>, e.g. MAPBOARD_DATABASE.
 # Choose an environment with `mapboard env <name>` or `--env <name>`; with
 # neither, `local` is used.
+#
+# A value may name a secret instead of holding one: op:// (1Password), env://,
+# file://, keychain://, or k8s://<namespace>/<secret>/<key> (a cluster Secret,
+# read through `tigr`). It is fetched only when a command connects.
 
 op_account = "uw-madison.1password.com"
 
@@ -11,6 +15,11 @@ env_class = "local"
 
 [development]
 env_class = "development"
-# A value may name a secret instead of holding one: op:// (1Password), env://,
-# file:// or keychain://. It is fetched only when a command connects.
-database = "op://<vault>/<item>/url"
+
+# `database` is a URL, or a table when the password is stored apart from the
+# host it is used through (the operator's secret names the in-cluster host).
+[development.database]
+host = "db.development.svc.macrostrat.org"
+user = "mapboard"
+dbname = "mapboard"
+password = "k8s://macrostrat-dev/development-macrostrat-pguser-mapboard/password"
