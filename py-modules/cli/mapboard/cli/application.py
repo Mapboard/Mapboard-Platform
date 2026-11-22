@@ -1,6 +1,14 @@
 from os import environ
+
 from macrostrat.app_frame import Application, DockerComposeManager
+from macrostrat.app_frame.control_command import ControlCommand
 from mapboard.core.settings import MAPBOARD_ROOT
+from typer import Context, Option
+
+from .config import environments
+
+# Commands that inspect or change the environment rather than use it.
+ENVIRONMENT_NEUTRAL = {"env", "config", None}
 
 
 def prepare_compose_env(app) -> dict[str, str]:
@@ -15,6 +23,20 @@ def prepare_compose_env(app) -> dict[str, str]:
         compose_profiles.append("production")
 
     return {"COMPOSE_PROFILES": " ".join(compose_profiles)}
+
+
+class MapboardCommand(ControlCommand):
+    def callback(
+        self,
+        ctx: Context,
+        verbose: bool = Option(False, "--verbose"),
+        # Already taken from argv when settings loaded; declared for the help text.
+        env: str = Option(None, "--env", "-e", help="Environment for this command"),
+    ):
+        """:app_name: command-line interface"""
+        super().callback(ctx, verbose=verbose)
+        if ctx.invoked_subcommand not in ENVIRONMENT_NEUTRAL:
+            environments.require_environment()
 
 
 class MapboardApplication(Application):
@@ -37,7 +59,7 @@ class MapboardApplication(Application):
         )
 
     def control_command(self, *args, **kwargs):
-        cmd = super().control_command(*args, **kwargs)
+        cmd = MapboardCommand(self, *args, **kwargs)
         self.compose_manager.add_commands(cmd)
         return cmd
 

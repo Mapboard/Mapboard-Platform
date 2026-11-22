@@ -7,14 +7,19 @@ import typer
 import logging
 
 from macrostrat.app_frame import Application
+from macrostrat.app_frame.secrets import Secret
+from macrostrat.schema_management.cli import create_schema_cli
+from sqlalchemy.engine import make_url
 from macrostrat.database import Database
 from macrostrat.dinosaur import temp_database
 from macrostrat.utils import setup_stderr_logs
-from mapboard.core.settings import MAPBOARD_ROOT, connection_string
+from mapboard.core.settings import MAPBOARD_ROOT, database_url
 from mapboard.core.workers import watch_topology, send_event
 from mapboard.topology_manager import TopologyManager, TopologyContext
 
-from .application import MapboardApplication
+from .config import environments
+from .application import MapboardApplication, console
+from .schema import schema_app
 from .database import db_app, get_srid, project_params
 from .fixtures import apply_fixtures
 from .projects import app as projects_app
@@ -26,8 +31,34 @@ from mapboard.topology_manager.config import _side_effects
 core_app = MapboardApplication()
 app = core_app.control_command()
 
+app.add_typer(environments.cli(), name="env", help="Choose the environment")
+app.add_typer(create_schema_cli(schema_app), name="schema", help="Core database schema")
 app.add_typer(projects_app, help="Manage Mapboard projects")
 app.add_typer(db_app, help="Database management")
+
+
+@app.command()
+def config():
+    """Show the settings the tools are using"""
+    settings = environments.settings
+    database = settings.get("database")
+    if database is None:
+        shown = f"[dim]not set; from .env:[/] {_hide_password(database_url())}"
+    elif isinstance(database, Secret):
+        # A reference names the credential without being one.
+        shown = f"{database.ref} [dim](not fetched)[/]"
+    else:
+        shown = _hide_password(database)
+    env_class = environments.env_class.value
+    console.print(f"config file:    {environments.config_file or '[dim]none[/]'}")
+    console.print(f"environment:    {environments.env or '[dim]none[/]'} ({env_class})")
+    console.print(f"database:       {shown}")
+    console.print(f"planning image: {settings.get('planning_image')}")
+
+
+def _hide_password(url: str) -> str:
+    return make_url(url).render_as_string(hide_password=True)
+
 
 from .access import app as access_app
 from .tasks import app as tasks_app

@@ -28,7 +28,7 @@ active goal is to make it deployable to cloud infrastructure (eventually K8s). S
 | `py-modules/tasks` | `mapboard.tasks` — Celery/Redis background task scaffolding. |
 | `py-modules/cross-sections` | `mapboard.cross-sections` — cross-section subsystem (Naukluft). |
 | `py-modules/api` | `mapboard.api` — currently an empty stub. |
-| `migrations/` | Standalone SQL migration & procedure files, run via `mapboard db run`. |
+| `migrations/` | Migration modules for `mapboard schema migrate`; `legacy/` holds hand-run SQL for `mapboard db run`. |
 | `system/` | `docker-compose.yaml` + `Caddyfile` (reverse proxy). |
 | `mapboard-ui/` | Frontend: Vike + React + Vite, talks to PostgREST. Uses Yarn 4 (PnP). |
 | `bin/mapboard` | Launcher that activates `.venv` and runs the CLI. |
@@ -41,11 +41,21 @@ active goal is to make it deployable to cloud infrastructure (eventually K8s). S
 - The CLI is invoked as `mapboard <command>` via `bin/mapboard` (symlink it with `make install`).
 - `mapboard --help` lists command groups. Key ones:
   - `mapboard projects {list,create,drop,copy,dump,export,reset-topology}` — project lifecycle.
-  - `mapboard db {init,migrate,migrate-projects,run,psql,dump,dump-cluster,cleanup,disconnect}` — database ops.
+  - `mapboard schema {plan,review,apply,sync,migrate,provision,graph}` — the core schema (see below).
+  - `mapboard env`, `mapboard config` — choose and show the environment.
+  - `mapboard db {init,migrate-projects,run,psql,dump,dump-cluster,cleanup,disconnect}` — database ops.
   - `mapboard topo ...` — topology management (delegates to the submodule CLI).
   - `mapboard ops ...`, `mapboard ingest`, `mapboard test` — misc/ingest/test.
 - Start the stack: `docker compose -f system/docker-compose.yaml up` (from a context where `.env` is loaded).
-- Bootstrap the core DB schema: `mapboard db init` (no project arg → core fixtures).
+- **Environments** come from `mapboard.toml` (gitignored; copy `mapboard.example.toml`),
+  via `macrostrat.app_frame.environments`: `--env <name>`, `mapboard env <name>`, else `local`.
+  `[local]` without `database` falls back to `.env`'s `POSTGRES_*`.
+- **Core schema** is declarative (`macrostrat.schema_management`): chunks in
+  `py-modules/cli/mapboard/cli/schema.py` over `core-fixtures/`. `mapboard schema plan` diffs it
+  against the database in a scratch container (Docker); `apply` runs the plan; `sync`
+  re-applies views/functions/grants. Project schemas (`mb_*`) are outside it, built per canvas
+  by `mapboard db init <project>`. The transitional `mapboard_api` views and `public.photo_note`
+  read one project's schemas, so they are kept out of diffs (`UNMANAGED_VIEWS`).
 
 ## Data model — READ THIS before touching project/DB code
 
@@ -86,9 +96,10 @@ migration; `docs/architecture.md` documents its mechanics.
   `mb_<slug>_<uuid8>_` prefix. Identity is the project UUID; names are hard-capped under
   Postgres's 63-char limit (over-length raises). Don't hand-craft these.
 - **Cross-database copies** during migration use `postgres_fdw` (`migrate_utils/foreign_schema.py`).
-- **Connection strings** come from `mapboard.core.settings.connection_string(...)`; there is a
-  module-level `core_db` pointing at the `mapboard` database. Respect `container_internal` when
-  code runs inside vs. outside Docker.
+- **Connection strings**: `database_url()` is the selected environment's database (else
+  `MAPBOARD_DATABASE_URL`, else `.env`); `core_db` connects to it lazily, on first use.
+  `connection_string(...)` is for other databases on the local server (the legacy
+  per-project ones). Respect `container_internal` when code runs inside vs. outside Docker.
 - **Frontend** hits two REST surfaces via the gateway: `/pg-api/*` (PostgREST, the main data
   layer, via `@supabase/postgrest-js`) and `/api/*` (the `mapboard_server` topology API), plus
   a WebSocket at `/topology/changes` for live topology updates. API TypeScript types are

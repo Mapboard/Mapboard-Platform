@@ -174,7 +174,8 @@ and nothing source-side is silently dropped.
 ```
 mapboard db migrate-projects [--dry-run] [--delete] [--promote] [--project <slug>]
 mapboard db cleanup      # prune orphaned topologies + orphaned mb_ schemas
-mapboard db init         # (re)apply the core-fixtures schema + mapboard_api views
+mapboard schema plan     # diff the core schema (core-fixtures) against the database
+mapboard schema apply    # apply the plan; `schema sync` re-applies views, functions, grants
 ```
 
 `projects {list,create,drop}` and `core.database.project_params` / `get_topology_manager` (and the

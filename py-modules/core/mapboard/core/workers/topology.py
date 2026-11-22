@@ -12,7 +12,7 @@ from mapboard.topology_manager.database import Database
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 from datetime import datetime
 
-from mapboard.core.settings import core_db, connection_string
+from mapboard.core.settings import core_db, database_url
 from json import dumps
 
 verbose = True
@@ -29,7 +29,7 @@ def project_params(data_schema: str):
         dict(data_schema=data_schema),
     ).one()
 
-    url = connection_string(res.database)
+    url = database_url(res.database)
     database = Database(url)
 
     return create_context(
@@ -64,7 +64,7 @@ def watch_topology(database: str):
     mapboard.topology_manager, this works across multiple projects,
     if they share the same database.
     """
-    DATABASE_URL = connection_string(database)
+    DATABASE_URL = database_url(database)
     main_db = Database(DATABASE_URL)
 
     # Get a raw connection to listen for notifications
@@ -137,7 +137,7 @@ async def _update_topology(database):
 
 def send_event(database: str):
     """Send an event to the database for testing purposes"""
-    url = connection_string(database)
+    url = database_url(database)
     db = Database(url)
     conn = _raw_connection(db)
     cursor = conn.cursor()

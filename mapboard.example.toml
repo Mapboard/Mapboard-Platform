@@ -1,0 +1,16 @@
+# Copy to mapboard.toml at the repository root (it is gitignored).
+# Any setting can also be given as MAPBOARD_<KEY>, e.g. MAPBOARD_DATABASE.
+# Choose an environment with `mapboard env <name>` or `--env <name>`; with
+# neither, `local` is used.
+
+op_account = "uw-madison.1password.com"
+
+[local]
+env_class = "local"
+# Without `database`, the local stack's URL is built from .env (POSTGRES_*).
+
+[development]
+env_class = "development"
+# A value may name a secret instead of holding one: op:// (1Password), env://,
+# file:// or keychain://. It is fetched only when a command connects.
+database = "op://<vault>/<item>/url"

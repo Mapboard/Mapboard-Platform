@@ -1,6 +1,9 @@
 /** Schema for the Mapboard project management database */
 
 CREATE EXTENSION IF NOT EXISTS postgis;
+CREATE EXTENSION IF NOT EXISTS postgis_topology;
+-- Tables carried over from per-project databases default to uuid_generate_v4().
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE SCHEMA IF NOT EXISTS mapboard;
 
 DROP VIEW IF EXISTS mapboard_api.context CASCADE;
@@ -30,7 +33,13 @@ CREATE TABLE IF NOT EXISTS mapboard.project (
 -- `SET main_context = NULL` on grandfathered rows. Re-add as a BEFORE INSERT OR UPDATE OF slug
 -- trigger (enforces on create/rename only, not maintenance updates or deletes).
 
-CREATE TYPE mapboard.context_type AS enum ('map', 'cross-section');
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type t JOIN pg_namespace n ON n.oid = t.typnamespace
+                 WHERE n.nspname = 'mapboard' AND t.typname = 'context_type') THEN
+    CREATE TYPE mapboard.context_type AS enum ('map', 'cross-section');
+  END IF;
+END $$;
 
 -- A mapping canvas is a view within a project that shares a single topology and
 -- set of contexts.

@@ -74,10 +74,11 @@ The Typer CLI. Command groups are assembled in `mapboard/cli/__init__.py`:
 
 Supporting assets in this package:
 - `core-fixtures/*.sql` — the **core (`mapboard`/`mapboard_api`) schema**, roles, and the
-  `copy_project_metadata` migration function. Applied by `mapboard db init`.
+  `copy_project_metadata` migration function. Declared as chunks in `schema.py` and managed
+  with `mapboard schema` (`macrostrat.schema_management`).
 - `fixtures/*.sql` — per-project/canvas data-table fixtures applied by `apply_fixtures`.
 - `migrate_utils/` — the legacy→multi-tenant migration (see [The migration mechanism](#the-migration-mechanism-mapboard-db-migrate-projects)).
-- `migrations/` (repo root) and `procedures/` — ad-hoc SQL run via `mapboard db run`.
+- `migrations/` (repo root) — `schema migrate` modules; `migrations/legacy/` and `procedures/` hold ad-hoc SQL run via `mapboard db run`.
 - `mobile_export/` — export a project to the mobile app's format.
 
 ### `mapboard.core` (`py-modules/core`)
