@@ -58,6 +58,9 @@ active goal is to make it deployable to cloud infrastructure (eventually K8s). S
   re-applies views/functions/grants. Project schemas (`mb_*`) are outside it, built per canvas
   by `mapboard db init <project>`. The transitional `mapboard_api` views and `public.photo_note`
   read one project's schemas, so they are kept out of diffs (`UNMANAGED_VIEWS`).
+  Plans never create roles or grants: on a new database, `mapboard schema provision --target
+  grants` creates `mapboard` and grants it what it needs, and `mapboard schema migrate`
+  (`app-owner`) re-owns anything another role built.
 
 ## Data model — READ THIS before touching project/DB code
 

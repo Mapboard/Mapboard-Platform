@@ -22,8 +22,6 @@ from mapboard.core.settings import APP_OWNER, MAPBOARD_ROOT, admin_database_url
 from .config import environments
 
 FIXTURES = Path(__file__).parent.parent.parent / "core-fixtures"
-# What a superuser grants the owner on a shared cluster; written for `mapboard`.
-CLUSTER_SETUP = MAPBOARD_ROOT / "system" / "cluster-database-setup.sql"
 # Migration modules; the hand-run SQL of the per-database era is in `legacy/`.
 MIGRATIONS_DIR = MAPBOARD_ROOT / "migrations"
 
@@ -46,6 +44,11 @@ def chunks(owner: str = APP_OWNER) -> list[SchemaDefinition]:
         SchemaDefinition(name="roles", provides=[FIXTURES / "00-roles.sql"]),
         SchemaDefinition(name="extensions", provides=[FIXTURES / "00-extensions.sql"]),
         SchemaDefinition(
+            name="grants",
+            depends_on=["roles", "extensions"],
+            provides=[FIXTURES / "00-grants.sql"],
+        ),
+        SchemaDefinition(
             name="local-roles",
             depends_on=["roles", "extensions"],
             provides=[FIXTURES / "local"],
@@ -53,7 +56,7 @@ def chunks(owner: str = APP_OWNER) -> list[SchemaDefinition]:
         ),
         SchemaDefinition(
             name="core",
-            depends_on=["roles", "extensions"],
+            depends_on=["grants"],
             owner=owner,
             provides=[
                 FIXTURES / "01-schema.sql",
@@ -149,12 +152,6 @@ def schema_app() -> SchemaApp:
             url = cluster.engine.url.set(database="mapboard")
             create_database(url)
             plan_db = Database(url)
-            # As the cluster's operator creates the owner, then what it is granted.
-            plan_db.run_sql(f'CREATE ROLE "{APP_OWNER}" NOLOGIN', raise_errors=True)
-            plan_db.run_sql(
-                f'GRANT ALL ON DATABASE mapboard TO "{APP_OWNER}"', raise_errors=True
-            )
-            plan_db.run_sql(CLUSTER_SETUP, raise_errors=True)
             try:
                 yield plan_db
             finally:

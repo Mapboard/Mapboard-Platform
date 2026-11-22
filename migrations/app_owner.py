@@ -1,9 +1,8 @@
 """Make `mapboard` the owner of an existing database's application objects.
 
 A fresh build is applied as `mapboard`, but a plan is ownership-blind, so a database
-built as another role (the local stack's superuser) is converged here. The role is
-created where the cluster's operator hasn't already, and given what a shared cluster's
-one-time setup grants it (`system/cluster-database-setup.sql`).
+built as another role (the local stack's superuser) is converged here. The role and
+its grants come first, from `mapboard schema provision --target grants`.
 
 Shared schemas (`public`, `topology`, PostGIS's tiger geocoder) keep their owners,
 apart from the few application objects in `public`. Extension members are left alone.
@@ -11,10 +10,7 @@ apart from the few application objects in `public`. Extension members are left a
 
 from macrostrat.database import Database
 from macrostrat.schema_management import ApplicationStatus, Migration
-from mapboard.core.settings import APP_OWNER, MAPBOARD_ROOT
-from psycopg2.sql import Identifier
-
-CLUSTER_SETUP = MAPBOARD_ROOT / "system" / "cluster-database-setup.sql"
+from mapboard.core.settings import APP_OWNER
 
 _EXCLUDED = ["information_schema", "public", "topology", "tiger", "tiger_data"]
 _INCLUDED = ["public.users", "public.photo_note", "public.context_type"]
@@ -80,40 +76,24 @@ SELECT statement FROM (
 ORDER BY stage, statement
 """
 
-_GRANTED = """
-SELECT has_database_privilege(:owner, current_database(), 'CREATE')
-   AND has_table_privilege(:owner, 'topology.topology', 'INSERT')
-   AND has_table_privilege(:owner, 'public.spatial_ref_sys', 'REFERENCES')
-"""
-
-
 class AppOwnerMigration(Migration):
     name = "app-owner"
-    description = f"Create the {APP_OWNER} role where needed and make it the owner"
+    description = f"Make {APP_OWNER} the owner of what another role built"
     subsystem = "core"
-    owner = None  # creates the role and re-owns, so needs the connector
+    owner = None  # re-owning another role's objects needs the connector
     load_sql_files = False
 
     def should_apply(self, db: Database) -> ApplicationStatus:
         if not _role_exists(db):
-            return ApplicationStatus.CAN_APPLY
-        if not db.run_query(_GRANTED, _PARAMS).scalar():
-            return ApplicationStatus.CAN_APPLY
+            return ApplicationStatus.CANT_APPLY
         if db.run_query(_REASSIGNMENTS, _PARAMS).first() is not None:
             return ApplicationStatus.CAN_APPLY
         return ApplicationStatus.APPLIED
 
-    def apply(self, db: Database):
-        role = Identifier(APP_OWNER)
-        if not _role_exists(db):
-            db.run_sql("CREATE ROLE {role} NOLOGIN", dict(role=role), raise_errors=True)
-        db.run_sql(
-            "GRANT ALL ON DATABASE {database} TO {role}",
-            dict(database=Identifier(db.engine.url.database), role=role),
-            raise_errors=True,
-        )
-        db.run_sql(CLUSTER_SETUP, raise_errors=True)
+    def explain(self, db: Database) -> list[str]:
+        return [f"no {APP_OWNER} role: run `mapboard schema provision --target grants`"]
 
+    def apply(self, db: Database):
         statements = [r.statement for r in db.run_query(_REASSIGNMENTS, _PARAMS)]
         db.session.commit()
         print(f"Re-owning {len(statements)} objects to {APP_OWNER}")
