@@ -10,6 +10,7 @@ from pathlib import Path
 from macrostrat.app_frame import AccessScope
 from macrostrat.database import Database
 from macrostrat.database.utils import create_database
+from sqlalchemy.engine import make_url
 from macrostrat.schema_management import (
     EnvironmentClass,
     SchemaApp,
@@ -17,13 +18,16 @@ from macrostrat.schema_management import (
     reload_postgrest_schema,
     scratch_database,
 )
-from mapboard.core.settings import MAPBOARD_ROOT, core_db
+from mapboard.core.settings import MAPBOARD_ROOT, database_url
 
 from .config import environments
 
 FIXTURES = Path(__file__).parent.parent.parent / "core-fixtures"
 # Migration modules; the hand-run SQL of the per-database era is in `legacy/`.
 MIGRATIONS_DIR = MAPBOARD_ROOT / "migrations"
+
+# The database default without "$user"; fixtures and plans assume unqualified names are public.
+SEARCH_PATH = "-csearch_path=public,topology"
 
 # Views over one project's schemas, which a scratch database cannot build. The
 # transitional API views are synced; `public.photo_note` is Naukluft's own.
@@ -72,7 +76,7 @@ def chunks() -> list[SchemaDefinition]:
             depends_on=["access"],
             provides=[FIXTURES / "02.0-api.sql"],
         ),
-        # Synced like any chunk, but left out of diffs (see `ignore_unmanaged_views`).
+        # Synced like any chunk, but left out of diffs (see `ignore_unmanaged`).
         SchemaDefinition(
             name="api-transitional",
             depends_on=["api"],
@@ -86,29 +90,57 @@ def chunks() -> list[SchemaDefinition]:
     ]
 
 
-def ignore_unmanaged_views(changes):
-    """Keep views over project schemas out of a diff, on both sides"""
+# PostGIS's tables: a non-superuser can't see their PUBLIC grants, so they always differ.
+EXTENSION_TABLES = {
+    ("public", "spatial_ref_sys"),
+    ("public", "geometry_columns"),
+    ("public", "geography_columns"),
+}
+
+# Installed by the cluster's operator, not by Mapboard.
+CLUSTER_EXTENSIONS = {"pg_stat_statements", "pgaudit"}
+
+
+def ignore_unmanaged(changes):
+    """Keep what Mapboard's schema doesn't own out of a diff, on both sides"""
     for inspector in (changes.i_from, changes.i_target):
-        for prop in ("relations", "views", "selectables", "privileges"):
-            objects = getattr(inspector, prop, None)
-            if not isinstance(objects, dict):
-                continue
-            setattr(
-                inspector,
-                prop,
-                {k: v for k, v in objects.items() if not _is_unmanaged(v)},
-            )
+        _drop(inspector, ("relations", "views", "selectables", "privileges"), _is_view)
+        _drop(inspector, ("privileges",), _is_extension_table)
+        _drop(inspector, ("extensions",), lambda v: getattr(v, "name", None) in CLUSTER_EXTENSIONS)
 
 
-def _is_unmanaged(obj) -> bool:
-    return (getattr(obj, "schema", None), getattr(obj, "name", None)) in UNMANAGED_VIEWS
+def _drop(inspector, props, predicate):
+    for prop in props:
+        objects = getattr(inspector, prop, None)
+        if isinstance(objects, dict):
+            setattr(inspector, prop, {k: v for k, v in objects.items() if not predicate(v)})
+
+
+def _name(obj):
+    return getattr(obj, "schema", None), getattr(obj, "name", None)
+
+
+def _is_view(obj) -> bool:
+    return _name(obj) in UNMANAGED_VIEWS
+
+
+def _is_extension_table(obj) -> bool:
+    return _name(obj) in EXTENSION_TABLES
 
 
 def schema_app() -> SchemaApp:
     settings = environments.settings
 
+    db = None
+
     def database() -> Database:
-        return core_db._get()
+        nonlocal db
+        if db is None:
+            # On dev the role is `mapboard`, so "$user" would put the mapboard schema first.
+            # In the URL, since the plan's inspector reconnects from the URL alone.
+            url = make_url(database_url()).update_query_dict({"options": SEARCH_PATH})
+            db = Database(url)
+        return db
 
     @contextmanager
     def planning_database():
@@ -138,7 +170,7 @@ def schema_app() -> SchemaApp:
         planning_database=planning_database,
         # Extension-owned.
         excluded_schemas=["topology"],
-        prepare_diff=ignore_unmanaged_views,
+        prepare_diff=ignore_unmanaged,
         authorize=authorize,
         after_change=reload_postgrest_schema,
         source_root=MAPBOARD_ROOT,
