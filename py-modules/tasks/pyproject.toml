@@ -13,8 +13,11 @@ classifiers = [
     "Programming Language :: Python :: 3.14",
 ]
 dependencies = [
+    "celery[redis]>=5.4.0,<6",
+    "macrostrat.database>=4.0.0,<5",
     "mapboard.core",
     "mapboard.topology-manager",
+    "pydantic>=2.9.2,<3",
 ]
 
 [tool.uv.build-backend]

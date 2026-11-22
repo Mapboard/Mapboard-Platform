@@ -1,7 +1,7 @@
 from macrostrat.database import Database
 from mapboard.topology_manager import TopologyContext, TopologyManager, create_context
 
-from .settings import connection_string, core_db
+from .settings import connection_string, core_db, database_url
 
 
 def project_params(project: str):
@@ -40,4 +40,24 @@ def get_topology_manager(project: str) -> TopologyManager:
     params = project_params(project)
     db = Database(connection_string(params.pop("database")))
     ctx = create_context(db, **params)
+    return TopologyManager(ctx)
+
+
+def canvas_topology_manager(canvas_id: int) -> TopologyManager:
+    """Topology manager for one canvas, the unit a topology belongs to."""
+    res = core_db.run_query(
+        """
+        SELECT database, data_schema, topo_schema, srid, tolerance
+        FROM mapboard.canvas
+        WHERE id = :canvas_id
+        """,
+        dict(canvas_id=canvas_id),
+    ).one()
+    ctx = create_context(
+        Database(database_url(res.database)),
+        data_schema=res.data_schema,
+        topo_schema=res.topo_schema,
+        srid=res.srid,
+        tolerance=res.tolerance,
+    )
     return TopologyManager(ctx)

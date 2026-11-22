@@ -1,7 +1,9 @@
 CREATE SCHEMA IF NOT EXISTS mapboard_api;
 
+-- Named columns: `SELECT *` would publish email addresses.
+DROP VIEW IF EXISTS mapboard_api.users;
 CREATE OR REPLACE VIEW mapboard_api.users AS
-SELECT * FROM public.users;
+SELECT id, username, created_at, name, sub FROM public.users;
 
 CREATE OR REPLACE VIEW mapboard_api.project AS
 SELECT
@@ -12,11 +14,16 @@ SELECT
    FROM
      mapboard.context context
    WHERE
-     context.project_id = p.id) AS n_contexts
+     context.project_id = p.id) AS n_contexts,
+  mapboard.project_access(p.id, mapboard.current_user_id()) AS access
 FROM
   mapboard.project p
   LEFT JOIN mapboard.context ctx
-    ON p.main_context = ctx.id;
+    ON p.main_context = ctx.id
+-- Only PostgREST's roles are filtered: mapboard_server and the CLI read these views
+-- as the database owner and must see every project.
+WHERE current_user NOT IN ('web_anon', 'web_user')
+   OR mapboard.project_access(p.id, mapboard.current_user_id()) IS NOT NULL;
 
 CREATE OR REPLACE VIEW mapboard_api.context AS
 SELECT
@@ -67,5 +74,9 @@ FROM
     ON c.project_id = p.id
   JOIN mapboard.canvas ca
     ON c.canvas_id = ca.id
-    AND ca.project_id = p.id;
+    AND ca.project_id = p.id
+-- Only PostgREST's roles are filtered: mapboard_server and the CLI read these views
+-- as the database owner and must see every project.
+WHERE current_user NOT IN ('web_anon', 'web_user')
+   OR mapboard.project_access(p.id, mapboard.current_user_id()) IS NOT NULL;
 

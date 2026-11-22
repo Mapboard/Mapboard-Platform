@@ -22,6 +22,7 @@ dependencies = [
     "mapboard.cross-sections",
     "mapboard.core",
     "mapboard.tasks",
+    "mapboard.api",
     "pytest>=8.3.5,<9",
     "python-daemon>=3.0.1,<4",
     "zeroconf>=0.56.0,<0.57",

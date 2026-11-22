@@ -29,6 +29,17 @@ def connection_string(database: str, container_internal: bool = False):
     return f"postgresql://{user}:{password}@{host}:{port}/{database}"
 
 
+def database_url(database: str = "mapboard") -> str:
+    """URL for a database; a deployment supplies one whole URL instead of parts."""
+    url = environ.get("MAPBOARD_DATABASE_URL")
+    if url is None:
+        return connection_string(database)
+    # SQLAlchemy 2 rejects the `postgres://` scheme that libpq clients accept.
+    if url.startswith("postgres://"):
+        url = "postgresql://" + url.removeprefix("postgres://")
+    return url
+
+
 POSTGRES_IMAGE = environ.get("POSTGRES_IMAGE") or "postgis/postgis:13-3.1"
 
-core_db = Database(connection_string("mapboard"))
+core_db = Database(database_url())

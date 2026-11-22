@@ -29,6 +29,12 @@ app = core_app.control_command()
 app.add_typer(projects_app, help="Manage Mapboard projects")
 app.add_typer(db_app, help="Database management")
 
+from .access import app as access_app
+from .tasks import app as tasks_app
+
+app.add_typer(access_app, help="Manage who may read and edit projects")
+app.add_typer(tasks_app, help="Background topology rebuilds")
+
 app.command(name="watch")(watch_topology)
 app.command(name="send-event")(send_event)
 
