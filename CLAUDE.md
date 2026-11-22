@@ -50,6 +50,8 @@ active goal is to make it deployable to cloud infrastructure (eventually K8s). S
 - **Environments** come from `mapboard.toml` (gitignored; copy `mapboard.example.toml`),
   via `macrostrat.app_frame.environments`: `--env <name>`, `mapboard env <name>`, else `local`.
   `[local]` without `database` falls back to `.env`'s `POSTGRES_*`.
+  Each `database` is a **superuser**; the CLI works as `mapboard` (`APP_OWNER`), applying
+  schema changes under `SET ROLE` and connecting otherwise with `options=-crole=mapboard`.
 - **Core schema** is declarative (`macrostrat.schema_management`): chunks in
   `py-modules/cli/mapboard/cli/schema.py` over `core-fixtures/`. `mapboard schema plan` diffs it
   against the database in a scratch container (Docker); `apply` runs the plan; `sync`
@@ -96,8 +98,9 @@ migration; `docs/architecture.md` documents its mechanics.
   `mb_<slug>_<uuid8>_` prefix. Identity is the project UUID; names are hard-capped under
   Postgres's 63-char limit (over-length raises). Don't hand-craft these.
 - **Cross-database copies** during migration use `postgres_fdw` (`migrate_utils/foreign_schema.py`).
-- **Connection strings**: `database_url()` is the selected environment's database (else
-  `MAPBOARD_DATABASE_URL`, else `.env`); `core_db` connects to it lazily, on first use.
+- **Connection strings**: `admin_database_url()` is the selected environment's database (else
+  `MAPBOARD_DATABASE_URL`, else `.env`), as the connecting role; `database_url()` is the same
+  acting as `mapboard` when the CLI has set that role. `core_db` connects to it lazily.
   `connection_string(...)` is for other databases on the local server (the legacy
   per-project ones). Respect `container_internal` when code runs inside vs. outside Docker.
 - **Frontend** hits two REST surfaces via the gateway: `/pg-api/*` (PostgREST, the main data

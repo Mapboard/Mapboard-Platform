@@ -31,8 +31,13 @@ def connection_string(database: str, container_internal: bool = False):
     return f"postgresql://{user}:{password}@{host}:{port}/{database}"
 
 
+# The role that owns Mapboard's database objects, and that the services connect as.
+APP_OWNER = "mapboard"
+
 # Set by the CLI to the selected environment's database.
 _url_provider: Optional[Callable[[], Optional[str]]] = None
+# Set by the CLI, which connects as a superuser but works as the application role.
+_session_role: Optional[str] = None
 
 
 def set_database_url_provider(provider: Callable[[], Optional[str]]):
@@ -40,8 +45,13 @@ def set_database_url_provider(provider: Callable[[], Optional[str]]):
     _url_provider = provider
 
 
-def database_url(database: Optional[str] = None) -> str:
-    """URL of the Mapboard database, or of another database on the same server"""
+def set_session_role(role: Optional[str]):
+    global _session_role
+    _session_role = role
+
+
+def admin_database_url(database: Optional[str] = None) -> str:
+    """URL of the Mapboard database (or another on its server), as the connecting role"""
     url = None
     if _url_provider is not None:
         url = _url_provider()
@@ -55,6 +65,18 @@ def database_url(database: Optional[str] = None) -> str:
     if database is None:
         return url
     return make_url(url).set(database=database).render_as_string(hide_password=False)
+
+
+def database_url(database: Optional[str] = None) -> str:
+    """As `admin_database_url`, acting as the session role where one is set"""
+    url = admin_database_url(database)
+    if _session_role is None:
+        return url
+    # A connection-time setting, so no transaction rollback or new connection undoes it.
+    parsed = make_url(url)
+    options = " ".join(filter(None, [parsed.query.get("options"), f"-crole={_session_role}"]))
+    parsed = parsed.update_query_dict({"options": options})
+    return parsed.render_as_string(hide_password=False)
 
 
 POSTGRES_IMAGE = environ.get("POSTGRES_IMAGE") or "postgis/postgis:13-3.1"

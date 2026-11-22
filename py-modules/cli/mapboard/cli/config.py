@@ -4,7 +4,12 @@ from collections.abc import Mapping
 from os import environ
 
 from macrostrat.app_frame import Environments
-from mapboard.core.settings import MAPBOARD_ROOT, set_database_url_provider
+from mapboard.core.settings import (
+    APP_OWNER,
+    MAPBOARD_ROOT,
+    set_database_url_provider,
+    set_session_role,
+)
 from sqlalchemy.engine import URL
 
 DEFAULTS = {
@@ -50,3 +55,5 @@ def setting_url(key: str):
 
 # Resolved on first connection, so commands that never connect fetch nothing.
 set_database_url_provider(lambda: setting_url("database"))
+# `database` is a superuser; outside schema changes, the CLI works as the services do.
+set_session_role(APP_OWNER)

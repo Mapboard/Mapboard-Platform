@@ -1,5 +1,8 @@
 /** One-time setup of the `mapboard` database on a shared Postgres cluster.
   *
+  * The `app-owner` migration (`mapboard schema migrate`) also runs it, and scratch
+  * databases for `mapboard schema plan` are set up with it.
+  *
   * Run as a superuser of the cluster (`postgres`, or its admin user), connected to the
   * `mapboard` database,
   * before restoring into it. It lets the database's owner role (`mapboard`) run

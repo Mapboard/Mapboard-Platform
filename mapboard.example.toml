@@ -10,25 +10,18 @@ op_account = "uw-madison.1password.com"
 
 [local]
 env_class = "local"
-# Without `database`, the local stack's URL is built from .env (POSTGRES_*).
+# Without `database`, the local stack's URL is built from .env (POSTGRES_*),
+# whose user is the local superuser.
 
 [development]
 env_class = "development"
 
-# Schema commands connect as the cluster's superuser and apply changes as
-# `schema_owner`, so what they create is owned as the services expect.
-schema_owner = "mapboard"
-
+# The CLI connects as a superuser of the cluster. Schema changes are applied as
+# `mapboard`, which owns Mapboard's objects, and every other command works as it.
+#
 # `database` is a URL, or a table when the stored credential names a host we
 # can't reach (the operator's Secret names the in-cluster one).
 [development.database]
-host = "db.development.svc.macrostrat.org"
-user = "mapboard"
-dbname = "mapboard"
-# 1Password copy of the operator Secret k8s/macrostrat-dev/development-macrostrat-pguser-mapboard.
-password = "op://Macrostrat admin/3yc43uoeqnqxkzdww3czqhaylq/Secret data/password"
-
-[development.schema_database]
 host = "db.development.svc.macrostrat.org"
 user = "macrostrat-admin"
 dbname = "mapboard"

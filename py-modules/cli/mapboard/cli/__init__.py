@@ -14,7 +14,7 @@ from sqlalchemy.engine import make_url
 from macrostrat.database import Database
 from macrostrat.dinosaur import temp_database
 from macrostrat.utils import setup_stderr_logs
-from mapboard.core.settings import MAPBOARD_ROOT, database_url
+from mapboard.core.settings import APP_OWNER, MAPBOARD_ROOT, admin_database_url
 from mapboard.core.workers import watch_topology, send_event
 from mapboard.topology_manager import TopologyManager, TopologyContext
 
@@ -46,16 +46,13 @@ def config():
     console.print(f"config file:     {environments.config_file or '[dim]none[/]'}")
     console.print(f"environment:     {environments.env or '[dim]none[/]'} ({env_class})")
     console.print(f"database:        {_describe(settings.get('database'))}")
-    schema_database = settings.get("schema_database")
-    if schema_database is not None:
-        console.print(f"schema database: {_describe(schema_database)}")
-    console.print(f"schema owner:    {settings.get('schema_owner') or '[dim]connecting role[/]'}")
+    console.print(f"app role:        {APP_OWNER}")
     console.print(f"planning image:  {settings.get('planning_image')}")
 
 
 def _describe(database) -> str:
     if database is None:
-        return f"[dim]not set; from .env:[/] {_hide_password(database_url())}"
+        return f"[dim]not set; from .env:[/] {_hide_password(admin_database_url())}"
     if isinstance(database, Secret):
         # A reference names the credential without being one.
         return f"{database.ref} [dim](not fetched)[/]"

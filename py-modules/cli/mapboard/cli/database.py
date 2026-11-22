@@ -14,7 +14,7 @@ from typer import Argument, Context, Option, Typer
 
 from .fixtures import apply_fixtures
 from mapboard.cli.migrate_utils import pg_dump_cluster
-from mapboard.core.settings import MAPBOARD_ROOT, core_db, database_url
+from mapboard.core.settings import MAPBOARD_ROOT, admin_database_url, core_db
 from mapboard.core.database import project_params, setup_database
 import asyncio
 from .application import console
@@ -42,7 +42,7 @@ def get_srid(db: Database, schema="mapboard") -> Optional[int]:
 )
 def psql(ctx: Context, database: Optional[str] = None):
     """Run psql in the database container"""
-    DATABASE_URL = database_url(database)
+    DATABASE_URL = admin_database_url(database)
 
     flags = [
         "-i",
@@ -76,11 +76,11 @@ def run_procedure(project: str, name: Optional[str] = Argument(None)):
 @db_app.command()
 def disconnect(project: Optional[str] = None):
     """Disconnect from a project database"""
-    if project is None:
-        db = core_db
-    else:
-        mgr = get_topology_manager(project)
-        db = mgr.database
+    database = None
+    if project is not None:
+        database = project_params(project)["database"]
+    # Ending other roles' sessions needs the connecting role's privileges.
+    db = Database(admin_database_url(database))
     db.run_sql(
         """
         SELECT *, pg_terminate_backend(pid)
@@ -126,7 +126,7 @@ def dump_cluster(
     ),
 ):
     """Dump all databases in the Mapboard cluster to a directory"""
-    engine = core_db.engine
+    engine = Database(admin_database_url()).engine
     task = pg_dump_cluster(
         engine,
         dump_dir=dump_dir,
@@ -159,7 +159,8 @@ def migrate_projects(
         promote_migrated_projects as _promote_migrated_projects,
     )
 
-    db = core_db
+    # Foreign servers need a superuser; `mapboard schema migrate` re-owns what it builds.
+    db = Database(admin_database_url())
 
     if dry_run:
         _plan_projects(db, only_slug=project)

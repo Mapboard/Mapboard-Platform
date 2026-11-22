@@ -17,12 +17,12 @@ from macrostrat.schema_management import (
     reload_postgrest_schema,
     scratch_database,
 )
-from mapboard.core.settings import MAPBOARD_ROOT, database_url
+from mapboard.core.settings import APP_OWNER, MAPBOARD_ROOT, admin_database_url
 
-from .config import environments, setting_url
+from .config import environments
 
 FIXTURES = Path(__file__).parent.parent.parent / "core-fixtures"
-# Run once by a superuser where the owner isn't one; written for the `mapboard` role.
+# What a superuser grants the owner on a shared cluster; written for `mapboard`.
 CLUSTER_SETUP = MAPBOARD_ROOT / "system" / "cluster-database-setup.sql"
 # Migration modules; the hand-run SQL of the per-database era is in `legacy/`.
 MIGRATIONS_DIR = MAPBOARD_ROOT / "migrations"
@@ -39,7 +39,7 @@ UNMANAGED_VIEWS = {
 }
 
 
-def chunks(owner: str | None = None) -> list[SchemaDefinition]:
+def chunks(owner: str = APP_OWNER) -> list[SchemaDefinition]:
     """The core schema. Chunks after the cluster-level ones are applied as *owner*."""
     return [
         # Cluster-level objects, applied as the connecting role.
@@ -134,14 +134,12 @@ def _is_cluster_extension_view(obj) -> bool:
 
 def schema_app() -> SchemaApp:
     settings = environments.settings
-    # Where the services' role isn't a superuser, a superuser applies changes as it.
-    owner = settings.get("schema_owner")
     db = None
 
     def database() -> Database:
         nonlocal db
         if db is None:
-            db = Database(setting_url("schema_database") or database_url())
+            db = Database(admin_database_url())
         return db
 
     @contextmanager
@@ -151,13 +149,12 @@ def schema_app() -> SchemaApp:
             url = cluster.engine.url.set(database="mapboard")
             create_database(url)
             plan_db = Database(url)
-            if owner is not None:
-                # As the cluster's operator creates it, then what dev's one-time setup grants.
-                plan_db.run_sql(f'CREATE ROLE "{owner}" NOLOGIN', raise_errors=True)
-                plan_db.run_sql(
-                    f'GRANT ALL ON DATABASE mapboard TO "{owner}"', raise_errors=True
-                )
-                plan_db.run_sql(CLUSTER_SETUP, raise_errors=True)
+            # As the cluster's operator creates the owner, then what it is granted.
+            plan_db.run_sql(f'CREATE ROLE "{APP_OWNER}" NOLOGIN', raise_errors=True)
+            plan_db.run_sql(
+                f'GRANT ALL ON DATABASE mapboard TO "{APP_OWNER}"', raise_errors=True
+            )
+            plan_db.run_sql(CLUSTER_SETUP, raise_errors=True)
             try:
                 yield plan_db
             finally:
@@ -171,8 +168,8 @@ def schema_app() -> SchemaApp:
     return SchemaApp(
         name="mapboard",
         database=database,
-        chunks=chunks(owner),
-        owner=owner,
+        chunks=chunks(),
+        owner=APP_OWNER,
         schema_dir=FIXTURES,
         migrations_dir=MIGRATIONS_DIR,
         environment=environments.env or "default",
