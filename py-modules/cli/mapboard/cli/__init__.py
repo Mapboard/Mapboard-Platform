@@ -48,6 +48,7 @@ def config():
     console.print(f"database:        {_describe(settings.get('database'))}")
     console.print(f"app role:        {APP_OWNER}")
     console.print(f"planning image:  {settings.get('planning_image')}")
+    console.print(f"admin users:     {', '.join(settings.get('admin_users') or []) or '[dim]none[/]'}")
 
 
 def _describe(database) -> str:

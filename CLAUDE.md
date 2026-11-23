@@ -52,6 +52,8 @@ active goal is to make it deployable to cloud infrastructure (eventually K8s). S
   `[local]` without `database` falls back to `.env`'s `POSTGRES_*`.
   Each `database` is a **superuser**; the CLI works as `mapboard` (`APP_OWNER`), applying
   schema changes under `SET ROLE` and connecting otherwise with `options=-crole=mapboard`.
+  `admin_users` (a list of ORCID iDs) names each environment's first administrators:
+  `mapboard access sync` promotes those who have signed in, so no UI step is needed.
 - **Core schema** is declarative (`macrostrat.schema_management`): chunks in
   `py-modules/cli/mapboard/cli/schema.py` over `core-fixtures/`. `mapboard schema plan` diffs it
   against the database in a scratch container (Docker) and writes `_plans/<env>.plan.sql`

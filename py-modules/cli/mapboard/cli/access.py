@@ -1,14 +1,18 @@
 """Manage who may read and edit each project."""
 
+import re
 from enum import Enum
 
 from mapboard.core.settings import core_db
 from typer import Argument, Exit, Option, Typer
 
 from .application import core_app
+from .config import environments
 
 app = Typer(name="access", no_args_is_help=True)
 console = core_app.console
+
+ORCID_ID = re.compile(r"\d{4}-\d{4}-\d{4}-\d{3}[\dX]")
 
 
 class Level(str, Enum):
@@ -93,6 +97,42 @@ def admin(orcid: str, remove: bool = Option(False, help="Remove administrator st
         dict(id=_user_id(orcid), admin=not remove),
     )
     console.print(f"{orcid} is {'no longer' if remove else 'now'} an administrator")
+
+
+@app.command()
+def sync():
+    """Make the configured `admin_users` administrators, once they have signed in"""
+    orcids = configured_admin_users()
+    if not orcids:
+        console.print("[dim]No admin users configured[/]")
+        return
+    rows = _run(
+        """UPDATE public.users SET is_admin = true
+           WHERE sub = ANY(%(orcids)s) AND NOT is_admin
+           RETURNING sub, name""",
+        dict(orcids=orcids),
+    )
+    for row in rows:
+        console.print(f"{row['sub']} {row['name'] or ''} is now an administrator")
+    signed_in = {
+        r["sub"]
+        for r in _run(
+            "SELECT sub FROM public.users WHERE sub = ANY(%(orcids)s)",
+            dict(orcids=orcids),
+        )
+    }
+    for orcid in orcids:
+        if orcid not in signed_in:
+            console.print(f"[yellow]{orcid} has not signed in yet[/]")
+
+
+def configured_admin_users() -> list[str]:
+    orcids = environments.settings.get("admin_users") or []
+    for orcid in orcids:
+        if not ORCID_ID.fullmatch(orcid):
+            console.print(f"[red]Not an ORCID iD in `admin_users`: {orcid!r}")
+            raise Exit(1)
+    return list(orcids)
 
 
 @app.command(name="list")
