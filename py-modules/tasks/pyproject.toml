@@ -17,6 +17,7 @@ dependencies = [
     "macrostrat.database>=4.0.0,<5",
     "mapboard.core",
     "mapboard.topology-manager",
+    "macrostrat.task_runner>=0.1.0,<0.2",
     "pydantic>=2.9.2,<3",
 ]
 

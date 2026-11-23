@@ -8,6 +8,7 @@ from os import environ
 from celery import Celery
 from celery.signals import worker_ready
 
+BROKER_URL = environ.get("CELERY_BROKER_URL", "redis://localhost:6379/0")
 TOPOLOGY_QUEUE = "topology"
 TOPOLOGY_REBUILD = "mapboard.topology.rebuild"
 
@@ -16,8 +17,7 @@ TASK_ROUTES = {"mapboard.topology.*": {"queue": TOPOLOGY_QUEUE}}
 
 
 def create_celery(name: str, **kwargs) -> Celery:
-    broker = environ.get("CELERY_BROKER_URL", "redis://localhost:6379/0")
-    celery = Celery(name, broker=broker, **kwargs)
+    celery = Celery(name, broker=BROKER_URL, **kwargs)
     celery.conf.task_routes = TASK_ROUTES
     celery.conf.broker_connection_retry_on_startup = True
     # A rebuild is slow; don't let the worker reserve a second one it can't start.

@@ -16,6 +16,7 @@ dependencies = [
     "fastapi>=0.115,<0.137",
     "uvicorn>=0.30,<1",
     "macrostrat.auth_system>=1.2.0,<2",
+    "macrostrat.task_runner>=0.1.0,<0.2",
     "macrostrat.database>=4.0.0,<5",
     "mapboard.core",
     "mapboard.tasks",

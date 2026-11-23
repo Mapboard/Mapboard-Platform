@@ -874,6 +874,20 @@ wheels = [
 ]
 
 [[package]]
+name = "macrostrat-task-runner"
+version = "0.1.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "macrostrat-database" },
+    { name = "pydantic" },
+    { name = "redis" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/e5/81/45a6ddd439fff1ce193b871af8df47d41dc1f1b1ca68d7f6ab33bd1a3873/macrostrat_task_runner-0.1.0.tar.gz", hash = "sha256:1b94070b67bc8c2c15a6ed1f2cbd59e507f91537aa9676599566cad0fdb96fd6", size = 7737, upload-time = "2026-11-23T11:27:29.709Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/b5/2e/266af7f4281544945b50d2fef7c8706d7cc4746e9e518601e10c36ac1bf6/macrostrat_task_runner-0.1.0-py3-none-any.whl", hash = "sha256:8ea9e59d44cfc85abfa50a8dc741adc26d0a63800e25255fe8ee19ae383efd00", size = 10321, upload-time = "2026-11-23T11:27:28.875Z" },
+]
+
+[[package]]
 name = "macrostrat-utils"
 version = "1.3.3"
 source = { registry = "https://pypi.org/simple" }
@@ -894,6 +908,7 @@ dependencies = [
     { name = "fastapi" },
     { name = "macrostrat-auth-system" },
     { name = "macrostrat-database" },
+    { name = "macrostrat-task-runner" },
     { name = "mapboard-core" },
     { name = "mapboard-tasks" },
     { name = "uvicorn" },
@@ -904,6 +919,7 @@ requires-dist = [
     { name = "fastapi", specifier = ">=0.115,<0.137" },
     { name = "macrostrat-auth-system", specifier = ">=1.2.0,<2" },
     { name = "macrostrat-database", specifier = ">=4.0.0,<5" },
+    { name = "macrostrat-task-runner", specifier = ">=0.1.0,<0.2" },
     { name = "mapboard-core", editable = "py-modules/core" },
     { name = "mapboard-tasks", editable = "py-modules/tasks" },
     { name = "uvicorn", specifier = ">=0.30,<1" },
@@ -1044,6 +1060,7 @@ source = { editable = "py-modules/tasks" }
 dependencies = [
     { name = "celery", extra = ["redis"] },
     { name = "macrostrat-database" },
+    { name = "macrostrat-task-runner" },
     { name = "mapboard-core" },
     { name = "mapboard-topology-manager" },
     { name = "pydantic" },
@@ -1053,6 +1070,7 @@ dependencies = [
 requires-dist = [
     { name = "celery", extras = ["redis"], specifier = ">=5.4.0,<6" },
     { name = "macrostrat-database", specifier = ">=4.0.0,<5" },
+    { name = "macrostrat-task-runner", specifier = ">=0.1.0,<0.2" },
     { name = "mapboard-core", editable = "py-modules/core" },
     { name = "mapboard-topology-manager", editable = "py-modules/topology-manager" },
     { name = "pydantic", specifier = ">=2.9.2,<3" },

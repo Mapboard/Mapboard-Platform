@@ -11,7 +11,8 @@ from macrostrat.database import Database
 from sqlalchemy.exc import IntegrityError
 
 LIVE_STATES = ("queued", "running")
-RUN_COLUMNS = """id, task, canvas_id, params, requested_by, state,
+FINAL_STATES = ("succeeded", "failed", "cancelled", "killed")
+RUN_COLUMNS = """id, task, canvas_id, params, requested_by, celery_task_id, state,
                  created_at, started_at, finished_at, error"""
 
 
@@ -76,8 +77,10 @@ def write_log(db: Database, run_id: UUID | str, log: str):
     )
 
 
-def finish_run(db: Database, run_id: UUID | str, *, error: str | None, log: str):
-    state = "succeeded" if error is None else "failed"
+def finish_run(
+    db: Database, run_id: UUID | str, *, state: str, error: str | None, log: str | None
+):
+    assert state in FINAL_STATES, state
     _one(
         db,
         """UPDATE mapboard.task_run
@@ -85,6 +88,21 @@ def finish_run(db: Database, run_id: UUID | str, *, error: str | None, log: str)
            WHERE id = %(id)s RETURNING id""",
         dict(id=str(run_id), state=state, error=error, log=log),
     )
+
+
+def end_live_run(
+    db: Database, run_id: UUID | str, *, state: str, error: str, log: str | None = None
+) -> bool:
+    """Close a run no worker will record: cancelled before it started, or killed."""
+    row = _one(
+        db,
+        """UPDATE mapboard.task_run
+           SET state = %(state)s, finished_at = now(), error = %(error)s,
+               log = coalesce(%(log)s, log)
+           WHERE id = %(id)s AND state IN ('queued', 'running') RETURNING id""",
+        dict(id=str(run_id), state=state, error=error, log=log),
+    )
+    return row is not None
 
 
 def fail_run(db: Database, run_id: UUID | str, error: str):
@@ -117,6 +135,20 @@ def get_run(db: Database, run_id: UUID | str, *, with_log: bool = False) -> dict
         dict(id=str(run_id)),
     )
     return dict(row) if row else None
+
+
+def get_state(db: Database, run_id: UUID | str) -> str | None:
+    row = _one(
+        db, "SELECT state FROM mapboard.task_run WHERE id = %(id)s", dict(id=str(run_id))
+    )
+    return row["state"] if row else None
+
+
+def get_log(db: Database, run_id: UUID | str) -> str | None:
+    row = _one(
+        db, "SELECT log FROM mapboard.task_run WHERE id = %(id)s", dict(id=str(run_id))
+    )
+    return row["log"] if row else None
 
 
 def list_runs(db: Database, canvas_ids: list[int], limit: int = 20) -> list[dict]:

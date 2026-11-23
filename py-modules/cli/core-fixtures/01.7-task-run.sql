@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS mapboard.task_run (
   requested_by   integer REFERENCES public.users (id) ON DELETE SET NULL,
   celery_task_id text,
   state          text NOT NULL DEFAULT 'queued'
-                   CHECK (state IN ('queued', 'running', 'succeeded', 'failed')),
+                   CHECK (state IN ('queued', 'running', 'succeeded', 'failed', 'cancelled', 'killed')),
   created_at     timestamptz NOT NULL DEFAULT now(),
   started_at     timestamptz,
   finished_at    timestamptz,

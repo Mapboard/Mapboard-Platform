@@ -3,7 +3,6 @@ import { useParams } from "~/utils/routing";
 import { useData } from "vike-react/useData";
 import type { Data } from "./+data";
 import { Spinner } from "@blueprintjs/core";
-import { TopologyRebuild } from "~/components";
 
 export function Page() {
   const { slug } = useParams();
@@ -18,7 +17,7 @@ export function Page() {
     h("p", ["Created on ", strDate]),
     h("p", ["SRID: ", srid]),
     h(Contexts, { contexts }),
-    h(TopologyRebuild, { project: slug }),
+    h("p", h("a", { href: `./${slug}/topology` }, "Topology rebuilds")),
     h("a", { href: `./${slug}/legend-items` }, "View legend items"),
   ]);
 }

@@ -19,6 +19,7 @@ from starlette.testclient import TestClient
 
 FIXTURES = Path(__file__).parents[2] / "cli" / "core-fixtures"
 SCHEMA = [
+    "00-extensions.sql",
     "01-schema.sql",
     "01.1-functions.sql",
     "01.6-access.sql",
@@ -243,3 +244,47 @@ def test_orphaned_runs_are_closed(client, provider, db, sent):
     ledger.start_run(db, run_id)
     assert ledger.fail_orphaned_runs(db, "mapboard.topology.") == 1
     assert client.post("/tasks/topology/closed", json={}).status_code == 202
+
+
+@pytest.fixture
+def control(monkeypatch):
+    from mapboard.api import tasks
+
+    calls = []
+    monkeypatch.setattr(
+        tasks.celery_app.control, "revoke", lambda tid, **kw: calls.append(("revoke", kw))
+    )
+    monkeypatch.setattr(
+        tasks, "request_cancel", lambda redis, run_id: calls.append("cancel") or 1
+    )
+    monkeypatch.setattr(tasks, "read_all", lambda redis, run_id: "partial output")
+    return calls
+
+
+def test_cancel_and_kill_need_edit_access(client, provider, db, sent, control):
+    sign_in(client, provider, EDITOR)
+    grant(db, EDITOR, "closed", "edit")
+
+    # An earlier test may have left one queued; the canvas holds one live run.
+    for run in client.get("/tasks/topology/closed").json():
+        if run["state"] in ledger.LIVE_STATES:
+            ledger.end_live_run(db, run["id"], state="failed", error="test setup")
+    queued = client.post("/tasks/topology/closed", json={}).json()["id"]
+    sign_in(client, provider, VISITOR)
+    assert client.post(f"/tasks/runs/{queued}/cancel").status_code == 404
+    sign_in(client, provider, EDITOR)
+    res = client.post(f"/tasks/runs/{queued}/cancel")
+    assert res.json()["state"] == "cancelled"
+    assert control == [("revoke", {})]
+    assert client.post(f"/tasks/runs/{queued}/cancel").status_code == 409
+
+    running = client.post("/tasks/topology/closed", json={}).json()["id"]
+    ledger.start_run(db, running)
+    # The worker records a cancel of a running run.
+    assert client.post(f"/tasks/runs/{running}/cancel").json()["state"] == "running"
+    assert control[-1] == "cancel"
+
+    res = client.post(f"/tasks/runs/{running}/kill")
+    assert res.json()["state"] == "killed"
+    assert control[-1] == ("revoke", {"terminate": True, "signal": "SIGKILL"})
+    assert ledger.get_log(db, running) == "partial output"

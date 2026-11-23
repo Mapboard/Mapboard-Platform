@@ -94,6 +94,15 @@ services:
   # Runs topology rebuilds one at a time, each in a fresh process
   worker:
     <<: *platform
+    environment:
+      - MAPBOARD_DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@database:5432/${POSTGRES_DB}
+      - CELERY_BROKER_URL=redis://broker:6379/0
+      # Rich renders progress bars and colour as in a 120-column terminal, which the page draws.
+      - FORCE_COLOR=1
+      - COLORTERM=truecolor
+      - TERM=xterm-256color
+      - COLUMNS=120
+      - LINES=40
     command:
       - celery
       - -A
