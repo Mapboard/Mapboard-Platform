@@ -1,0 +1,65 @@
+.topology-page
+  text-align: left
+  padding: 1em 2em
+
+  .muted
+    color: var(--secondary-color)
+
+  .breadcrumbs
+    margin: 0
+
+  .layout
+    display: flex
+    gap: 2em
+    align-items: flex-start
+
+  .main
+    flex: 1
+    min-width: 0
+
+  .rebuild-panel
+    margin-bottom: 1em
+    .context-select
+      display: block
+      margin-bottom: 0.75em
+
+  .panel-footer
+    display: flex
+    gap: 0.75em
+    align-items: center
+    flex-wrap: wrap
+    margin-top: 0.75em
+    p
+      margin: 0
+
+  .run-status
+    display: flex
+    gap: 0.75em
+    align-items: center
+    flex: 1
+    flex-wrap: wrap
+    .run-details
+      font-variant-numeric: tabular-nums
+    .run-actions
+      margin-left: auto
+      display: flex
+      gap: 0.5em
+
+  .run-error
+    margin-bottom: 1em
+    white-space: pre-wrap
+
+  .run-list
+    width: 16em
+    flex-shrink: 0
+    h3
+      margin-top: 0
+    ul
+      list-style: none
+      padding: 0
+      margin: 0
+    li
+      padding: 0.4em 0.5em
+      border-radius: 4px
+      &.shown
+        background: var(--card-background-color, rgba(128, 128, 128, 0.12))

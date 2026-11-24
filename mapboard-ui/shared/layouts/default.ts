@@ -4,7 +4,7 @@ import "@macrostrat/style-system/dist/style-system.css";
 import { DarkModeProvider } from "@macrostrat/ui-components";
 import styles from "./layouts.module.scss";
 import React from "react";
-import { Link } from "~/components";
+import { Link, UserMenu } from "~/components";
 import hyper from "@macrostrat/hyper";
 import { usePageContext } from "vike-react/usePageContext";
 
@@ -41,6 +41,7 @@ function DefaultLayout({ children }: { children: React.ReactNode }) {
         h(Logo),
         h(Link, { href: "/" }, "Welcome"),
         h(Link, { href: "/docs" }, "Documentation"),
+        h(UserMenu),
       ]),
       h(Content, children),
     ],

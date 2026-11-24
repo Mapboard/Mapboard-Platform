@@ -1,4 +1,4 @@
-import { postgrest } from "~/utils/api-client";
+import { postgrestForRequest } from "~/utils/api-client";
 import { useConfig } from "vike-react/useConfig";
 import type { PageContextServer } from "vike/types";
 import type { Context } from "~/types";
@@ -10,7 +10,7 @@ export const data = async (pageContext: PageContextServer) => {
   // https://vike.dev/useConfig
   const config = useConfig();
 
-  const res = await postgrest
+  const res = await postgrestForRequest(pageContext)
     .from("context")
     .select()
     .eq("project_slug", pageContext.routeParams.slug)

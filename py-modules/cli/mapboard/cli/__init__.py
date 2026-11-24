@@ -1,5 +1,6 @@
 import logging
 import sys
+from collections.abc import Mapping
 from os import environ
 import click
 import pytest
@@ -7,14 +8,19 @@ import typer
 import logging
 
 from macrostrat.app_frame import Application
+from macrostrat.app_frame.secrets import Secret
+from macrostrat.schema_management.cli import create_schema_cli
+from sqlalchemy.engine import make_url
 from macrostrat.database import Database
 from macrostrat.dinosaur import temp_database
 from macrostrat.utils import setup_stderr_logs
-from mapboard.core.settings import MAPBOARD_ROOT, connection_string
+from mapboard.core.settings import APP_OWNER, MAPBOARD_ROOT, admin_database_url
 from mapboard.core.workers import watch_topology, send_event
 from mapboard.topology_manager import TopologyManager, TopologyContext
 
-from .application import MapboardApplication
+from .config import environments
+from .application import MapboardApplication, console
+from .schema import schema_app
 from .database import db_app, get_srid, project_params
 from .fixtures import apply_fixtures
 from .projects import app as projects_app
@@ -26,8 +32,52 @@ from mapboard.topology_manager.config import _side_effects
 core_app = MapboardApplication()
 app = core_app.control_command()
 
+app.add_typer(environments.cli(), name="env", help="Choose the environment")
+app.add_typer(create_schema_cli(schema_app), name="schema", help="Core database schema")
 app.add_typer(projects_app, help="Manage Mapboard projects")
 app.add_typer(db_app, help="Database management")
+
+
+@app.command()
+def config():
+    """Show the settings the tools are using"""
+    settings = environments.settings
+    env_class = environments.env_class.value
+    console.print(f"config file:     {environments.config_file or '[dim]none[/]'}")
+    console.print(f"environment:     {environments.env or '[dim]none[/]'} ({env_class})")
+    console.print(f"database:        {_describe(settings.get('database'))}")
+    console.print(f"app role:        {APP_OWNER}")
+    console.print(f"planning image:  {settings.get('planning_image')}")
+    console.print(f"admin users:     {', '.join(settings.get('admin_users') or []) or '[dim]none[/]'}")
+
+
+def _describe(database) -> str:
+    if database is None:
+        return f"[dim]not set; from .env:[/] {_hide_password(admin_database_url())}"
+    if isinstance(database, Secret):
+        # A reference names the credential without being one.
+        return f"{database.ref} [dim](not fetched)[/]"
+    if not isinstance(database, Mapping):
+        return _hide_password(database)
+    password = database.get("password")
+    if isinstance(password, Secret):
+        password = f"{password.ref} [dim](not fetched)[/]"
+    elif password is not None:
+        password = "***"
+    address = f"{database.get('host')}:{database.get('port') or 5432}"
+    dbname = database.get("dbname") or "mapboard"
+    return f"{database.get('user')}@{address}/{dbname}, password {password}"
+
+
+def _hide_password(url: str) -> str:
+    return make_url(url).render_as_string(hide_password=True)
+
+
+from .access import app as access_app
+from .tasks import app as tasks_app
+
+app.add_typer(access_app, help="Manage who may read and edit projects")
+app.add_typer(tasks_app, help="Background topology rebuilds")
 
 app.command(name="watch")(watch_topology)
 app.command(name="send-event")(send_event)

@@ -42,6 +42,9 @@ services:
       - PGRST_DB_URI=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@database:5432/${POSTGRES_DB}
       - PGRST_DB_SCHEMA=mapboard_api
       - PGRST_DB_ANON_ROLE=web_anon
+      # The session token issued by the platform API is also PostgREST's JWT
+      - PGRST_JWT_SECRET=${SECRET_KEY:-local-development-secret-key-not-for-deployment}
+      - PGRST_JWT_AUD=mapboard
   elevation_tiler:
     image: elevation-tiler:v0.1.0
     restart: unless-stopped
@@ -59,6 +62,8 @@ services:
     environment:
       - MAPBOARD_DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@database:5432/${POSTGRES_DB}
       - LOG_LEVEL=info
+      # Verifies the platform API's session tokens; without it every request is allowed
+      - SECRET_KEY=${SECRET_KEY:-local-development-secret-key-not-for-deployment}
   frontend:
     build: ../mapboard-ui
     restart: unless-stopped
@@ -69,16 +74,50 @@ services:
       - VITE_MAPBOX_TOKEN=${MAPBOX_TOKEN}
       # Don't fail on self-signed certificates (which OrbStack provides)
       - NODE_TLS_REJECT_UNAUTHORIZED=0
-  # topology_manager:
-  #   build: ../topology-manager
-  #   command: ["echo", "Hello, world!"]
-  # The broker and worker containers create an architecture
-  # for running import and processing tasks on a separate thread
-  # from the web server. These only run in "worker" profile.
-  #  broker:
-  #    profiles:
-  #      - production
-  #    image: redis:latest
+  # Sign-in (issues the session token that mapboard_server and PostgREST verify) and task runs
+  api: &platform
+    build:
+      context: ..
+    image: mapboard-platform
+    restart: unless-stopped
+    depends_on:
+      - database
+      - broker
+    environment:
+      - MAPBOARD_DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@database:5432/${POSTGRES_DB}
+      - CELERY_BROKER_URL=redis://broker:6379/0
+      - SECRET_KEY=${SECRET_KEY:-local-development-secret-key-not-for-deployment}
+      # Sign-in is off until an ORCID client is configured
+      - OAUTH_CLIENT_ID
+      - OAUTH_CLIENT_SECRET
+      - REDIRECT_URI=${REDIRECT_URI:-https://mapboard.local/api/auth/callback}
+  # Runs topology rebuilds one at a time, each in a fresh process
+  worker:
+    <<: *platform
+    environment:
+      - MAPBOARD_DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@database:5432/${POSTGRES_DB}
+      - CELERY_BROKER_URL=redis://broker:6379/0
+      # Rich renders progress bars and colour as in a 120-column terminal, which the page draws.
+      - FORCE_COLOR=1
+      - COLORTERM=truecolor
+      - TERM=xterm-256color
+      - COLUMNS=120
+      - LINES=40
+    command:
+      - celery
+      - -A
+      - mapboard.tasks.app
+      - worker
+      - -Q
+      - topology
+      - --concurrency=1
+      - --max-tasks-per-child=1
+      - --loglevel=info
+  # Task queue only; run state lives in mapboard.task_run
+  broker:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
 volumes:
   db_cluster:
 

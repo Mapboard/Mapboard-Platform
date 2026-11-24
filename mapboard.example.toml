@@ -1,0 +1,33 @@
+# Copy to mapboard.toml at the repository root (it is gitignored).
+# Any setting can also be given as MAPBOARD_<KEY>, e.g. MAPBOARD_DATABASE.
+# Choose an environment with `mapboard env <name>` or `--env <name>`; with
+# neither, `local` is used.
+#
+# A value may name a secret instead of holding one: op:// (1Password), env://,
+# file:// or keychain://. It is fetched only when a command connects.
+
+op_account = "uw-madison.1password.com"
+
+# ORCID iDs made administrators of every project by `mapboard access sync`, once
+# they have signed in. An environment's own list replaces this one.
+admin_users = []
+
+[local]
+env_class = "local"
+# Without `database`, the local stack's URL is built from .env (POSTGRES_*),
+# whose user is the local superuser.
+
+[development]
+env_class = "development"
+
+# The CLI connects as a superuser of the cluster. Schema changes are applied as
+# `mapboard`, which owns Mapboard's objects, and every other command works as it.
+#
+# `database` is a URL, or a table when the stored credential names a host we
+# can't reach (the operator's Secret names the in-cluster one).
+[development.database]
+host = "db.development.svc.macrostrat.org"
+user = "macrostrat-admin"
+dbname = "mapboard"
+# 1Password copy of the operator Secret k8s/macrostrat-dev/development-macrostrat-pguser-macrostrat-admin.
+password = "op://Macrostrat admin/uw7xpvvph5yllk42wf3nbs4gla/Secret data/password"

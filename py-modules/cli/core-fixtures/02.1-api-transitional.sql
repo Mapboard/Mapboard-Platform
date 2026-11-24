@@ -1,5 +1,3 @@
-CREATE EXTENSION IF NOT EXISTS postgis_topology;
-
 /* The Naukluft data now lives in its own project schemas in this database
   (`mb_naukluft_2517c1e5_*`), so it is no longer mirrored from the legacy
   `naukluft` database with postgres_fdw. naukluft-app's

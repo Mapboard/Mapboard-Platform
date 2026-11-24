@@ -17,6 +17,7 @@ export function Page() {
     h("p", ["Created on ", strDate]),
     h("p", ["SRID: ", srid]),
     h(Contexts, { contexts }),
+    h("p", h("a", { href: `./${slug}/topology` }, "Topology rebuilds")),
     h("a", { href: `./${slug}/legend-items` }, "View legend items"),
   ]);
 }
