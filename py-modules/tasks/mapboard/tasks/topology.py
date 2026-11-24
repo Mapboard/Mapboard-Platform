@@ -50,23 +50,39 @@ def run_topology_rebuild(
     if run is None:
         return "skipped"
 
-    if get_manager is None:
-        from mapboard.core.database import canvas_topology_manager as get_manager
+    try:
+        state, error, log = _rebuild(db, run, get_manager, db_url, redis_url)
+    except BaseException as err:
+        # Otherwise the run stays 'running' and its page waits forever.
+        ledger.end_live_run(
+            db,
+            run_id,
+            state="failed",
+            error=f"{type(err).__name__}: {err}",
+            log=traceback.format_exc(),
+        )
+        raise
+    ledger.finish_run(db, run_id, state=state, error=error, log=log)
+    return state
 
+
+def _rebuild(db, run, get_manager, db_url, redis_url) -> tuple[str, str | None, str]:
     params = RebuildParams(**run["params"])
 
     def rebuild(*_):
-        get_manager(run["canvas_id"]).update(**params.model_dump())
+        # Imported here so an import error lands in the run's output.
+        manager = get_manager
+        if manager is None:
+            from mapboard.core.database import canvas_topology_manager as manager
+        manager(run["canvas_id"]).update(**params.model_dump())
 
-    if redis_url is not None:
-        from macrostrat.task_runner import execute
+    if redis_url is None:
+        return _run_here(db, run["id"], rebuild)
 
-        outcome = execute(str(run_id), rebuild, db_url=db_url, redis_url=redis_url)
-        state, error, log = outcome.state, outcome.error, outcome.log
-    else:
-        state, error, log = _run_here(db, run_id, rebuild)
-    ledger.finish_run(db, run_id, state=state, error=error, log=log)
-    return state
+    from macrostrat.task_runner import execute
+
+    outcome = execute(str(run["id"]), rebuild, db_url=db_url, redis_url=redis_url)
+    return outcome.state, outcome.error, outcome.log
 
 
 def _run_here(db: Database, run_id: str, rebuild) -> tuple[str, str | None, str]:

@@ -237,6 +237,22 @@ def test_rebuild_runs_once_per_canvas(client, provider, db, sent):
     assert [r["state"] for r in runs] == ["failed", "succeeded"]
 
 
+def test_setup_errors_close_the_run(client, provider, db, sent):
+    sign_in(client, provider, EDITOR)
+    grant(db, EDITOR, "closed", "edit")
+    run_id = client.post("/tasks/topology/closed", json={}).json()["id"]
+    db.run_sql(
+        "UPDATE mapboard.task_run SET params = '{\"reset\": \"often\"}' WHERE id = :id",
+        dict(id=run_id),
+    )
+    with pytest.raises(Exception):
+        run_topology_rebuild(db, run_id, lambda canvas_id: FakeManager())
+    run = client.get(f"/tasks/runs/{run_id}").json()
+    assert run["state"] == "failed"
+    assert "ValidationError" in run["error"]
+    assert "Traceback" in run["log"]
+
+
 def test_orphaned_runs_are_closed(client, provider, db, sent):
     sign_in(client, provider, EDITOR)
     grant(db, EDITOR, "closed", "edit")
